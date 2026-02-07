@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tennisleague
+      POSTGRES_USER: tennisleague
+      POSTGRES_PASSWORD: tennisleague
+    ports:
+      - "5432:5432"
+    volumes:
+      - tennis-league-postgres_data:/var/lib/postgresql/data
+      - ../init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U tennisleague -d tennisleague" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - tennis-league-redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-ui:
+    image: redis/redisinsight:latest
+    container_name: redis-ui
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+
+
+  migrate:
+    image: migrate/migrate:4
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    command: [
+      "-path=/migrations",
+      "-database=postgres://tennisleague:tennisleague@postgres:5432/tennisleague?sslmode=disable",
+      "up"
+    ]
+ 
+
+volumes:
+  tennis-league-postgres_data:
+  tennis-league-redis_data:
