@@ -9,6 +9,7 @@ import * as yup from 'yup';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
+import { useNavigate } from 'react-router-dom';
 
 // ================= VALIDATION SCHEMA =================
 const schema = yup.object({
@@ -20,6 +21,7 @@ const schema = yup.object({
 });
 
 export default function Leagues() {
+  const navigate = useNavigate();
   const [leagues, setLeagues] = useState([]);
   const [error, setError] = useState(null);
   const [createVisible, setCreateVisible] = useState(false);
@@ -49,12 +51,16 @@ export default function Leagues() {
   }, []);
 
   const handleStandings = (league) => {
-    console.log('Puan durumu:', league);
+    navigate(`/leagues/${league.id}/standings`);
   };
 
   const handleFixtures = (league) => {
-    console.log('Fikstür:', league);
-  };
+    navigate(`/leagues/${league.id}/fixtures`);
+    };
+    
+    const handleTeams=(league) => {
+      navigate(`/leagues/${league.id}/teams`);
+    }
 
   const handleCreateLeague = () => {
     reset();
@@ -116,6 +122,12 @@ export default function Leagues() {
                 <span className="font-medium">{league.name}</span>
 
                 <div className="flex gap-2">
+                  <Button
+                    label="Takımlar & Oyuncular"
+                    icon="pi pi-chart-bar"
+                    outlined
+                    onClick={() => handleTeams(league)}
+                  />
                   <Button
                     label="Puan Durumu"
                     icon="pi pi-chart-bar"
