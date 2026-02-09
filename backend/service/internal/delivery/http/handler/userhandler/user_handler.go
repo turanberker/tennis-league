@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
+	"github.com/turanberker/tennis-league-service/internal/delivery"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
 )
 
@@ -20,8 +21,8 @@ func NewUserHandler(uc *user.Usecase, tokenAuth *jwtauth.JWTAuth) *UserHandler {
 }
 
 func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
-	r.POST("user/login", h.login)
-	r.POST("user/register", h.register)
+	r.POST("auth/login", h.login)
+	r.POST("auth/register", h.register)
 }
 
 func (h *UserHandler) login(c *gin.Context) {
@@ -44,9 +45,17 @@ func (h *UserHandler) login(c *gin.Context) {
 	tokenString, _ := h.createToken(usr)
 	// JWT oluştur
 
-	c.JSON(http.StatusOK, gin.H{
-		"token": tokenString,
+	response := delivery.NewSuccessResponse(LoginResponse{
+		Token: tokenString,
+		CurrentUser: CurrentUserDTO{
+			UserID:  usr.ID,
+			Name:    usr.Name,
+			Surname: usr.Surname,
+			Role:    string(usr.Role),
+		},
 	})
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *UserHandler) createToken(usr *user.User) (string, error) {
@@ -84,8 +93,15 @@ func (h *UserHandler) register(c *gin.Context) {
 
 	tokenString, _ := h.createToken(usr)
 	// JWT oluştur
-
-	c.JSON(http.StatusOK, gin.H{
-		"token": tokenString,
+	response := delivery.NewSuccessResponse(LoginResponse{
+		Token: tokenString,
+		CurrentUser: CurrentUserDTO{
+			UserID:  usr.ID,
+			Name:    usr.Name,
+			Surname: usr.Surname,
+			Role:    string(usr.Role),
+		},
 	})
+
+	c.JSON(http.StatusOK, response)
 }
