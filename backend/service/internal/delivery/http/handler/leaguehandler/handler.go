@@ -53,7 +53,8 @@ func (h *Handler) getById(c *gin.Context) {
 
 		return
 	}
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(league))
+	response := ToLeagueResponse(league)
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
 }
 
 func (h *Handler) save(c *gin.Context) {
@@ -87,7 +88,23 @@ func (h *Handler) getAll(c *gin.Context) {
 	name := c.Query("name") // query param
 	leagues, _ := h.uc.GetAll(c.Request.Context(), name)
 
-	res := delivery.NewSuccessResponse(leagues)
+	leagueResponse := make([]*LeagueResponse, 0, len(leagues))
+
+	for _, l := range leagues {
+		leagueResponse = append(leagueResponse, ToLeagueResponse(l))
+	}
+
+	res := delivery.NewSuccessResponse(leagueResponse)
 	c.JSON(http.StatusOK, res)
 
+}
+func ToLeagueResponse(l *league.League) *LeagueResponse {
+	if l == nil {
+		return nil
+	}
+
+	return &LeagueResponse{
+		ID:   l.ID,
+		Name: l.Name,
+	}
 }
