@@ -42,3 +42,4 @@ logs
 .eslintcache
 
 */__debug_bin.exe
+backend/service/cmd/api/__debug_bin.exe
