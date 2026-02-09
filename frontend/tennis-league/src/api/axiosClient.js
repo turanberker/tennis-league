@@ -2,24 +2,16 @@ import axios from 'axios';
 
 const axiosClient = axios.create({
   baseURL: 'http://localhost:8500',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// İleride JWT eklemek için interceptor
-axiosClient.interceptors.request.use((config) => {
-  const user = localStorage.getItem('user');
-
-  if (user) {
-    const token = JSON.parse(user)?.token;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+/* axiosClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
-});
+}); */
 
 // Response interceptor → backend response unwrap + global error
 axiosClient.interceptors.response.use(

@@ -4,16 +4,19 @@ import { Button } from 'primereact/button';
 import { Sidebar } from 'primereact/sidebar';
 import { Avatar } from 'primereact/avatar';
 import { Menu } from 'primereact/menu';
+import { Toast } from 'primereact/toast';
 
 import 'primeflex/primeflex.css';
 import LoginDialog from './components/auth/LoginDialog';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SidebarLinks, AppRoutes } from './router/AppRouter';
+import { login as loginApi } from './api/authService'; // backend çağrısı
 
 function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [loginDialogVisible, setLoginDialogVisible] = useState(false);
   const menuRef = useRef(null);
+  const toast = useRef(null);
 
   const { user, login, logout, isAuthenticated } = useAuth();
 
@@ -26,13 +29,24 @@ function Layout() {
     { label: 'Çıkış Yap', icon: 'pi pi-sign-out', command: logout },
   ];
 
-  const handleLogin = () => {
-    login({ name: 'Berker' });
+  // LoginDialog’dan çağrılacak fonksiyon
+  const handleLogin = (data) => {
+    // data = { token, currentUser }
+    localStorage.setItem('token', data.token);
+    login(data.currentUser); // AuthContext’e kaydet
     setLoginDialogVisible(false);
+
+    toast.current.show({
+      severity: 'success',
+      summary: 'Giriş başarılı',
+      detail: `Hoş geldin ${data.currentUser.name}`,
+      life: 3000,
+    });
   };
 
   return (
     <div className="min-h-screen flex flex-column">
+      <Toast ref={toast} />
       {/* HEADER */}
       <header
         className="flex align-items-center justify-content-between px-4"

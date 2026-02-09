@@ -43,62 +43,18 @@ export function SidebarLinks() {
   );
 }
 
-
-
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
 
-      <Route
-        path="/leagues"
-        element={
-          <ProtectedRoute>
-            <Leagues />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/leagues/:id/standings"
-        element={
-          <ProtectedRoute>
-            <Standings />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/leagues/:id/teams"
-        element={
-          <ProtectedRoute>
-            <Teams />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/leagues/:id/fixtures"
-        element={
-          <ProtectedRoute>
-            <Fixtures />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/players"
-        element={
-          <ProtectedRoute>
-            <Players />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/leagues" element={<Leagues />} />
+      <Route path="/leagues/:id/standings" element={<Standings />} />
+      <Route path="/leagues/:id/teams" element={<Teams />} />
+      <Route path="/leagues/:id/fixtures" element={<Fixtures />} />
+      <Route path="/players" element={<Players />} />
 
-      <Route
-        path="/matches"
-        element={
-          <ProtectedRoute>
-            <Matches />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/matches" element={<Matches />} />
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
