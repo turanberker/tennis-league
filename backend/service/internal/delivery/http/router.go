@@ -2,13 +2,17 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/userhandler"
 )
 
-func NewRouter(userHandler *userhandler.UserHandler) *gin.Engine {
+func NewRouter(handlers ...RegisterableHandler) *gin.Engine {
 	r := gin.Default()
-
-	userHandler.RegisterRoutes(r)
+	for _, h := range handlers {
+		h.RegisterRoutes(r)
+	}
 
 	return r
+}
+
+type RegisterableHandler interface {
+	RegisterRoutes(r *gin.Engine)
 }
