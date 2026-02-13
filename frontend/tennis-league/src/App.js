@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SidebarLinks, AppRoutes } from './router/AppRouter';
 import { login as loginApi } from './api/authService'; // backend çağrısı
 import RegisterDialog from './components/auth/RegisterDialog';
+import { register as registerApi } from './api/authService';
 
 function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -103,19 +104,35 @@ function Layout() {
       <RegisterDialog
         visible={registerDialogVisible}
         onHide={() => setRegisterDialogVisible(false)}
-        onRegister={(form) => {
-          console.log(form);
-          // burada register api çağrısı yapılacak
-          setRegisterDialogVisible(false);
+        onRegister={async (form) => {
+          try {
+            // captchaInput ve passwordRepeat backend'e gitmesin
+            const { captchaInput, passwordRepeat, ...payload } = form;
 
-          toast.current.show({
-            severity: 'success',
-            summary: 'Kayıt başarılı',
-            detail: 'Şimdi giriş yapabilirsiniz',
-            life: 3000,
-          });
+            const data = await registerApi(payload);
 
-          setLoginDialogVisible(true); // otomatik login dialog aç
+            // TOKEN KAYDET
+            localStorage.setItem('token', data.token);
+
+            // USER CONTEXT'E YAZ
+            login(data.currentUser);
+
+            setRegisterDialogVisible(false);
+
+            toast.current.show({
+              severity: 'success',
+              summary: 'Kayıt başarılı',
+              detail: `Hoş geldin ${data.currentUser.name}`,
+              life: 3000,
+            });
+          } catch (err) {
+            toast.current.show({
+              severity: 'error',
+              summary: 'Hata',
+              detail: err.error || 'Kayıt başarısız',
+              life: 3000,
+            });
+          }
         }}
       />
       {/* BODY */}
