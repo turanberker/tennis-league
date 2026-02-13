@@ -11,10 +11,12 @@ import LoginDialog from './components/auth/LoginDialog';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SidebarLinks, AppRoutes } from './router/AppRouter';
 import { login as loginApi } from './api/authService'; // backend çağrısı
+import RegisterDialog from './components/auth/RegisterDialog';
 
 function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [loginDialogVisible, setLoginDialogVisible] = useState(false);
+  const [registerDialogVisible, setRegisterDialogVisible] = useState(false);
   const menuRef = useRef(null);
   const toast = useRef(null);
 
@@ -93,8 +95,29 @@ function Layout() {
         visible={loginDialogVisible}
         onHide={() => setLoginDialogVisible(false)}
         onLogin={handleLogin}
+        onShowRegister={() => {
+          setLoginDialogVisible(false);
+          setRegisterDialogVisible(true);
+        }}
       />
+      <RegisterDialog
+        visible={registerDialogVisible}
+        onHide={() => setRegisterDialogVisible(false)}
+        onRegister={(form) => {
+          console.log(form);
+          // burada register api çağrısı yapılacak
+          setRegisterDialogVisible(false);
 
+          toast.current.show({
+            severity: 'success',
+            summary: 'Kayıt başarılı',
+            detail: 'Şimdi giriş yapabilirsiniz',
+            life: 3000,
+          });
+
+          setLoginDialogVisible(true); // otomatik login dialog aç
+        }}
+      />
       {/* BODY */}
       <div className="flex flex-1">
         <Sidebar

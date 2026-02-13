@@ -6,7 +6,12 @@ import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { login } from '../../api/authService';
 
-export default function LoginDialog({ visible, onHide, onLogin }) {
+export default function LoginDialog({
+  visible,
+  onHide,
+  onLogin,
+  onShowRegister,
+}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,7 +54,7 @@ export default function LoginDialog({ visible, onHide, onLogin }) {
 
   const footer = (
     <div className="flex justify-content-between w-full">
-      <Button label="Kayıt Ol" text />
+      <Button label="Kayıt Ol" text onClick={onShowRegister} />
       <Button
         label="Giriş Yap"
         icon="pi pi-sign-in"
