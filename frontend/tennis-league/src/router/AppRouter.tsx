@@ -9,6 +9,8 @@ import ProtectedRoute from './ProtectedRoute';
 import Standings from '../pages/Standings';
 import Fixtures from '../pages/Fixtures';
 import Teams from '../pages/Teams';
+import NewPlayer from '../pages/player/NewPlayer';
+import PlayerDetail from '../pages/player/PlayerDetail';
 
 export function SidebarLinks() {
   const navigate = useNavigate();
@@ -53,6 +55,8 @@ export function AppRoutes() {
       <Route path="/leagues/:id/teams" element={<Teams />} />
       <Route path="/leagues/:id/fixtures" element={<Fixtures />} />
       <Route path="/players" element={<Players />} />
+      <Route path="/players/new" element={<NewPlayer />} />
+      <Route path="/players/:uuid" element={<PlayerDetail />} />
 
       <Route path="/matches" element={<Matches />} />
 
