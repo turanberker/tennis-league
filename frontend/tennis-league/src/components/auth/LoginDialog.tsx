@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
@@ -6,25 +6,32 @@ import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { login } from '../../api/authService';
 
-export default function LoginDialog({
+interface LoginDialogProps {
+  visible: boolean;
+  onHide: () => void;
+  onLogin: (res: any) => void; // API tipine göre özelleştir
+  onShowRegister: () => void;
+}
+
+const LoginDialog: React.FC<LoginDialogProps> = ({
   visible,
   onHide,
   onLogin,
   onShowRegister,
-}) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+}) => {
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const toast = React.useRef(null);
+  const toast = useRef<Toast>(null);
 
   const handleLogin = async () => {
     try {
       setLoading(true);
       const res = await login({ email, password });
       if (res) {
-        onLogin(res); // parent’a gönderiyoruz
-        toast.current.show({
+        onLogin(res);
+        toast.current?.show({
           severity: 'success',
           summary: 'Giriş başarılı',
           detail: `Hoş geldin ${res.currentUser.name}`,
@@ -32,16 +39,16 @@ export default function LoginDialog({
         });
         onHide();
       } else {
-        toast.current.show({
+        toast.current?.show({
           severity: 'error',
           summary: 'Hata',
-          detail: res.errorDetail || 'Giriş başarısız',
+          detail:  'Giriş başarısız',
           life: 3000,
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.current.show({
+      toast.current?.show({
         severity: 'error',
         summary: 'Hata',
         detail: err.message || 'Giriş başarısız',
@@ -101,4 +108,6 @@ export default function LoginDialog({
       </Dialog>
     </>
   );
-}
+};
+
+export default LoginDialog;

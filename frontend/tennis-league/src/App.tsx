@@ -8,18 +8,19 @@ import { Toast } from 'primereact/toast';
 
 import 'primeflex/primeflex.css';
 import LoginDialog from './components/auth/LoginDialog';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import RegisterDialog, {
+  RegisterForm,
+} from './components/auth/RegisterDialog';
 import { SidebarLinks, AppRoutes } from './router/AppRouter';
-import { login as loginApi } from './api/authService'; // backend çağrısı
-import RegisterDialog from './components/auth/RegisterDialog';
-import { register as registerApi } from './api/authService';
+import { AuthProvider, useAuth, AuthUser } from './context/AuthContext';
+import { login as loginApi, register as registerApi } from './api/authService';
 
 function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [loginDialogVisible, setLoginDialogVisible] = useState(false);
   const [registerDialogVisible, setRegisterDialogVisible] = useState(false);
-  const menuRef = useRef(null);
-  const toast = useRef(null);
+  const menuRef = useRef<Menu>(null);
+  const toast = useRef<Toast>(null);
 
   const { user, login, logout, isAuthenticated } = useAuth();
 
@@ -32,14 +33,15 @@ function Layout() {
     { label: 'Çıkış Yap', icon: 'pi pi-sign-out', command: logout },
   ];
 
-  // LoginDialog’dan çağrılacak fonksiyon
-  const handleLogin = (data) => {
-    // data = { token, currentUser }
+  /* -----------------------------
+      LOGIN HANDLER
+  ----------------------------- */
+  const handleLogin = (data: { token: string; currentUser: AuthUser }) => {
     localStorage.setItem('token', data.token);
-    login(data.currentUser); // AuthContext’e kaydet
+    login(data.currentUser);
     setLoginDialogVisible(false);
 
-    toast.current.show({
+    toast.current?.show({
       severity: 'success',
       summary: 'Giriş başarılı',
       detail: `Hoş geldin ${data.currentUser.name}`,
@@ -50,14 +52,11 @@ function Layout() {
   return (
     <div className="min-h-screen flex flex-column">
       <Toast ref={toast} />
+
       {/* HEADER */}
       <header
         className="flex align-items-center justify-content-between px-4"
-        style={{
-          height: '64px',
-          borderBottom: '1px solid #e5e7eb',
-          background: '#ffffff',
-        }}
+        style={{ height: 64, borderBottom: '1px solid #e5e7eb', background: '#fff' }}
       >
         <div className="flex align-items-center gap-3">
           <Button
@@ -66,9 +65,7 @@ function Layout() {
             rounded
             onClick={() => setSidebarVisible(true)}
           />
-          <span style={{ fontSize: '20px', fontWeight: 600 }}>
-            🎾 Tennis League
-          </span>
+          <span style={{ fontSize: 20, fontWeight: 600 }}>🎾 Tennis League</span>
         </div>
 
         <div className="flex align-items-center gap-2">
@@ -81,10 +78,10 @@ function Layout() {
           ) : (
             <>
               <Avatar
-                label={user?.name?.[0] || 'U'}
+                label={user?.name?.[0] ?? 'U'}
                 shape="circle"
                 className="cursor-pointer"
-                onClick={(e) => menuRef.current.toggle(e)}
+                onClick={(e) => menuRef.current?.toggle(e)}
               />
               <Menu model={profileItems} popup ref={menuRef} />
             </>
@@ -92,6 +89,7 @@ function Layout() {
         </div>
       </header>
 
+      {/* DIALOGS */}
       <LoginDialog
         visible={loginDialogVisible}
         onHide={() => setLoginDialogVisible(false)}
@@ -101,46 +99,43 @@ function Layout() {
           setRegisterDialogVisible(true);
         }}
       />
+
       <RegisterDialog
         visible={registerDialogVisible}
         onHide={() => setRegisterDialogVisible(false)}
-        onRegister={async (form) => {
+        onRegister={async (form: RegisterForm) => {
           try {
-            // captchaInput ve passwordRepeat backend'e gitmesin
             const { captchaInput, passwordRepeat, ...payload } = form;
 
             const data = await registerApi(payload);
 
-            // TOKEN KAYDET
             localStorage.setItem('token', data.token);
-
-            // USER CONTEXT'E YAZ
             login(data.currentUser);
-
             setRegisterDialogVisible(false);
 
-            toast.current.show({
+            toast.current?.show({
               severity: 'success',
               summary: 'Kayıt başarılı',
               detail: `Hoş geldin ${data.currentUser.name}`,
               life: 3000,
             });
-          } catch (err) {
-            toast.current.show({
+          } catch (err: any) {
+            toast.current?.show({
               severity: 'error',
               summary: 'Hata',
-              detail: err.error || 'Kayıt başarısız',
+              detail: err.message || 'Kayıt başarısız',
               life: 3000,
             });
           }
         }}
       />
+
       {/* BODY */}
       <div className="flex flex-1">
         <Sidebar
           visible={sidebarVisible}
           onHide={() => setSidebarVisible(false)}
-          style={{ width: '260px' }}
+          style={{ width: 260 }}
         >
           <h3 className="mb-4">Menü</h3>
           <SidebarLinks />

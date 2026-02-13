@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { InputText } from 'primereact/inputtext';
 
-export default function Captcha({ value, onChange }) {
-  const canvasRef = useRef(null);
-  const [captchaText, setCaptchaText] = useState('');
+interface CaptchaProps {
+  value: string;
+  onChange: (val: string) => void;
+}
+
+const Captcha: React.FC<CaptchaProps> = ({ value, onChange }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [captchaText, setCaptchaText] = useState<string>('');
 
   const generateCaptcha = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -20,7 +25,9 @@ export default function Captcha({ value, onChange }) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#f2f2f2';
@@ -53,4 +60,6 @@ export default function Captcha({ value, onChange }) {
       </small>
     </div>
   );
-}
+};
+
+export default Captcha;

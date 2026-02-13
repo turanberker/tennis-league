@@ -4,12 +4,22 @@ import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
-import { getLeagues, saveLeague } from '../api/leagueService.ts';
+import { getLeagues, saveLeague } from '../api/leagueService';
 import * as yup from 'yup';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
 import { useNavigate } from 'react-router-dom';
+
+// ================= TYPES =================
+interface League {
+  id: number;
+  name: string;
+}
+
+interface FormData {
+  name: string;
+}
 
 // ================= VALIDATION SCHEMA =================
 const schema = yup.object({
@@ -22,24 +32,25 @@ const schema = yup.object({
 
 export default function Leagues() {
   const navigate = useNavigate();
-  const [leagues, setLeagues] = useState([]);
-  const [error, setError] = useState(null);
-  const [createVisible, setCreateVisible] = useState(false);
-  const toast = useRef(null);
+  const [leagues, setLeagues] = useState<League[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [createVisible, setCreateVisible] = useState<boolean>(false);
+  const toast = useRef<Toast>(null);
+
   // ================= REACT HOOK FORM =================
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm({
+  } = useForm<FormData>({
     resolver: yupResolver(schema),
     defaultValues: { name: '' },
   });
 
   const loadLeagues = () => {
     getLeagues()
-      .then(setLeagues)
+      .then((data: League[]) => setLeagues(data))
       .catch((err) => {
         console.error('League fetch error:', err);
         setError('Ligler yüklenemedi');
@@ -50,28 +61,28 @@ export default function Leagues() {
     loadLeagues();
   }, []);
 
-  const handleStandings = (league) => {
+  const handleStandings = (league: League) => {
     navigate(`/leagues/${league.id}/standings`);
   };
 
-  const handleFixtures = (league) => {
+  const handleFixtures = (league: League) => {
     navigate(`/leagues/${league.id}/fixtures`);
-    };
-    
-    const handleTeams=(league) => {
-      navigate(`/leagues/${league.id}/teams`);
-    }
+  };
+
+  const handleTeams = (league: League) => {
+    navigate(`/leagues/${league.id}/teams`);
+  };
 
   const handleCreateLeague = () => {
     reset();
     setCreateVisible(true);
   };
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: FormData) => {
     try {
       await saveLeague(data);
 
-      toast.current.show({
+      toast.current?.show({
         severity: 'success',
         summary: 'Başarılı',
         detail: 'Lig başarıyla oluşturuldu',
@@ -80,10 +91,10 @@ export default function Leagues() {
 
       setCreateVisible(false);
       loadLeagues(); // listeyi yenile
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
 
-      toast.current.show({
+      toast.current?.show({
         severity: 'error',
         summary: 'Hata',
         detail: err.message || 'Lig oluşturulamadı',
@@ -134,7 +145,6 @@ export default function Leagues() {
                     outlined
                     onClick={() => handleStandings(league)}
                   />
-
                   <Button
                     label="Fikstür"
                     icon="pi pi-calendar"

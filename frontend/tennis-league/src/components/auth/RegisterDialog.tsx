@@ -8,26 +8,40 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Captcha from '../Captcha';
 
-export default function RegisterDialog({ visible, onHide, onRegister }) {
+export interface RegisterForm {
+  email: string;
+  name: string;
+  surname: string;
+  password: string;
+  passwordRepeat: string;
+  captchaInput: string;
+}
+
+interface RegisterDialogProps {
+  visible: boolean;
+  onHide: () => void;
+  onRegister: (values: RegisterForm) => void;
+}
+
+const RegisterDialog: React.FC<RegisterDialogProps> = ({
+  visible,
+  onHide,
+  onRegister,
+}) => {
   const validationSchema = Yup.object().shape({
     email: Yup.string()
       .email('Geçerli bir email giriniz')
       .required('Email zorunludur'),
-
     name: Yup.string().required('Ad zorunludur'),
-
     surname: Yup.string().required('Soyad zorunludur'),
-
     password: Yup.string().required('Şifre zorunludur'),
-
     passwordRepeat: Yup.string()
-      .oneOf([Yup.ref('password'), null], 'Şifreler aynı olmalıdır')
+      .oneOf([Yup.ref('password'), undefined], 'Şifreler aynı olmalıdır')
       .required('Şifre tekrar zorunludur'),
-
     captchaInput: Yup.string().required('Captcha zorunludur'),
   });
 
-  const formik = useFormik({
+  const formik = useFormik<RegisterForm>({
     initialValues: {
       email: '',
       name: '',
@@ -42,32 +56,34 @@ export default function RegisterDialog({ visible, onHide, onRegister }) {
     },
   });
 
-  const isFormFieldValid = (name) =>
+  const isFormFieldValid = (name: keyof RegisterForm) =>
     !!(formik.touched[name] && formik.errors[name]);
 
-  const getFormErrorMessage = (name) =>
+  const getFormErrorMessage = (name: keyof RegisterForm) =>
     isFormFieldValid(name) && (
       <small className="p-error">{formik.errors[name]}</small>
     );
 
   const footer = (
-    <Button
-      label="Kayıt Ol"
-      icon="pi pi-user-plus"
-      onClick={formik.handleSubmit}
-    />
+  <Button
+    label="Kayıt Ol"
+    icon="pi pi-user-plus"
+    type="button" // button tipini belirtmek önemli
+    onClick={() => formik.handleSubmit()}
+  />
   );
 
   return (
     <Dialog
       header="Kayıt Ol"
       visible={visible}
-      style={{ width: '420px' }}
+      style={{ width: 420 }}
       modal
       onHide={onHide}
       footer={footer}
     >
       <form onSubmit={formik.handleSubmit} className="flex flex-column gap-3">
+        {/* Email */}
         <span className="p-float-label">
           <InputText
             id="email"
@@ -81,6 +97,7 @@ export default function RegisterDialog({ visible, onHide, onRegister }) {
         </span>
         {getFormErrorMessage('email')}
 
+        {/* Name */}
         <span className="p-float-label">
           <InputText
             id="name"
@@ -94,6 +111,7 @@ export default function RegisterDialog({ visible, onHide, onRegister }) {
         </span>
         {getFormErrorMessage('name')}
 
+        {/* Surname */}
         <span className="p-float-label">
           <InputText
             id="surname"
@@ -107,6 +125,7 @@ export default function RegisterDialog({ visible, onHide, onRegister }) {
         </span>
         {getFormErrorMessage('surname')}
 
+        {/* Password */}
         <span className="p-float-label">
           <Password
             id="password"
@@ -116,14 +135,13 @@ export default function RegisterDialog({ visible, onHide, onRegister }) {
             onBlur={formik.handleBlur}
             toggleMask
             feedback={false}
-            className={classNames({
-              'p-invalid': isFormFieldValid('password'),
-            })}
+            className={classNames({ 'p-invalid': isFormFieldValid('password') })}
           />
           <label htmlFor="password">Şifre</label>
         </span>
         {getFormErrorMessage('password')}
 
+        {/* Password Repeat */}
         <span className="p-float-label">
           <Password
             id="passwordRepeat"
@@ -141,12 +159,15 @@ export default function RegisterDialog({ visible, onHide, onRegister }) {
         </span>
         {getFormErrorMessage('passwordRepeat')}
 
+        {/* Captcha */}
         <Captcha
           value={formik.values.captchaInput}
-          onChange={(val) => formik.setFieldValue('captchaInput', val)}
+          onChange={(val: string) => formik.setFieldValue('captchaInput', val)}
         />
         {getFormErrorMessage('captchaInput')}
       </form>
     </Dialog>
   );
-}
+};
+
+export default RegisterDialog;
