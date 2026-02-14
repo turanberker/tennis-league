@@ -28,7 +28,7 @@ func (r *PlayerRepository) GetById(ctx context.Context, id int64) (*player.Playe
 func (r *PlayerRepository) GetByUuid(ctx context.Context, uuid string) (*player.Player, error) {
 	player := &player.Player{}
 	query := `SELECT id, uuid, name, surname, user_id FROM players WHERE uuid=$1`
-	err := r.db.QueryRowContext(ctx, query, uuid).Scan(&player.ID, &player.Uuid, &player.Name, &player.Surname, &player.UserId)		
+	err := r.db.QueryRowContext(ctx, query, uuid).Scan(&player.ID, &player.Uuid, &player.Name, &player.Surname, &player.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +50,7 @@ func (r *PlayerRepository) List(ctx context.Context, name string) ([]*player.Pla
 		if err != nil {
 			return nil, err
 		}
+		players = append(players, player)
 	}
 
 	return players, nil

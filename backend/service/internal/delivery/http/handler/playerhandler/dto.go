@@ -5,5 +5,5 @@ type PlayerResponse struct {
 	UUID    string `json:"uuid"`
 	Name    string `json:"name"`
 	Surname string `json:"surname"`
-	UserId  int64  `json:"user_id"`
+	UserId  *int64 `json:"user_id"`
 }

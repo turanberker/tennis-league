@@ -11,7 +11,6 @@ export interface Player {
 export interface CreatePlayerRequest {
   name: string;
   surname: string;
-  userId: number;
 }
 
 export const getPlayers = async (name?: string) => {

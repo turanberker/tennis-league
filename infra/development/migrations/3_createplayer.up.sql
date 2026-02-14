@@ -11,4 +11,4 @@ CREATE TABLE tennisleague.players (
 );
 
 CREATE UNIQUE INDEX uq_player_uuid
-ON tennisleague.player (uuid);
+ON tennisleague.players (uuid);

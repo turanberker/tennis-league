@@ -55,7 +55,7 @@ export function AppRoutes() {
       <Route path="/leagues/:id/teams" element={<Teams />} />
       <Route path="/leagues/:id/fixtures" element={<Fixtures />} />
       <Route path="/players" element={<Players />} />
-      <Route path="/players/new" element={<NewPlayer />} />
+    
       <Route path="/players/:uuid" element={<PlayerDetail />} />
 
       <Route path="/matches" element={<Matches />} />
