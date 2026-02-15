@@ -30,6 +30,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.GET("/list", h.getAll)
 		leagues.POST("", h.save)
 		leagues.GET("/:id", h.getById)
+		leagues.POST("/:id/create-fixture", h.createFixture)
 		leagues.GET("/:id/teams", h.getTeams)
 		leagues.POST("/:id/teams", h.newTeam)
 	}
@@ -156,14 +157,24 @@ func (h *Handler) newTeam(c *gin.Context) {
 
 }
 
+func (h *Handler) createFixture(c *gin.Context) {
+
+	leagueId := c.Param("id") // query param
+	h.uc.SetFitxtureCreatedDate(c.Request.Context(), leagueId)
+
+	res := delivery.NewSuccessResponse("Fikstür oluşturuldu")
+	c.JSON(http.StatusOK, res)
+}
+
 func toLeagueResponse(l *league.League) *LeagueResponse {
 	if l == nil {
 		return nil
 	}
 
 	return &LeagueResponse{
-		ID:   l.ID,
-		Name: l.Name,
+		ID:                 l.ID,
+		Name:               l.Name,
+		FixtureCreatedDate: l.FixtureCreatedDate,
 	}
 }
 

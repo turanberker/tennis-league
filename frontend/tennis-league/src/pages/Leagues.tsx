@@ -4,9 +4,9 @@ import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
-import { getLeagues, saveLeague } from '../api/leagueService';
+import { createFixture, getLeagues, saveLeague } from '../api/leagueService';
 import * as yup from 'yup';
-import { useForm } from 'react-hook-form';
+import { get, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
 import { useNavigate } from 'react-router-dom';
@@ -74,6 +74,17 @@ export default function Leagues() {
     setCreateVisible(true);
   };
 
+  const handleCreateFixture = async (league: League) => {
+    await createFixture(league.id);
+    toast.current?.show({
+      severity: 'success',
+      summary: 'Başarılı',
+      detail: 'Fikstür başarıyla oluşturuldu',
+      life: 3000,
+    });
+    loadLeagues();
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
       await saveLeague(data);
@@ -97,6 +108,44 @@ export default function Leagues() {
         life: 4000,
       });
     }
+  };
+
+  const getButtons = (league: League) => {
+    const hasFixture = !!league.fixtureCreatedDate;
+
+    return (
+      <div className="flex gap-2">
+        <Button
+          label="Takımlar & Oyuncular"
+          icon="pi pi-chart-bar"
+          outlined
+          onClick={() => handleTeams(league)}
+        />
+        {hasFixture ? (
+          <>
+            <Button
+              label="Fikstürü Gör"
+              icon="pi pi-calendar"
+              outlined
+              onClick={() => handleFixtures(league)}
+            />
+            <Button
+              label="Puan Durumu"
+              icon="pi pi-chart-bar"
+              outlined
+              onClick={() => handleStandings(league)}
+            />
+          </>
+        ) : (
+          <Button
+            label="Fikstür Oluştur"
+            icon="pi pi-plus-circle"
+            severity="success"
+            onClick={() => handleCreateFixture(league)}
+          />
+        )}
+      </div>
+    );
   };
 
   return (
@@ -128,26 +177,7 @@ export default function Leagues() {
               >
                 <span className="font-medium">{league.name}</span>
 
-                <div className="flex gap-2">
-                  <Button
-                    label="Takımlar & Oyuncular"
-                    icon="pi pi-chart-bar"
-                    outlined
-                    onClick={() => handleTeams(league)}
-                  />
-                  <Button
-                    label="Puan Durumu"
-                    icon="pi pi-chart-bar"
-                    outlined
-                    onClick={() => handleStandings(league)}
-                  />
-                  <Button
-                    label="Fikstür"
-                    icon="pi pi-calendar"
-                    outlined
-                    onClick={() => handleFixtures(league)}
-                  />
-                </div>
+                {getButtons(league)}
               </div>
             ))}
           </div>

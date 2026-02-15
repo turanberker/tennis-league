@@ -27,3 +27,7 @@ export const createTeam = async (
 ): Promise<string> => {
   return await axiosClient.post<string>(`leagues/${leagueId}/teams`, team);
 };
+
+export const createFixture = async (leagueId: string) => {
+  return await axiosClient.post(`leagues/${leagueId}/create-fixture`);
+}

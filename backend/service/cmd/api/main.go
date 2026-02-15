@@ -31,8 +31,8 @@ func main() {
 	leagueRepository := postgres.NewLeagueRepository(db)
 	teamRepository := postgres.NewTeamRepository(db)
 	teamPlayerRepository := postgres.NewTeamPlayerRepository(db)
-
-	leagueUseCase := league.NewUsecase(db, leagueRepository)
+	matchRepository := postgres.NewMatchRepository(db)
+	leagueUseCase := league.NewUsecase(db, leagueRepository, teamRepository, matchRepository)
 	teamUseCase := team.NewUseCase(db, teamRepository, teamPlayerRepository)
 
 	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase)

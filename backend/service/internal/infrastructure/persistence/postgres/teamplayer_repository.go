@@ -20,7 +20,7 @@ func NewTeamPlayerRepository(db *sql.DB) *TeamPlayerRepository {
 }
 
 func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId string) ([]*player.Player, error) {
-	query := `SELECT  p.id, p.name,p.surname,p.sex,p.user_id FROM team_players tp inner join players p on p.id=tp.player_id WHERE team_id=$1`
+	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id FROM team_players tp inner join players p on p.id=tp.player_id WHERE team_id=$1`
 	rows, err := r.db.QueryContext(ctx, query, teamId)
 
 	if err != nil {

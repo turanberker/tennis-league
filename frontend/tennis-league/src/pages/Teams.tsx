@@ -212,8 +212,11 @@ const Teams: React.FC = () => {
               <Dropdown
                 {...field}
                 onChange={(e) => field.onChange(e.value)}
+                filterMatchMode="contains"
+                filter
+                filterBy="name,surname"
+                filterLocale="tr"
                 options={players}
-                optionLabel="name"
                 dataKey="id"
                 itemTemplate={playerLabelItemTemplate}
                 valueTemplate={playerLabelItemTemplate}
@@ -235,7 +238,10 @@ const Teams: React.FC = () => {
                 {...field}
                 onChange={(e) => field.onChange(e.value)}
                 options={players}
-                optionLabel="name"
+                filterMatchMode="contains"
+                filter
+                filterBy="name,surname"
+                filterLocale="tr"
                 dataKey="id"
                 itemTemplate={playerLabelItemTemplate}
                 valueTemplate={playerLabelItemTemplate}
