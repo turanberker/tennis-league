@@ -12,37 +12,35 @@ import { Dropdown } from 'primereact/dropdown';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
-import { Player, Sex, SexOptions } from '../model/player.model';
-
-
+import { Player, Sex, SexLabels, SexOptions } from '../model/player.model';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 
 // VALIDATION
 const schema = yup.object().shape({
   name: yup
     .string()
-    .required("Ad zorunludur")
-    .min(3, "Ad en az 3 karakter olmalı")
-    .max(75, "Ad en fazla 75 karakter olabilir"),
+    .required('Ad zorunludur')
+    .min(3, 'Ad en az 3 karakter olmalı')
+    .max(75, 'Ad en fazla 75 karakter olabilir'),
 
   surname: yup
     .string()
-    .required("Soyad zorunludur")
-    .min(3, "Soyad en az 3 karakter olmalı")
-    .max(75, "Soyad en fazla 75 karakter olabilir"),
+    .required('Soyad zorunludur')
+    .min(3, 'Soyad en az 3 karakter olmalı')
+    .max(75, 'Soyad en fazla 75 karakter olabilir'),
 
   sex: yup
     .mixed<Sex>()
-    .oneOf(Object.values(Sex), "Cinsiyet seçiniz")
-    .required("Cinsiyet zorunludur"),
+    .oneOf(Object.values(Sex), 'Cinsiyet seçiniz')
+    .required('Cinsiyet zorunludur'),
 });
-
 
 interface FormData {
   name: string;
   surname: string;
   sex: Sex;
 }
-
 
 export default function Players() {
   const {
@@ -117,6 +115,17 @@ export default function Players() {
     navigate(`/players/${uuid}`);
   };
 
+  const header = () => {
+    return (
+      <div className="flex justify-content-end">
+        <Button
+          label="Yeni Oyuncu"
+          icon="pi pi-plus"
+          onClick={() => setCreateVisible(true)}
+        />
+      </div>
+    );
+  };
   return (
     <>
       <Toast ref={toast} />
@@ -124,43 +133,37 @@ export default function Players() {
       <Card
         title="Oyuncular"
         subTitle="Mevcut oyuncuları görüntüleyebilir veya yeni oyuncu ekleyebilirsiniz."
-        header={
-          <div className="flex justify-content-end p-3">
-            <Button
-              label="Yeni Oyuncu"
-              icon="pi pi-plus"
-              onClick={() => setCreateVisible(true)}
-            />
-          </div>
-        }
       >
         {error && <p style={{ color: 'red' }}>{error}</p>}
 
-        {loading ? (
-          <p>Yükleniyor...</p>
-        ) : players.length === 0 ? (
-          <p>Oyuncu bulunamadı.</p>
-        ) : (
-          <div className="flex flex-column gap-3">
-            {players.map((player) => (
-              <div
-                key={player.id}
-                className="flex align-items-center justify-content-between p-3 border-round surface-border border-1"
-              >
-                <span className="font-medium">
-                  {player.name} {player.surname}
-                </span>
-
-                <Button
-                  label="Detay"
-                  icon="pi pi-info-circle"
-                  outlined
-                  onClick={() => handlePlayerDetail(player.id)}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <DataTable
+          value={players}
+          header={header}
+          key="id"
+          emptyMessage="Oyuncu bulunamadı"
+          loading={loading}
+          tableStyle={{ minWidth: '50rem' }}
+        >
+          <Column field="name" header="Ad" />
+          <Column field="surname" header="Soyad" />
+          <Column
+            field="sex"
+            header="Cinsiyet"
+            body={(rowData) => SexLabels[rowData.sex as Sex]}
+          />
+          <Column
+            header="İşlem"
+            body={(rowData) => (
+              <Button
+                icon="pi pi-info-circle"
+                severity="info"
+                rounded
+                text
+                onClick={() => handlePlayerDetail(rowData.id)}
+              />
+            )}
+          />
+        </DataTable>
       </Card>
 
       {/* CREATE DIALOG */}

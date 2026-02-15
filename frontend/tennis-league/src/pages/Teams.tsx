@@ -13,6 +13,8 @@ import { Player } from '../model/player.model';
 import { getPlayers } from '../api/playersService';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 
 type CreateTeamForm = {
   name: string;
@@ -134,40 +136,36 @@ const Teams: React.FC = () => {
     ) as string;
   };
 
+  const header = () => {
+    return (
+      <div className="flex justify-content-end">
+        <Button
+          label="Yeni Takım"
+          icon="pi pi-plus"
+          onClick={() => setCreateDialogVisible(true)}
+        />
+      </div>
+    );
+  };
   return (
     <>
       <Toast ref={toast} />
 
       <Card
         title="Takımlar & Oyuncular"
-        header={
-          <div className="flex justify-content-end p-3">
-            <Button
-              label="Yeni Takım"
-              icon="pi pi-plus"
-              onClick={() => setCreateDialogVisible(true)}
-            />
-          </div>
-        }
+        subTitle="Lige katılacak takımları görüntüleyebilir veya yeni takım tanımlayabilirsiniz."
       >
         {error && <p style={{ color: 'red' }}>{error}</p>}
-
-        {loading ? (
-          <p>Yükleniyor...</p>
-        ) : teams.length === 0 ? (
-          <p>Takım bulunamadı.</p>
-        ) : (
-          <div className="flex flex-column gap-3">
-            {teams.map((team) => (
-              <div
-                key={team.id}
-                className="p-3 border-1 surface-border border-round"
-              >
-                <span className="font-medium">{team.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <DataTable
+          value={teams}
+          loading={loading}
+          emptyMessage="Takım bulunamadı"
+          tableStyle={{ minWidth: '50rem' }}
+          header={header}
+          key="id"
+        >
+          <Column field="name" header="Takım Adı" />
+        </DataTable>
       </Card>
 
       {/* Yeni Takım Dialog */}

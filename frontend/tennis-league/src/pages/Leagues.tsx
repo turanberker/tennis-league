@@ -10,6 +10,8 @@ import { get, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
 import { useNavigate } from 'react-router-dom';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 
 // ================= TYPES =================
 
@@ -29,6 +31,7 @@ const schema = yup.object({
 export default function Leagues() {
   const navigate = useNavigate();
   const [leagues, setLeagues] = useState<League[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [createVisible, setCreateVisible] = useState<boolean>(false);
   const toast = useRef<Toast>(null);
@@ -45,8 +48,12 @@ export default function Leagues() {
   });
 
   const loadLeagues = () => {
+    setLoading(true);
     getLeagues()
-      .then((data: League[]) => setLeagues(data))
+      .then((data: League[]) => {
+        setLeagues(data);
+        setLoading(false);
+      })
       .catch((err) => {
         console.error('League fetch error:', err);
         setError('Ligler yüklenemedi');
@@ -56,6 +63,18 @@ export default function Leagues() {
   useEffect(() => {
     loadLeagues();
   }, []);
+
+  const header = () => {
+    return (
+      <div className="flex justify-content-end">
+        <Button
+          label="Yeni Lig Tanımla"
+          icon="pi pi-plus"
+          onClick={() => setCreateVisible(true)}
+        />
+      </div>
+    );
+  };
 
   const handleStandings = (league: League) => {
     navigate(`/leagues/${league.id}/standings`);
@@ -116,6 +135,8 @@ export default function Leagues() {
     return (
       <div className="flex gap-2">
         <Button
+          rounded
+          text
           label="Takımlar & Oyuncular"
           icon="pi pi-chart-bar"
           outlined
@@ -124,12 +145,16 @@ export default function Leagues() {
         {hasFixture ? (
           <>
             <Button
+              rounded
+              text
               label="Fikstürü Gör"
               icon="pi pi-calendar"
               outlined
               onClick={() => handleFixtures(league)}
             />
             <Button
+              rounded
+              text
               label="Puan Durumu"
               icon="pi pi-chart-bar"
               outlined
@@ -138,6 +163,8 @@ export default function Leagues() {
           </>
         ) : (
           <Button
+            rounded
+            text
             label="Fikstür Oluştur"
             icon="pi pi-plus-circle"
             severity="success"
@@ -154,34 +181,23 @@ export default function Leagues() {
       <Card
         title="Ligler"
         subTitle="Mevcut ligleri görüntüleyebilir veya yeni lig tanımlayabilirsiniz."
-        header={
-          <div className="flex justify-content-end p-3">
-            <Button
-              label="Yeni Lig Tanımla"
-              icon="pi pi-plus"
-              onClick={handleCreateLeague}
-            />
-          </div>
-        }
       >
         {error && <p style={{ color: 'red' }}>{error}</p>}
 
-        {leagues.length === 0 && !error ? (
-          <p>Lig bulunamadı.</p>
-        ) : (
-          <div className="flex flex-column gap-3">
-            {leagues.map((league) => (
-              <div
-                key={league.id}
-                className="flex align-items-center justify-content-between p-3 border-round surface-border border-1"
-              >
-                <span className="font-medium">{league.name}</span>
-
-                {getButtons(league)}
-              </div>
-            ))}
-          </div>
-        )}
+        <DataTable
+          value={leagues}
+          header={header}
+          key="id"
+          emptyMessage="Lig bulunamadı"
+          loading={loading}
+          tableStyle={{ minWidth: '50rem' }}
+        >
+          <Column field="name" header="Lig Adı" />
+          <Column
+            header="İşlem"
+            body={(rowData) => getButtons(rowData)}
+          ></Column>
+        </DataTable>
       </Card>
 
       <Dialog
