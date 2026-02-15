@@ -47,6 +47,7 @@ services:
 
   migrate:
     image: migrate/migrate:4
+    container_name: migrate
     depends_on:
       postgres:
         condition: service_healthy

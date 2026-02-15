@@ -1,17 +1,5 @@
 import axiosClient from './axiosClient';
-
-export interface Player {
-  id: number;
-  name: string;
-  surname: string;
-  uuid: string;
-  userId: number;
-}
-
-export interface CreatePlayerRequest {
-  name: string;
-  surname: string;
-}
+import { Player, CreatePlayerRequest } from '../model/player.model';
 
 export const getPlayers = async (name?: string) => {
   return axiosClient.get<Player[]>('/player/list', {

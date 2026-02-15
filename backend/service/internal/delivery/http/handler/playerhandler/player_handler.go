@@ -53,20 +53,22 @@ func (h *PlayerHandler) getByUuid(c *gin.Context) {
 func (h *PlayerHandler) save(c *gin.Context) {
 
 	var req struct {
-		Name    string `json:"name" binding:"min=3,max=75,required"`
-		Surname string `json:"surname" binding:"min=3,max=75,required"`
+		Name    string     `json:"name" binding:"min=3,max=75,required"`
+		Surname string     `json:"surname" binding:"min=3,max=75,required"`
+		Sex     player.Sex `json:"sex" binding:"required,oneof=M F"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	persistLeague := &player.PersistPlayer{
+	persistPlayer := &player.PersistPlayer{
 		Name:    req.Name,
 		Surname: req.Surname,
+		Sex:     req.Sex,
 	}
 
-	playerId, err := h.uc.Save(c.Request.Context(), persistLeague)
+	playerId, err := h.uc.Save(c.Request.Context(), persistPlayer)
 
 	if err != nil {
 		res := delivery.NewErrorResponse(err.Error())
@@ -101,6 +103,7 @@ func toPlayerResponse(l *player.Player) *PlayerResponse {
 		Name:    l.Name,
 		Surname: l.Surname,
 		UUID:    l.Uuid,
+		Sex:     l.Sex,
 		UserId:  l.UserId,
 	}
 }

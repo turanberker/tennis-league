@@ -3,6 +3,7 @@ CREATE TABLE tennisleague.players (
     uuid VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
     surname VARCHAR(100) NOT NULL,
+    sex VARCHAR(1) NOT NULL,
     user_id BIGINT UNIQUE,
     CONSTRAINT fk_player_user
         FOREIGN KEY (user_id)
@@ -12,3 +13,6 @@ CREATE TABLE tennisleague.players (
 
 CREATE UNIQUE INDEX uq_player_uuid
 ON tennisleague.players (uuid);
+
+CREATE  INDEX sex
+ON tennisleague.players (sex);

@@ -2,15 +2,21 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
-import { getPlayers, Player,createPlayer } from '../api/playersService';
+import { getPlayers, createPlayer } from '../api/playersService';
+
 import { useNavigate } from 'react-router-dom';
 import { Dialog } from 'primereact/dialog';
 import * as yup from 'yup';
 import { InputText } from 'primereact/inputtext';
-import { set, useForm } from 'react-hook-form';
+import { Dropdown } from 'primereact/dropdown';
+import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
+import { Player, Sex, SexOptions } from '../model/player.model';
 
+
+
+// VALIDATION
 const schema = yup.object().shape({
   name: yup
     .string()
@@ -23,28 +29,38 @@ const schema = yup.object().shape({
     .required("Soyad zorunludur")
     .min(3, "Soyad en az 3 karakter olmalı")
     .max(75, "Soyad en fazla 75 karakter olabilir"),
+
+  sex: yup
+    .mixed<Sex>()
+    .oneOf(Object.values(Sex), "Cinsiyet seçiniz")
+    .required("Cinsiyet zorunludur"),
 });
+
 
 interface FormData {
   name: string;
   surname: string;
+  sex: Sex;
 }
 
+
 export default function Players() {
-const {
+  const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: yupResolver(schema),
-    defaultValues: { name: '',surname: '' },
+    defaultValues: { name: '', surname: '', sex: undefined as any },
   });
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-    const [createVisible, setCreateVisible] = useState<boolean>(false);
+  const [createVisible, setCreateVisible] = useState<boolean>(false);
+
   const toast = useRef<Toast>(null);
   const navigate = useNavigate();
 
@@ -52,12 +68,10 @@ const {
   const loadPlayers = async () => {
     try {
       setLoading(true);
-        const res = await getPlayers();
-        console.log('Oyuncular yüklendi:', res);
+      const res = await getPlayers();
       setPlayers(res);
       setError(null);
     } catch (err: any) {
-      console.error(err);
       setError(err.message || 'Oyuncular yüklenemedi.');
       toast.current?.show({
         severity: 'error',
@@ -70,43 +84,43 @@ const {
     }
   };
 
-   const onSubmit = async (data: FormData) => {
-      try {
-        await createPlayer(data);
-  
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Başarılı',
-          detail: 'Lig başarıyla oluşturuldu',
-          life: 3000,
-        });
-  
-        setCreateVisible(false);
-        loadPlayers(); // listeyi yenile
-      } catch (err: any) {
-        console.error(err);
-  
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Hata',
-          detail: err.message || 'Lig oluşturulamadı',
-          life: 4000,
-        });
-      }
-    };
- 
+  // CREATE
+  const onSubmit = async (data: FormData) => {
+    try {
+      await createPlayer(data);
+
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Başarılı',
+        detail: 'Oyuncu başarıyla oluşturuldu',
+        life: 3000,
+      });
+
+      reset();
+      setCreateVisible(false);
+      loadPlayers();
+    } catch (err: any) {
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Hata',
+        detail: err.message || 'Oyuncu oluşturulamadı',
+        life: 4000,
+      });
+    }
+  };
+
   useEffect(() => {
     loadPlayers();
   }, []);
 
-
   const handlePlayerDetail = (uuid: string) => {
-    navigate(`/players/${uuid}`); // Player detay sayfasına yönlendir
+    navigate(`/players/${uuid}`);
   };
 
   return (
     <>
       <Toast ref={toast} />
+
       <Card
         title="Oyuncular"
         subTitle="Mevcut oyuncuları görüntüleyebilir veya yeni oyuncu ekleyebilirsiniz."
@@ -115,7 +129,7 @@ const {
             <Button
               label="Yeni Oyuncu"
               icon="pi pi-plus"
-              onClick={()=>setCreateVisible(true)}
+              onClick={() => setCreateVisible(true)}
             />
           </div>
         }
@@ -149,62 +163,78 @@ const {
         )}
       </Card>
 
-       <Dialog
-              header="Yeni Oyuncu Tanımla"
-              visible={createVisible}
-              style={{ width: '400px' }}
-              modal
-              onHide={() => setCreateVisible(false)}
-              footer={
-                <div className="flex justify-content-end gap-2">
-                  <Button
-                    label="İptal"
-                    icon="pi pi-times"
-                    text
-                    onClick={() => setCreateVisible(false)}
-                  />
-                  <Button
-                    label="Kaydet"
-                    icon="pi pi-check"
-                    onClick={handleSubmit(onSubmit)}
-                    loading={isSubmitting}
-                  />
-                </div>
-              }
-            >
-              <div className="flex flex-column gap-2">
-                <label htmlFor="name" className="font-medium">
-                  Adı *
-                </label>
-      
-                <InputText
-                  id="name"
-                  placeholder="Örn: Berker"
-                  className={classNames({ 'p-invalid': errors.name })}
-                  {...register('name')}
-                />
-      
-                {errors.name && (
-                  <small className="p-error">{errors.name.message}</small>
-                )}
+      {/* CREATE DIALOG */}
+      <Dialog
+        header="Yeni Oyuncu Tanımla"
+        visible={createVisible}
+        style={{ width: '400px' }}
+        modal
+        onHide={() => setCreateVisible(false)}
+        footer={
+          <div className="flex justify-content-end gap-2">
+            <Button
+              label="İptal"
+              icon="pi pi-times"
+              text
+              onClick={() => setCreateVisible(false)}
+            />
+            <Button
+              label="Kaydet"
+              icon="pi pi-check"
+              onClick={handleSubmit(onSubmit)}
+              loading={isSubmitting}
+            />
+          </div>
+        }
+      >
+        {/* NAME */}
+        <div className="flex flex-column gap-2">
+          <label className="font-medium">Adı *</label>
+          <InputText
+            placeholder="Örn: Berker"
+            className={classNames({ 'p-invalid': errors.name })}
+            {...register('name')}
+          />
+          {errors.name && (
+            <small className="p-error">{errors.name.message}</small>
+          )}
         </div>
-         <div className="flex flex-column gap-2">
-                <label htmlFor="name" className="font-medium">
-                  Soyadı *
-                </label>
-      
-                <InputText
-                  id="surname"
-                  placeholder="Örn: Turan"
-                  className={classNames({ 'p-invalid': errors.name })}
-                  {...register('surname')}
-                />
-      
-                {errors.name && (
-                  <small className="p-error">{errors.name.message}</small>
-                )}
-              </div>
-            </Dialog>
+
+        {/* SURNAME */}
+        <div className="flex flex-column gap-2 mt-3">
+          <label className="font-medium">Soyadı *</label>
+          <InputText
+            placeholder="Örn: Turan"
+            className={classNames({ 'p-invalid': errors.surname })}
+            {...register('surname')}
+          />
+          {errors.surname && (
+            <small className="p-error">{errors.surname.message}</small>
+          )}
+        </div>
+
+        {/* SEX */}
+        <div className="flex flex-column gap-2 mt-3">
+          <label className="font-medium">Cinsiyet *</label>
+
+          <Controller
+            name="sex"
+            control={control}
+            render={({ field }) => (
+              <Dropdown
+                {...field}
+                options={SexOptions}
+                placeholder="Cinsiyet seçiniz"
+                className={classNames({ 'p-invalid': errors.sex })}
+              />
+            )}
+          />
+
+          {errors.sex && (
+            <small className="p-error">{errors.sex.message}</small>
+          )}
+        </div>
+      </Dialog>
     </>
   );
 }
