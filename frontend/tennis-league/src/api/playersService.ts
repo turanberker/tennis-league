@@ -1,7 +1,7 @@
 import axiosClient from './axiosClient';
 import { Player, CreatePlayerRequest } from '../model/player.model';
 
-export const getPlayers = async (name?: string) => {
+export const getPlayers = async (name?: string): Promise<Player[]> => {
   return axiosClient.get<Player[]>('/player/list', {
     params: { name },
   });

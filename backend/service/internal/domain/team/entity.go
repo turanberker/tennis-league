@@ -1,7 +1,12 @@
 package team
 
 type Team struct {
-    ID       int64
-    LeagueID int64
-    Name     string
+	ID       string
+	LeagueID string
+	Name     string
+}
+
+type PersistTeam struct {
+	LeagueID string
+	Name     string
 }

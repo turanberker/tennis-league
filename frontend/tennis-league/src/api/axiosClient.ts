@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
-
+import { showGlobalError } from './toastService';
 const instance = axios.create({
   baseURL: 'http://localhost:8500',
   headers: { 'Content-Type': 'application/json' },
@@ -22,10 +22,15 @@ instance.interceptors.response.use(
     if (apiResponse?.success) {
       return apiResponse.data;
     }
-
-    return Promise.reject(
-      new Error(apiResponse?.errorDetail || 'Bilinmeyen hata')
+    console.error('API hatası:', apiResponse?.errorDetail || 'Bilinmeyen hata');
+    window.dispatchEvent(
+      new CustomEvent('api-error', {
+        detail: apiResponse?.errorDetail || 'Bilinmeyen hata',
+      }),
     );
+
+    // ❗ reject ETME → null dön
+    return null;
   },
   (error) => {
     if (error.response?.status === 401) {
@@ -33,8 +38,14 @@ instance.interceptors.response.use(
       window.location.href = '/';
     }
 
-    return Promise.reject(error);
-  }
+    window.dispatchEvent(
+      new CustomEvent('api-error', {
+        detail: 'Sunucu hatası',
+      }),
+    );
+
+    return null; // ❗ reject yok
+  },
 );
 
 /* ============================= */

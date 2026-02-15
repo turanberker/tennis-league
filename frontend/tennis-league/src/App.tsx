@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { Sidebar } from 'primereact/sidebar';
@@ -14,6 +14,7 @@ import RegisterDialog, {
 import { SidebarLinks, AppRoutes } from './router/AppRouter';
 import { AuthProvider, useAuth, AuthUser } from './context/AuthContext';
 import { login as loginApi, register as registerApi } from './api/authService';
+import { registerToast } from './api/toastService';
 
 function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -22,6 +23,19 @@ function Layout() {
   const menuRef = useRef<Menu>(null);
   const toast = useRef<Toast>(null);
 
+useEffect(() => {
+  const handler = (e: any) => {
+    toast.current?.show({
+      severity: 'error',
+      summary: 'Hata',
+      detail: e.detail,
+      life: 3000,
+    });
+  };
+
+  window.addEventListener('api-error', handler);
+  return () => window.removeEventListener('api-error', handler);
+}, []);
   const { user, login, logout, isAuthenticated } = useAuth();
 
   const profileItems = [

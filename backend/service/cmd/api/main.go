@@ -10,6 +10,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/userhandler"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
+	"github.com/turanberker/tennis-league-service/internal/domain/team"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
 	"github.com/turanberker/tennis-league-service/internal/infrastructure/persistence/postgres"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
@@ -28,9 +29,13 @@ func main() {
 	userHandler := userhandler.NewUserHandler(userUC, tokenAuth)
 
 	leagueRepository := postgres.NewLeagueRepository(db)
+	teamRepository := postgres.NewTeamRepository(db)
+	teamPlayerRepository := postgres.NewTeamPlayerRepository(db)
 
 	leagueUseCase := league.NewUsecase(db, leagueRepository)
-	leagueHandler := leaguehandler.NewHandler(leagueUseCase)
+	teamUseCase := team.NewUseCase(db, teamRepository, teamPlayerRepository)
+
+	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase)
 
 	playerRepository := postgres.NewPlayerRepository(db)
 	playerUc := player.NewUsecase(db, playerRepository)
