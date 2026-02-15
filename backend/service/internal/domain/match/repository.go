@@ -6,5 +6,8 @@ import (
 )
 
 type Repository interface {
-	SaveLeagueMatches(ctx context.Context, tx *sql.Tx, matches []PersistLeagueMatch) error
+	SaveLeagueMatches(ctx context.Context, tx *sql.Tx, matches []*PersistLeagueMatch) error
+	GetFixtureByLeagueId(ctx context.Context, leagueId string) ([]*LeagueFixtureMatch, error)
 }
+
+

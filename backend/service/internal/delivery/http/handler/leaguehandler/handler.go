@@ -10,6 +10,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery"
 	"github.com/turanberker/tennis-league-service/internal/delivery/dto"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
+	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 )
 
@@ -33,6 +34,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.POST("/:id/create-fixture", h.createFixture)
 		leagues.GET("/:id/teams", h.getTeams)
 		leagues.POST("/:id/teams", h.newTeam)
+		leagues.GET("/:id/fixture", h.getFixture)
 	}
 
 }
@@ -166,6 +168,25 @@ func (h *Handler) createFixture(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+func (h *Handler) getFixture(c *gin.Context) {
+	leagueId := c.Param("id") // query param
+
+	fixture, err := h.uc.GetFixture(c.Request.Context(), leagueId)
+
+	if err != nil {
+		res := delivery.NewErrorResponse(err.Error())
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	fixtureResponse := make([]*LeagueFixtureMatchResponse, 0, len(fixture))
+
+	for _, l := range fixture {
+		fixtureResponse = append(fixtureResponse, toFixtureResponse(l))
+	}
+	res := delivery.NewSuccessResponse(fixtureResponse)
+	c.JSON(http.StatusOK, res)
+}
+
 func toLeagueResponse(l *league.League) *LeagueResponse {
 	if l == nil {
 		return nil
@@ -186,5 +207,18 @@ func toTeamResponse(l *team.Team) *dto.TeamResponse {
 	return &dto.TeamResponse{
 		ID:   l.ID,
 		Name: l.Name,
+	}
+}
+
+func toFixtureResponse(l *match.LeagueFixtureMatch) *LeagueFixtureMatchResponse {
+	if l == nil {
+		return nil
+	}
+	return &LeagueFixtureMatchResponse{
+		Id:        l.Id,
+		Team1:     TeamRefResponse{Id: l.Team1.Id, Name: l.Team1.Name},
+		Team2:     TeamRefResponse{Id: l.Team2.Id, Name: l.Team2.Name},
+		Status:    l.Status,
+		MatchDate: l.MatchDate,
 	}
 }

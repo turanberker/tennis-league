@@ -17,7 +17,7 @@ func NewMatchRepository(db *sql.DB) *MatchRepository {
 	return &MatchRepository{db: db}
 }
 
-func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, tx *sql.Tx, matches []match.PersistLeagueMatch) error {
+func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, tx *sql.Tx, matches []*match.PersistLeagueMatch) error {
 	if len(matches) == 0 {
 		return nil // insert edilecek maç yok
 	}
@@ -43,4 +43,34 @@ func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, tx *sql.Tx, mat
 	}
 
 	return nil
+}
+
+func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
+	query := `
+		SELECT m.id, m.team_1_id, t1.name, m.team_2_id, t2.name, m.status, m.match_date
+		FROM tennisleague.matches m
+		JOIN tennisleague.teams t1 ON m.team_1_id = t1.id
+		JOIN tennisleague.teams t2 ON m.team_2_id = t2.id
+		WHERE m.league_id = $1 order by m.match_date asc
+	`
+	rows, err := r.db.QueryContext(ctx, query, leagueId)
+	if err != nil {
+		log.Println("Maç listesi çekerken hata oluştu:", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+	var matches []*match.LeagueFixtureMatch
+	for rows.Next() {
+		match := &match.LeagueFixtureMatch{}
+		err := rows.Scan(&match.Id, &match.Team1.Id, &match.Team1.Name, &match.Team2.Id, &match.Team2.Name, &match.Status, &match.MatchDate)
+
+		if err != nil {
+			log.Println("Maçlar maplerken hata oluştu:", err)
+			return nil, err
+		}
+		matches = append(matches, match)
+	}
+
+	return matches, nil
 }

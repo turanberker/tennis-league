@@ -19,6 +19,10 @@ type Usecase struct {
 	matchRepo match.Repository
 }
 
+func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
+	return u.matchRepo.GetFixtureByLeagueId(context, leagueId)
+}
+
 func NewUsecase(db *sql.DB, repo Repository, teamRepo team.Repository, matchRepo match.Repository) *Usecase {
 	return &Usecase{db: db, repo: repo, teamRepo: teamRepo, matchRepo: matchRepo}
 }
@@ -43,10 +47,10 @@ func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) e
 		return err
 	}
 
-	var matches []match.PersistLeagueMatch
+	var matches []*match.PersistLeagueMatch
 	for i := 0; i < len(teams); i++ {
 		for j := i + 1; j < len(teams); j++ { // j=i+1 → tekrar ve kendisiyle maç yok
-			match := match.PersistLeagueMatch{
+			match := &match.PersistLeagueMatch{
 				LeagueId: leagueId,
 				Team1Id:  teams[i].ID,
 				Team2Id:  teams[j].ID,
