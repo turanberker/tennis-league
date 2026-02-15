@@ -1,8 +1,7 @@
 package player
 
 type Player struct {
-	ID      int64
-	Uuid    string
+	ID      string
 	Name    string
 	Surname string
 	Sex     Sex

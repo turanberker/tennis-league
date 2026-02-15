@@ -7,7 +7,7 @@ type Repository interface {
 
 	GetByUuid(ctx context.Context, uuid string) (*Player, error)
 
-	Save(ctx context.Context, persistPlayer *PersistPlayer) (int64, error)
+	Save(ctx context.Context, persistPlayer *PersistPlayer) (*string, error)
 
-	List(ctx context.Context, name string) ([]*Player, error)	
+	List(ctx context.Context, name string) ([]*Player, error)
 }

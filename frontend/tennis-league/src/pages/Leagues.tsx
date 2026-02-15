@@ -12,10 +12,6 @@ import { classNames } from 'primereact/utils';
 import { useNavigate } from 'react-router-dom';
 
 // ================= TYPES =================
-interface League {
-  id: number;
-  name: string;
-}
 
 interface FormData {
   name: string;

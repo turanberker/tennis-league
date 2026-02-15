@@ -1,6 +1,5 @@
 CREATE TABLE tennisleague.players (
-    id BIGSERIAL PRIMARY KEY,
-    uuid VARCHAR(100) NOT NULL,
+    id VARCHAR(100) PRIMARY KEY ,
     name VARCHAR(100) NOT NULL,
     surname VARCHAR(100) NOT NULL,
     sex VARCHAR(1) NOT NULL,
@@ -10,9 +9,6 @@ CREATE TABLE tennisleague.players (
         REFERENCES tennisleague.users(id)
         ON DELETE SET NULL
 );
-
-CREATE UNIQUE INDEX uq_player_uuid
-ON tennisleague.players (uuid);
 
 CREATE  INDEX sex
 ON tennisleague.players (sex);

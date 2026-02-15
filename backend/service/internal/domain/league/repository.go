@@ -7,5 +7,5 @@ type Repository interface {
 
 	GetAll(ctx context.Context, name string) ([]*League, error)
 
-	Save(ctx context.Context, persistLeague *PersistLeague) (int64, error)
+	Save(ctx context.Context, persistLeague *PersistLeague) (*string, error)
 }

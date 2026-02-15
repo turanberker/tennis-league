@@ -23,7 +23,7 @@ func (u *Usecase) GetById(ctx context.Context, id int64) (*Player, error) {
 	return u.repo.GetById(ctx, id)
 }
 
-func (u *Usecase) Save(ctx context.Context, persistPlayer *PersistPlayer) (int64, error) {
+func (u *Usecase) Save(ctx context.Context, persistPlayer *PersistPlayer) (*string, error) {
 	return u.repo.Save(ctx, persistPlayer)
 }
 

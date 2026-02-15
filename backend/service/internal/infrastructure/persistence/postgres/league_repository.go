@@ -50,18 +50,18 @@ func (r *LeagueRepository) GetAll(ctx context.Context, name string) ([]*league.L
 	return leagues, nil
 }
 
-func (r *LeagueRepository) Save(ctx context.Context, persistLeague *league.PersistLeague) (int64, error) {
-	query := `INSERT INTO leagues (name) VALUES ($1) RETURNING id`
+func (r *LeagueRepository) Save(ctx context.Context, persistLeague *league.PersistLeague) (*string, error) {
+	query := `INSERT INTO leagues (id,name) VALUES (gen_random_uuid(),$1) RETURNING id`
 
-	var id int64
+	var id string
 	err := r.db.QueryRowContext(ctx, query, persistLeague.Name).Scan(&id)
 	if err != nil {
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Constraint == "leagues_name_key" {
-			return 0, errors.New("league name already exists")
+			return nil, errors.New("league name already exists")
 		}
 
-		return 0, err
+		return nil, err
 	}
-	return id, nil
+	return &id, nil
 }

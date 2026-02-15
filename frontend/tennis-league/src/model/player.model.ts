@@ -13,10 +13,9 @@ export const SexOptions = [
   { label: 'Kadın', value: Sex.Female },
 ];
 export interface Player {
-  id: number;
+  id: string;
   name: string;
   surname: string;
-  uuid: string;
   userId?: number;
   sex: Sex;
 }

@@ -155,7 +155,7 @@ export default function Players() {
                   label="Detay"
                   icon="pi pi-info-circle"
                   outlined
-                  onClick={() => handlePlayerDetail(player.uuid)}
+                  onClick={() => handlePlayerDetail(player.id)}
                 />
               </div>
             ))}

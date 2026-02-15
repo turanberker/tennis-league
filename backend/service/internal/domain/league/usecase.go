@@ -28,13 +28,13 @@ func (u *Usecase) GetAll(ctx context.Context, name string) ([]*League, error) {
 	return u.repo.GetAll(ctx, name)
 }
 
-func (u *Usecase) Save(ctx context.Context, persistLeague *PersistLeague) (int64, error) {
+func (u *Usecase) Save(ctx context.Context, persistLeague *PersistLeague) (*string, error) {
 	if persistLeague.Name == "" {
-		return 0, ErrNameFieldRequired
+		return nil, ErrNameFieldRequired
 	}
 
 	if len(persistLeague.Name) < 5 || len(persistLeague.Name) > 75 {
-		return 0, ErrNameLenghtError
+		return nil, ErrNameLenghtError
 	}
 
 	return u.repo.Save(ctx, persistLeague)

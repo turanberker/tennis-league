@@ -102,7 +102,6 @@ func toPlayerResponse(l *player.Player) *PlayerResponse {
 		ID:      l.ID,
 		Name:    l.Name,
 		Surname: l.Surname,
-		UUID:    l.Uuid,
 		Sex:     l.Sex,
 		UserId:  l.UserId,
 	}
