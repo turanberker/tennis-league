@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/leaguehandler"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/matchhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/playerhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/userhandler"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
@@ -40,10 +41,11 @@ func main() {
 	playerRepository := postgres.NewPlayerRepository(db)
 	playerUc := player.NewUsecase(db, playerRepository)
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)
-
+	matchHandler := matchhandler.NewMatchHandler()
 	r := http.NewRouter(userHandler,
 		leagueHandler,
-		playerhandler)
+		playerhandler,
+		matchHandler)
 
 	log.Println("Server running on :8500")
 	r.Run(":8500")
