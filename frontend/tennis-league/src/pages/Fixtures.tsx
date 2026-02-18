@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from 'primereact/card';
 import { getFixture } from '../api/leagueService';
@@ -7,7 +7,6 @@ import {
   MatchStatusLabels,
   Status,
 } from '../model/match.model';
-import { set } from 'react-hook-form';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
