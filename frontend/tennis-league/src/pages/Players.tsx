@@ -15,7 +15,8 @@ import { classNames } from 'primereact/utils';
 import { Player, Sex, SexLabels, SexOptions } from '../model/player.model';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-
+import { Sidebar } from 'primereact/sidebar';
+import { Tooltip } from 'primereact/tooltip';
 // VALIDATION
 const schema = yup.object().shape({
   name: yup
@@ -126,6 +127,30 @@ export default function Players() {
       </div>
     );
   };
+
+  const sidebarHeader = (
+    <div className="flex justify-content-end gap-2">
+      <Button
+        label="Kaydet"
+        icon="pi pi-check"
+        onClick={handleSubmit(onSubmit)}
+        loading={isSubmitting}
+      />
+    </div>
+  );
+
+  const customIcons = (
+    <React.Fragment>
+      <Button
+        className="p-sidebar-icon p-link mr-2"
+        icon="pi pi-check"
+        tooltip="Kaydet"
+        onClick={handleSubmit(onSubmit)}
+        loading={isSubmitting}
+        tooltipOptions={{ position: 'left' }}
+      ></Button>
+    </React.Fragment>
+  );
   return (
     <>
       <Toast ref={toast} />
@@ -166,29 +191,11 @@ export default function Players() {
         </DataTable>
       </Card>
 
-      {/* CREATE DIALOG */}
-      <Dialog
-        header="Yeni Oyuncu Tanımla"
+      <Sidebar
         visible={createVisible}
-        style={{ width: '400px' }}
-        modal
+        position="right"
         onHide={() => setCreateVisible(false)}
-        footer={
-          <div className="flex justify-content-end gap-2">
-            <Button
-              label="İptal"
-              icon="pi pi-times"
-              text
-              onClick={() => setCreateVisible(false)}
-            />
-            <Button
-              label="Kaydet"
-              icon="pi pi-check"
-              onClick={handleSubmit(onSubmit)}
-              loading={isSubmitting}
-            />
-          </div>
-        }
+        icons={() => customIcons}
       >
         {/* NAME */}
         <div className="flex flex-column gap-2">
@@ -237,7 +244,8 @@ export default function Players() {
             <small className="p-error">{errors.sex.message}</small>
           )}
         </div>
-      </Dialog>
+      </Sidebar>
+      {/* CREATE DIALOG */}
     </>
   );
 }

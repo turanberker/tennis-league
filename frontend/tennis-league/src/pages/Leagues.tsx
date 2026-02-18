@@ -12,6 +12,7 @@ import { classNames } from 'primereact/utils';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { Sidebar } from 'primereact/sidebar';
 
 // ================= TYPES =================
 
@@ -88,11 +89,6 @@ export default function Leagues() {
     navigate(`/leagues/${league.id}/teams`);
   };
 
-  const handleCreateLeague = () => {
-    reset();
-    setCreateVisible(true);
-  };
-
   const handleCreateFixture = async (league: League) => {
     await createFixture(league.id);
     toast.current?.show({
@@ -107,7 +103,7 @@ export default function Leagues() {
   const onSubmit = async (data: FormData) => {
     try {
       await saveLeague(data);
-
+      reset();
       toast.current?.show({
         severity: 'success',
         summary: 'Başarılı',
@@ -174,7 +170,18 @@ export default function Leagues() {
       </div>
     );
   };
-
+  const customIcons = (
+    <React.Fragment>
+      <Button
+        className="p-sidebar-icon p-link mr-2"
+        icon="pi pi-check"
+        tooltip="Kaydet"
+        onClick={handleSubmit(onSubmit)}
+        loading={isSubmitting}
+        tooltipOptions={{ position: 'left' }}
+      ></Button>
+    </React.Fragment>
+  );
   return (
     <>
       <Toast ref={toast} />
@@ -200,28 +207,12 @@ export default function Leagues() {
         </DataTable>
       </Card>
 
-      <Dialog
+      <Sidebar
         header="Yeni Lig Tanımla"
         visible={createVisible}
-        style={{ width: '400px' }}
-        modal
+        position="right"
         onHide={() => setCreateVisible(false)}
-        footer={
-          <div className="flex justify-content-end gap-2">
-            <Button
-              label="İptal"
-              icon="pi pi-times"
-              text
-              onClick={() => setCreateVisible(false)}
-            />
-            <Button
-              label="Kaydet"
-              icon="pi pi-check"
-              onClick={handleSubmit(onSubmit)}
-              loading={isSubmitting}
-            />
-          </div>
-        }
+        icons={() => customIcons}
       >
         <div className="flex flex-column gap-2">
           <label htmlFor="name" className="font-medium">
@@ -239,7 +230,7 @@ export default function Leagues() {
             <small className="p-error">{errors.name.message}</small>
           )}
         </div>
-      </Dialog>
+      </Sidebar>
     </>
   );
 }
