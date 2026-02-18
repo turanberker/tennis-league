@@ -10,6 +10,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/playerhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/userhandler"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
+	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
@@ -33,15 +34,17 @@ func main() {
 	teamRepository := postgres.NewTeamRepository(db)
 	teamPlayerRepository := postgres.NewTeamPlayerRepository(db)
 	matchRepository := postgres.NewMatchRepository(db)
+
 	leagueUseCase := league.NewUsecase(db, leagueRepository, teamRepository, matchRepository)
 	teamUseCase := team.NewUseCase(db, teamRepository, teamPlayerRepository)
-
+	matchUseCase := match.NewUseCase(matchRepository, db)
+	
 	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase)
 
 	playerRepository := postgres.NewPlayerRepository(db)
 	playerUc := player.NewUsecase(db, playerRepository)
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)
-	matchHandler := matchhandler.NewMatchHandler()
+	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 	r := http.NewRouter(userHandler,
 		leagueHandler,
 		playerhandler,

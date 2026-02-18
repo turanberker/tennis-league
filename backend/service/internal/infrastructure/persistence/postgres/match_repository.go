@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+
 	"fmt"
 	"log"
 
@@ -73,4 +74,15 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 	}
 
 	return matches, nil
+}
+
+func (r *MatchRepository) UpdateMatchDate(ctx context.Context, tx *sql.Tx, data match.UpdateMatchDate) error {
+	query := "Update matches set match_date=$1 where id=$2"
+
+	_, err := tx.ExecContext(ctx, query, data.MatchDate, data.Id)
+	if err != nil {
+		log.Println("Maç tarihi güncellenirken hata oluştu:", err)
+		return err
+	}
+	return nil
 }

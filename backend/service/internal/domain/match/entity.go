@@ -18,6 +18,11 @@ type PersistLeagueMatch struct {
 	Team2Id  string
 }
 
+type UpdateMatchDate struct{
+	Id string
+	MatchDate *time.Time
+}
+
 type LeagueFixtureMatch struct {
 	Id        string
 	LeagueId  string

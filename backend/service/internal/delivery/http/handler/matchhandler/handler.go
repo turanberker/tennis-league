@@ -2,23 +2,28 @@ package matchhandler
 
 import (
 	"log"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/turanberker/tennis-league-service/internal/delivery"
+	"github.com/turanberker/tennis-league-service/internal/domain/match"
 )
 
 type MatchHandler struct {
+	u *match.UseCase
 }
 
-func NewMatchHandler() *MatchHandler {
-	return &MatchHandler{}
+func NewMatchHandler(u *match.UseCase) *MatchHandler {
+	return &MatchHandler{u: u}
 }
 
 func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
 	matches := r.Group("/match")
 	{
 		matches.GET("/:id", h.getById)
-		matches.PATCH("/:id", h.updateScore)
-		matches.PATCH("/:id/update-date", h.updateDate)
+		matches.PUT("/:id", h.updateScore)
+		matches.PUT("/:id/update-date", h.updateDate)
 	}
 }
 
@@ -39,8 +44,19 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 
 func (h *MatchHandler) updateDate(c *gin.Context) {
 	matchId := c.Param("id")
-	matchDate := c.Query("match-date")
+	matchDateString := c.Query("match-date")
+	var matchDate *time.Time
+	if matchDateString != "" {
+		t, err := time.Parse(time.RFC3339, matchDateString)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, delivery.NewErrorResponse("Tarih Formatı Hatalı"))
+			return
+		}
+		matchDate = &t
+	}
+
+	h.u.UpdateMatchDate(c.Request.Context(), matchId, matchDate)
 	log.Printf("match id: %s, match Date: %s", matchId, matchDate)
-	c.JSON(200, gin.H{"message": "get match by id"})
-	
+	c.JSON(200, delivery.NewSuccessResponse(nil))
+
 }

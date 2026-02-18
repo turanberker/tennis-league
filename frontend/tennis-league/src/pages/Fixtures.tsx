@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from 'primereact/card';
 import { getFixture } from '../api/leagueService';
@@ -11,11 +11,22 @@ import { set } from 'react-hook-form';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
+import { OverlayPanel } from 'primereact/overlaypanel';
+import { FloatLabel } from 'primereact/floatlabel';
+import { Calendar } from 'primereact/calendar';
+import { updateDate } from '../api/matchService';
+import { Toast } from 'primereact/toast';
 
 export default function Fixtures() {
   const { id } = useParams();
   const [loading, setLoading] = useState<boolean>(false);
   const [matches, setMatches] = useState<LeagueFixtureMatchResponse[]>([]);
+
+  const [selectedMatch, setSelectedMatch] = useState<
+    LeagueFixtureMatchResponse | undefined
+  >();
+  const dateOP = useRef<OverlayPanel>(null);
+  const toast = useRef<Toast>(null);
   useEffect(() => {
     loadFixture(id!);
   }, [id]);
@@ -27,9 +38,24 @@ export default function Fixtures() {
     setLoading(false);
   };
 
-  const handleMatchDate = (match: LeagueFixtureMatchResponse) => {
+  const handleMatchDate = async (date: Date) => {
     // Maç tarihini ayarlama işlemi burada yapılacak
-    console.log('Tarih ayarla:', match);
+    console.log('Tarih ayarla:', selectedMatch);
+    if (selectedMatch) {
+      await updateDate(selectedMatch?.id, { 'match-date': date });
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.id === selectedMatch.id ? { ...m, matchDate: date } : m,
+        ),
+      );
+      toast.current?.show({
+        severity: 'success',
+        summary: 'İşlem Başarılı',
+        detail: `Maç Tarihi Güncellendi`,
+        life: 3000,
+      });
+    }
+    setSelectedMatch(undefined);
   };
 
   const handleMatchScore = (match: LeagueFixtureMatchResponse) => {
@@ -50,7 +76,10 @@ export default function Fixtures() {
               tooltip="Tarih Ayarla"
               icon="pi pi-calendar"
               outlined
-              onClick={() => handleMatchDate(match)}
+              onClick={(e) => {
+                setSelectedMatch(match);
+                dateOP.current?.toggle(e);
+              }}
             />
             {match.matchDate ? (
               <Button
@@ -74,35 +103,69 @@ export default function Fixtures() {
             label="Tarih Ayarla"
             icon="pi pi-calendar"
             outlined
-            onClick={() => handleMatchDate(match)}
+            onClick={(e) => {
+              setSelectedMatch(match);
+              dateOP.current?.toggle(e);
+            }}
           />
         );
     }
   };
 
   return (
-    <Card
-      title="Fikstür"
-      subTitle="Ligdeki maçların fikstürü burada görüntülenecek."
-    >
-      <DataTable
-        value={matches}
-        dataKey={id}
-        loading={loading}
-        emptyMessage="Fikstür bulunamadı"
-        tableStyle={{ minWidth: '50rem' }}
-        key="id"
+    <>
+      <Toast ref={toast} />
+      <Card
+        title="Fikstür"
+        subTitle="Ligdeki maçların fikstürü burada görüntülenecek."
       >
-        <Column field="team1.name" header="1. Takım" />
-        <Column field="team2.name" header="2. Takım" />
-        <Column
-          field="status"
-          header="Durum"
-          body={(rowData) => MatchStatusLabels[rowData.status as Status]}
-        ></Column>
-        <Column field="matchDate" header="Maç Tarihi"></Column>
-        <Column header="İşlem" body={(rowData) => getButtons(rowData)}></Column>
-      </DataTable>
-    </Card>
+        <DataTable
+          value={matches}
+          dataKey={id}
+          loading={loading}
+          emptyMessage="Fikstür bulunamadı"
+          tableStyle={{ minWidth: '50rem' }}
+          key="id"
+        >
+          <Column field="team1.name" header="1. Takım" />
+          <Column field="team2.name" header="2. Takım" />
+          <Column
+            field="status"
+            header="Durum"
+            body={(rowData) => MatchStatusLabels[rowData.status as Status]}
+          ></Column>
+          <Column
+            field="matchDate"
+            header="Maç Tarihi"
+            body={(rowData) =>
+              rowData.matchDate
+                ? new Date(rowData.matchDate).toLocaleString()
+                : '-'
+            }
+          ></Column>
+          <Column
+            header="İşlem"
+            body={(rowData) => getButtons(rowData)}
+          ></Column>
+        </DataTable>
+      </Card>
+      <OverlayPanel ref={dateOP}>
+        <FloatLabel>
+          <Calendar
+            appendTo="self"
+            showButtonBar
+            showTime
+            hourFormat="24"
+            inputId="birth_date"
+            value={selectedMatch?.matchDate}
+            onChange={(e) => {
+              handleMatchDate(e.value as Date);
+              dateOP.current?.hide();
+            }}
+          />
+          <label htmlFor="birth_date">Maç Tarihi</label>
+        </FloatLabel>
+      </OverlayPanel>
+    </>
   );
 }
