@@ -34,10 +34,10 @@ CREATE TABLE tennisleague.match_sets (
     match_id varchar(100) NOT NULL,
     set_number INT NOT NULL,          -- 1,2,3...
 
-     team_1_games INT ,
+    team_1_games INT ,
     team_2_games INT ,
 
-   team_1_tie_break_score INT ,
+    team_1_tie_break_score INT ,
     team_2_tie_break_score INT,
 
     CONSTRAINT fk_set_match
