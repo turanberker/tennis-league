@@ -19,6 +19,9 @@ import (
 )
 
 func main() {
+
+	matchhandler.RegisterSetValidations();
+	
 	db, err := database.NewPostgres()
 	if err != nil {
 		log.Fatal(err)

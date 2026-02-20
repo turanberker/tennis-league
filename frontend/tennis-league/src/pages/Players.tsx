@@ -3,9 +3,7 @@ import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { getPlayers, createPlayer } from '../api/playersService';
-
 import { useNavigate } from 'react-router-dom';
-import { Dialog } from 'primereact/dialog';
 import * as yup from 'yup';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
@@ -16,7 +14,7 @@ import { Player, Sex, SexLabels, SexOptions } from '../model/player.model';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Sidebar } from 'primereact/sidebar';
-import { Tooltip } from 'primereact/tooltip';
+
 // VALIDATION
 const schema = yup.object().shape({
   name: yup
@@ -127,17 +125,6 @@ export default function Players() {
       </div>
     );
   };
-
-  const sidebarHeader = (
-    <div className="flex justify-content-end gap-2">
-      <Button
-        label="Kaydet"
-        icon="pi pi-check"
-        onClick={handleSubmit(onSubmit)}
-        loading={isSubmitting}
-      />
-    </div>
-  );
 
   const customIcons = (
     <React.Fragment>

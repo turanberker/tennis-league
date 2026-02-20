@@ -22,7 +22,7 @@ func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
 	matches := r.Group("/match")
 	{
 		matches.GET("/:id", h.getById)
-		matches.PUT("/:id", h.updateScore)
+		matches.PUT("/:id/score", h.updateScore)
 		matches.PUT("/:id/update-date", h.updateDate)
 	}
 }
@@ -37,7 +37,17 @@ func (h *MatchHandler) getById(c *gin.Context) {
 
 func (h *MatchHandler) updateScore(c *gin.Context) {
 	matchId := c.Param("id")
+
+	macScore := MatchScore{}
+
+	if err := c.ShouldBindJSON(&macScore); err != nil {
+		errorMessage := delivery.ValidationError(err)
+		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+		return
+	}
+
 	log.Printf("match id: %s", matchId)
+	log.Printf("score :%+v", macScore)
 	c.JSON(200, gin.H{"message": "get match by id"})
 	// path param
 }

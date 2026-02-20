@@ -22,3 +22,14 @@ interface TeamRefResponse {
   id: string;
   name: string;
 }
+
+export interface MatchScore {
+  set1: SetScore;
+  set2: SetScore;
+  superTie: SetScore | null;
+}
+
+interface SetScore {
+  team1Score: number;
+  team2Score: number;
+}
