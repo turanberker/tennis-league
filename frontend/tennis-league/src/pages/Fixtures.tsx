@@ -15,7 +15,11 @@ import { Button } from 'primereact/button';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { FloatLabel } from 'primereact/floatlabel';
 import { Calendar } from 'primereact/calendar';
-import { updateDate, updateMatchScore } from '../api/matchService';
+import {
+  getSetScores,
+  updateDate,
+  updateMatchScore,
+} from '../api/matchService';
 import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
 import * as yup from 'yup';
@@ -160,8 +164,23 @@ export default function Fixtures() {
     setSelectedMatch(undefined);
   };
 
-  const handleMatchScore = (match: LeagueFixtureMatchResponse) => {
+  const handleMatchScore = async (match: LeagueFixtureMatchResponse) => {
     console.log(match);
+    const setScores = await getSetScores(match.id);
+    if (setScores) {
+      setValue('set1.team1Score', setScores.set1?.team1Score ?? null);
+      setValue('set1.team2Score', setScores.set1?.team2Score ?? null);
+
+      setValue('set2.team1Score', setScores.set2?.team1Score ?? null);
+      setValue('set2.team2Score', setScores.set2?.team2Score ?? null);
+      if (setScores.superTie) {
+        setValue('superTie.team1Score', setScores.superTie?.team1Score ?? null);
+        setValue('superTie.team2Score', setScores.superTie?.team2Score ?? null);
+        setShowSuperTie(true);
+      } else {
+        setShowSuperTie(false);
+      }
+    }
     setUpdateScoreVisible(true);
     setSelectedMatch(match);
   };
@@ -350,6 +369,8 @@ export default function Fixtures() {
               <label>{selectedMatch?.team1.name}</label>
               <input
                 type="number"
+                max={7}
+                min={0}
                 {...register('set1.team1Score', { valueAsNumber: true })}
                 className="p-inputtext"
               />
@@ -359,6 +380,8 @@ export default function Fixtures() {
               <label>{selectedMatch?.team2.name}</label>
               <input
                 type="number"
+                max={7}
+                min={0}
                 {...register('set1.team2Score', { valueAsNumber: true })}
                 className="p-inputtext"
               />
@@ -376,6 +399,8 @@ export default function Fixtures() {
               <label>{selectedMatch?.team1.name}</label>
               <input
                 type="number"
+                max={7}
+                min={0}
                 {...register('set2.team1Score', { valueAsNumber: true })}
                 className="p-inputtext"
               />
@@ -385,6 +410,8 @@ export default function Fixtures() {
               <label>{selectedMatch?.team2.name}</label>
               <input
                 type="number"
+                max={7}
+                min={0}
                 {...register('set2.team2Score', { valueAsNumber: true })}
                 className="p-inputtext"
               />
@@ -425,7 +452,7 @@ export default function Fixtures() {
 
               <div className="p-grid">
                 <div className="p-col-6">
-                  <label>Team 1</label>
+                  <label>{selectedMatch?.team1.name}</label>
                   <input
                     type="number"
                     {...register('superTie.team1Score', {
@@ -436,7 +463,7 @@ export default function Fixtures() {
                 </div>
 
                 <div className="p-col-6">
-                  <label>Team 2</label>
+                  <label>{selectedMatch?.team2.name}</label>
                   <input
                     type="number"
                     {...register('superTie.team2Score', {

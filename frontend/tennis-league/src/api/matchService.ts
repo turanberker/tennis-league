@@ -10,6 +10,10 @@ export const updateDate = async (id: string, data: { 'match-date': Date }) => {
 export const updateMatchScore = async (
   id: string,
   data: MatchScore,
-): Promise<MatchScoreResponse>  => {
+): Promise<MatchScoreResponse> => {
   return await axiosClient.put<MatchScoreResponse>(`match/${id}/score`, data);
+};
+
+export const getSetScores = async (id: string): Promise<MatchScore> => {
+  return await axiosClient.get<MatchScore>(`match/${id}/set-scores`);
 };

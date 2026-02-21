@@ -22,9 +22,49 @@ func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
 	matches := r.Group("/match")
 	{
 		matches.GET("/:id", h.getById)
+		matches.GET("/:id/set-scores", h.getSetScore)
 		matches.PUT("/:id/score", h.updateScore)
 		matches.PUT("/:id/update-date", h.updateDate)
 	}
+}
+
+func (h *MatchHandler) getSetScore(c *gin.Context) {
+
+	// path param
+	matchId := c.Param("id")
+	setScores := h.u.GetSetScore(c.Request.Context(), matchId)
+
+	response := MatchScore{}
+	for _, s := range setScores {
+		switch s.SetNumber {
+		case 1:
+			if s.Team1Game != nil {
+				response.Set1.Team1Score = *s.Team1Game
+			}
+			if s.Team2Game != nil {
+				response.Set1.Team2Score = *s.Team2Game
+			}
+		case 2:
+			if s.Team1Game != nil {
+				response.Set2.Team1Score = *s.Team1Game
+			}
+			if s.Team2Game != nil {
+				response.Set2.Team2Score = *s.Team2Game
+			}
+
+		case 3:
+			response.SuperTie = &SetScore{}
+			if s.Team1TiePoint != nil {
+				response.SuperTie.Team1Score = *s.Team1TiePoint
+			}
+			if s.Team2TiePoint != nil {
+				response.SuperTie.Team2Score = *s.Team2TiePoint
+			}
+		}
+
+	}
+
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
 }
 
 func (h *MatchHandler) getById(c *gin.Context) {
@@ -52,13 +92,17 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 	set1 := match.SaveScore{Team1Score: macScore.Set1.Team1Score, Team2Score: macScore.Set1.Team2Score}
 	set2 := match.SaveScore{Team1Score: macScore.Set2.Team1Score, Team2Score: macScore.Set2.Team2Score}
 
-	var tie match.SaveScore
+	saveMatchScore := &match.SaveMatchScore{MatchId: matchId, Set1: set1, Set2: set2}
+
 	if macScore.SuperTie != nil {
-		tie.Team1Score = macScore.SuperTie.Team1Score
-		tie.Team2Score = macScore.SuperTie.Team1Score
+
+		saveMatchScore.SuperTie = &match.SaveScore{}
+		saveMatchScore.SuperTie.Team1Score = macScore.SuperTie.Team1Score
+		saveMatchScore.SuperTie.Team2Score = macScore.SuperTie.Team2Score
+
 	}
 
-	response, err := h.u.SaveMatchScore(c.Request.Context(), &match.SaveMatchScore{MatchId: matchId, Set1: set1, Set2: set2, SuperTie: &tie})
+	response, err := h.u.SaveMatchScore(c.Request.Context(), saveMatchScore)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse(err.Error()))
 		return

@@ -23,7 +23,7 @@ func RegisterSetValidations() {
 			}
 
 			// en az 2 fark
-			if diff < 2 {
+			if diff < 2 && !((t1==7 &&t2==6) ||(t1==6 &&t2==7)) {
 				return false
 			}
 

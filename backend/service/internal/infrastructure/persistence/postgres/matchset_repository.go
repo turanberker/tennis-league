@@ -71,3 +71,28 @@ func (r *MatchSetRepository) DeleteSetScores(ctx context.Context, tx *sql.Tx, ma
 	}
 	return nil
 }
+
+func (r *MatchSetRepository) GetSetScoreList(ctx context.Context, matchId string) []*matchSet.MatchSetScores {
+	query := "select set_number, team_1_games ,team_2_games ,team_1_tie_break_score ,team_2_tie_break_score  from match_sets ms  where match_id =$1"
+
+	rows, err := r.db.QueryContext(ctx, query, matchId)
+
+	if err != nil {
+		log.Printf("Setler çekilirken hata oluştu:%+v", err)
+		return nil
+	}
+
+	var sets []*matchSet.MatchSetScores
+	for rows.Next() {
+		set := &matchSet.MatchSetScores{}
+		err := rows.Scan(&set.SetNumber, &set.Team1Game, &set.Team2Game, &set.Team1TiePoint, &set.Team2TiePoint)
+
+		if err != nil {
+			log.Println("Setler maplerken hata oluştu:", err)
+			return nil
+		}
+		sets = append(sets, set)
+	}
+
+	return sets
+}

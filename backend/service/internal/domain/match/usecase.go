@@ -45,7 +45,7 @@ func (u *UseCase) UpdateMatchDate(ctx context.Context, matchId string, matchDate
 	return tx.Commit()
 }
 
-func (u *UseCase) SaveMatchScore(ctx context.Context, score *SaveMatchScore) (*UpdateMatchScore,error) {
+func (u *UseCase) SaveMatchScore(ctx context.Context, score *SaveMatchScore) (*UpdateMatchScore, error) {
 
 	macScore, err := calculateMatchScore(score)
 
@@ -55,11 +55,11 @@ func (u *UseCase) SaveMatchScore(ctx context.Context, score *SaveMatchScore) (*U
 
 	teamIds := u.repository.GetMatchTeamIds(ctx, score.MatchId)
 	if teamIds == nil {
-		return nil,errors.New("Maç bulunamadı")
+		return nil, errors.New("Maç bulunamadı")
 	}
 
 	if teamIds.Status == StatusApproved {
-		return nil,errors.New("Maç skoru onaylandığı için güncelleyemezsiniz")
+		return nil, errors.New("Maç skoru onaylandığı için güncelleyemezsiniz")
 	}
 
 	if macScore.Team1Score > macScore.Team2Score {
@@ -70,15 +70,31 @@ func (u *UseCase) SaveMatchScore(ctx context.Context, score *SaveMatchScore) (*U
 
 	tx, err := u.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	defer tx.Rollback()
 	u.scoreRepository.DeleteSetScores(ctx, tx, score.MatchId)
-	u.scoreRepository.SaveSetScore(ctx, tx, &matchSet.UpdateSetScore{MatchId: score.MatchId, Set: 1, Team1Score: score.Set1.Team1Score, Team2Score: score.Set1.Team2Score})
-	u.scoreRepository.SaveSetScore(ctx, tx, &matchSet.UpdateSetScore{MatchId: score.MatchId, Set: 2, Team1Score: score.Set1.Team1Score, Team2Score: score.Set1.Team2Score})
+	u.scoreRepository.SaveSetScore(ctx, tx, &matchSet.UpdateSetScore{MatchId: score.MatchId,
+		Set:        1,
+		Team1Score: score.Set1.Team1Score,
+		Team2Score: score.Set1.Team2Score})
+	u.scoreRepository.SaveSetScore(ctx, tx, &matchSet.UpdateSetScore{MatchId: score.MatchId,
+		Set:        2,
+		Team1Score: score.Set2.Team1Score,
+		Team2Score: score.Set2.Team2Score})
+	if score.SuperTie != nil {
+		u.scoreRepository.SaveSuperTieScore(ctx, tx, &matchSet.UpdateSuperTieScore{MatchId: score.MatchId,
+			Team1Score: score.SuperTie.Team1Score,
+			Team2Score: score.SuperTie.Team2Score})
+	}
+
 	u.repository.UpdateMatchScore(ctx, tx, macScore)
 	tx.Commit()
-	return macScore,nil
+	return macScore, nil
+}
+
+func (u *UseCase) GetSetScore(ctx context.Context, matchId string) []*matchSet.MatchSetScores {
+	return u.scoreRepository.GetSetScoreList(ctx, matchId)
 }
 
 func calculateMatchScore(score *SaveMatchScore) (*UpdateMatchScore, error) {
@@ -89,10 +105,10 @@ func calculateMatchScore(score *SaveMatchScore) (*UpdateMatchScore, error) {
 	findSetWinner(score.Set2, matchscore)
 
 	if matchscore.Team1Score == matchscore.Team2Score {
-		if score.SuperTie != nil {
+		if score.SuperTie == nil {
 			return nil, errors.New("Süper Tie skoru eksik")
 		} else {
-			findSetWinner(score.Set2, matchscore)
+			findSetWinner(*score.SuperTie, matchscore)
 		}
 	}
 
