@@ -5,6 +5,10 @@ CREATE TABLE tennisleague.matches (
     team_1_id varchar(100) NOT NULL,
     team_2_id varchar(100) NOT NULL,
 
+    team_1_score INT,
+    team_2_score INT,
+    winner_id varchar(100),
+
     match_date TIMESTAMPTZ NULL,
 
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
@@ -23,6 +27,11 @@ CREATE TABLE tennisleague.matches (
         FOREIGN KEY (team_2_id)
         REFERENCES tennisleague.teams(id)
         ON DELETE CASCADE,
+
+     CONSTRAINT fk_matches_team_winner
+            FOREIGN KEY (winner_id)
+            REFERENCES tennisleague.teams(id)
+            ON DELETE CASCADE,
 
     CONSTRAINT chk_different_teams
         CHECK (team_1_id <> team_2_id)

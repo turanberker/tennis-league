@@ -20,8 +20,8 @@ import (
 
 func main() {
 
-	matchhandler.RegisterSetValidations();
-	
+	matchhandler.RegisterSetValidations()
+
 	db, err := database.NewPostgres()
 	if err != nil {
 		log.Fatal(err)
@@ -37,11 +37,12 @@ func main() {
 	teamRepository := postgres.NewTeamRepository(db)
 	teamPlayerRepository := postgres.NewTeamPlayerRepository(db)
 	matchRepository := postgres.NewMatchRepository(db)
+	matchSetRepository := postgres.NewMatchSetRepository(db)
 
 	leagueUseCase := league.NewUsecase(db, leagueRepository, teamRepository, matchRepository)
 	teamUseCase := team.NewUseCase(db, teamRepository, teamPlayerRepository)
-	matchUseCase := match.NewUseCase(matchRepository, db)
-	
+	matchUseCase := match.NewUseCase(db, matchRepository, matchSetRepository)
+
 	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase)
 
 	playerRepository := postgres.NewPlayerRepository(db)

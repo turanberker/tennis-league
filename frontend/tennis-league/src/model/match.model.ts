@@ -33,3 +33,8 @@ interface SetScore {
   team1Score: number;
   team2Score: number;
 }
+
+export interface MatchScoreResponse {
+  team1: null;
+  team2: null;
+}

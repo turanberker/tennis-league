@@ -86,3 +86,32 @@ func (r *MatchRepository) UpdateMatchDate(ctx context.Context, tx *sql.Tx, data 
 	}
 	return nil
 }
+
+func (r *MatchRepository) GetMatchTeamIds(ctx context.Context, matchId string) *match.MatchTeamIds {
+
+	var response match.MatchTeamIds
+	query := "select team_1_id ,team_2_id ,status  from matches m where id=$1"
+
+	err := r.db.QueryRowContext(ctx, query, matchId).
+		Scan(&response.Team1Id, &response.Team2Id, &response.Status)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// kayıt yok
+			return nil
+		}
+		return nil
+	}
+	return &response
+}
+
+func (r *MatchRepository) UpdateMatchScore(ctx context.Context, tx *sql.Tx, macScore *match.UpdateMatchScore) error {
+	query := "Update matches set team_1_score=$1, team_2_score=$2, winner_id=$3, status=$4 where id=$5"
+
+	_, err := tx.ExecContext(ctx, query, macScore.Team1Score, macScore.Team2Score, macScore.WinnerTeamId, match.StatusCompleted, macScore.Id)
+	if err != nil {
+		log.Printf("Maç Skoru güncellenirken hata oluştu:%+v", err)
+		return err
+	}
+	return nil
+}

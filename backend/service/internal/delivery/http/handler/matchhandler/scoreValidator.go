@@ -57,7 +57,7 @@ func RegisterSetValidations() {
 	}
 }
 
-func abs(x int64) int64 {
+func abs(x int8) int8 {
 	if x < 0 {
 		return -x
 	}

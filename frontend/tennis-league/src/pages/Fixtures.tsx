@@ -217,8 +217,8 @@ export default function Fixtures() {
   const onSubmit = async (data: MatchScore) => {
     if (selectedMatch) {
       try {
-        await updateMatchScore(selectedMatch?.id, data);
-
+        const score = await updateMatchScore(selectedMatch?.id, data);
+        console.log(score);
         toast.current?.show({
           severity: 'success',
           summary: 'Başarılı',

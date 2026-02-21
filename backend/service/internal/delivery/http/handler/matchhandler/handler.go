@@ -48,8 +48,24 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 
 	log.Printf("match id: %s", matchId)
 	log.Printf("score :%+v", macScore)
-	c.JSON(200, gin.H{"message": "get match by id"})
-	// path param
+
+	set1 := match.SaveScore{Team1Score: macScore.Set1.Team1Score, Team2Score: macScore.Set1.Team2Score}
+	set2 := match.SaveScore{Team1Score: macScore.Set2.Team1Score, Team2Score: macScore.Set2.Team2Score}
+
+	var tie match.SaveScore
+	if macScore.SuperTie != nil {
+		tie.Team1Score = macScore.SuperTie.Team1Score
+		tie.Team2Score = macScore.SuperTie.Team1Score
+	}
+
+	response, err := h.u.SaveMatchScore(c.Request.Context(), &match.SaveMatchScore{MatchId: matchId, Set1: set1, Set2: set2, SuperTie: &tie})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(&MatchScoreResponse{Team1Score: response.Team1Score, Team2Score: response.Team2Score}))
+
 }
 
 func (h *MatchHandler) updateDate(c *gin.Context) {
@@ -67,6 +83,6 @@ func (h *MatchHandler) updateDate(c *gin.Context) {
 
 	h.u.UpdateMatchDate(c.Request.Context(), matchId, matchDate)
 	log.Printf("match id: %s, match Date: %s", matchId, matchDate)
-	c.JSON(200, delivery.NewSuccessResponse(nil))
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
 
 }
