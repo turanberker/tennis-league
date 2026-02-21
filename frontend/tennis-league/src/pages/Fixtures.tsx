@@ -7,6 +7,7 @@ import {
   MatchScore,
   MatchStatusLabels,
   Status,
+  TeamRefResponse,
 } from '../model/match.model';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -172,46 +173,44 @@ export default function Fixtures() {
       case Status.PERDING:
         return (
           <>
-            <Button
-              rounded
-              text
-              tooltip="Tarih Ayarla"
-              icon="pi pi-calendar"
-              outlined
-              onClick={(e) => {
-                setSelectedMatch(match);
-                dateOP.current?.toggle(e);
-              }}
-            />
-            {match.matchDate ? (
-              <Button
-                rounded
-                text
-                tooltip="Maç Skoru Gir"
-                icon="pi pi-pencil"
-                outlined
-                onClick={() => handleMatchScore(match)}
-              />
-            ) : null}
+            {tarihAyarlaButton(match)}
+            {match.matchDate ? skorButton(match) : null}
           </>
         );
       case Status.COMPLETED:
-        return <> </>;
+        return <> {skorButton(match)}</>;
       case Status.CANCELLED:
-        return (
-          <Button
-            rounded
-            text
-            label="Tarih Ayarla"
-            icon="pi pi-calendar"
-            outlined
-            onClick={(e) => {
-              setSelectedMatch(match);
-              dateOP.current?.toggle(e);
-            }}
-          />
-        );
+        return tarihAyarlaButton(match);
     }
+  };
+
+  const tarihAyarlaButton = (match: LeagueFixtureMatchResponse) => {
+    return (
+      <Button
+        rounded
+        text
+        tooltip="Tarih Ayarla"
+        icon="pi pi-calendar"
+        outlined
+        onClick={(e) => {
+          setSelectedMatch(match);
+          dateOP.current?.toggle(e);
+        }}
+      />
+    );
+  };
+
+  const skorButton = (match: LeagueFixtureMatchResponse) => {
+    return (
+      <Button
+        rounded
+        text
+        tooltip="Maç Skoru Gir"
+        icon="pi pi-pencil"
+        outlined
+        onClick={() => handleMatchScore(match)}
+      />
+    );
   };
 
   const onSubmit = async (data: MatchScore) => {
@@ -253,6 +252,14 @@ export default function Fixtures() {
     </React.Fragment>
   );
 
+  const generateTeamName = (team: TeamRefResponse) => {
+    return (
+      <span style={{ fontWeight: team.winner ? 'bold' : 'normal' }}>
+        {team.name}
+      </span>
+    );
+  };
+
   return (
     <>
       <Toast ref={toast} />
@@ -268,8 +275,27 @@ export default function Fixtures() {
           tableStyle={{ minWidth: '50rem' }}
           key="id"
         >
-          <Column field="team1.name" header="1. Takım" />
-          <Column field="team2.name" header="2. Takım" />
+          <Column
+            header="1. Takım"
+            body={(rowData: LeagueFixtureMatchResponse) =>
+              generateTeamName(rowData.team1)
+            }
+          />
+          <Column
+            header="2. Takım"
+            body={(rowData: LeagueFixtureMatchResponse) =>
+              generateTeamName(rowData.team2)
+            }
+          />
+          <Column
+            header="Skor"
+            body={(rowData: LeagueFixtureMatchResponse) =>
+              rowData.status === Status.APPROVED ||
+              rowData.status === Status.COMPLETED
+                ? rowData.team1.score + '-' + rowData.team2.score
+                : '-'
+            }
+          ></Column>
           <Column
             field="status"
             header="Durum"
@@ -284,6 +310,7 @@ export default function Fixtures() {
                 : '-'
             }
           ></Column>
+
           <Column
             header="İşlem"
             body={(rowData) => getButtons(rowData)}

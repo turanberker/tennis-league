@@ -48,7 +48,8 @@ func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, tx *sql.Tx, mat
 
 func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
 	query := `
-		SELECT m.id, m.team_1_id, t1.name, m.team_2_id, t2.name, m.status, m.match_date
+		SELECT m.id, m.team_1_id, t1.name,m.team_1_score, m.winner_id =m.team_1_id, 
+		m.team_2_id, t2.name,m.team_2_score ,m.winner_id =m.team_2_id, m.status, m.match_date
 		FROM tennisleague.matches m
 		JOIN tennisleague.teams t1 ON m.team_1_id = t1.id
 		JOIN tennisleague.teams t2 ON m.team_2_id = t2.id
@@ -64,7 +65,10 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 	var matches []*match.LeagueFixtureMatch
 	for rows.Next() {
 		match := &match.LeagueFixtureMatch{}
-		err := rows.Scan(&match.Id, &match.Team1.Id, &match.Team1.Name, &match.Team2.Id, &match.Team2.Name, &match.Status, &match.MatchDate)
+		err := rows.Scan(&match.Id,
+			&match.Team1.Id, &match.Team1.Name, &match.Team1.Score, &match.Team1.Winner,
+			&match.Team2.Id, &match.Team2.Name, &match.Team2.Score, &match.Team2.Winner,
+			&match.Status, &match.MatchDate)
 
 		if err != nil {
 			log.Println("Maçlar maplerken hata oluştu:", err)

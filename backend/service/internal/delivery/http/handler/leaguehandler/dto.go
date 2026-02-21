@@ -23,4 +23,6 @@ type LeagueFixtureMatchResponse struct {
 type TeamRefResponse struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
+	Score *int8 `json:"score"`
+	Winner *bool `json:"winner"`
 }

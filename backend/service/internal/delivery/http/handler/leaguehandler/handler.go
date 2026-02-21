@@ -216,8 +216,8 @@ func toFixtureResponse(l *match.LeagueFixtureMatch) *LeagueFixtureMatchResponse 
 	}
 	return &LeagueFixtureMatchResponse{
 		Id:        l.Id,
-		Team1:     TeamRefResponse{Id: l.Team1.Id, Name: l.Team1.Name},
-		Team2:     TeamRefResponse{Id: l.Team2.Id, Name: l.Team2.Name},
+		Team1:     TeamRefResponse{Id: l.Team1.Id, Name: l.Team1.Name,Score: l.Team1.Score,Winner: l.Team1.Winner},
+		Team2:     TeamRefResponse{Id: l.Team2.Id, Name: l.Team2.Name,Score: l.Team2.Score,Winner: l.Team2.Winner},
 		Status:    l.Status,
 		MatchDate: l.MatchDate,
 	}

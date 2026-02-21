@@ -31,9 +31,9 @@ type MatchTeamIds struct {
 }
 
 type UpdateMatchScore struct {
-	Id         string
-	Team1Score int8
-	Team2Score int8
+	Id           string
+	Team1Score   int8
+	Team2Score   int8
 	WinnerTeamId string
 }
 
@@ -47,6 +47,8 @@ type LeagueFixtureMatch struct {
 }
 
 type teamRef struct {
-	Id   string
-	Name string
+	Id     string
+	Name   string
+	Score  *int8
+	Winner *bool
 }

@@ -1,12 +1,14 @@
 export enum Status {
   PERDING = 'PENDING',
   COMPLETED = 'COMPLETED',
+  APPROVED = 'APPROVED',
   CANCELLED = 'CANCELLED',
 }
 
 export const MatchStatusLabels: Record<Status, string> = {
   [Status.PERDING]: 'Beklemede',
   [Status.COMPLETED]: 'Tamamlandı',
+  [Status.APPROVED]: 'Onaylandı',
   [Status.CANCELLED]: 'İptal Edildi',
 };
 
@@ -18,9 +20,11 @@ export interface LeagueFixtureMatchResponse {
   matchDate: Date;
 }
 
-interface TeamRefResponse {
+export interface TeamRefResponse {
   id: string;
   name: string;
+  score?: number;
+  winner?: boolean;
 }
 
 export interface MatchScore {
