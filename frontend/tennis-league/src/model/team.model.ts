@@ -7,3 +7,8 @@ export interface CreateTeamRequest {
   name: string;
   playerIds: string[];
 }
+
+export interface TeamRef{
+  id: string
+  name:string
+}

@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
+	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 )
 
@@ -13,18 +14,25 @@ var ErrNameFieldRequired = errors.New("Name can not be null or empty string")
 var ErrNameLenghtError = errors.New("Name size must between 5 and 75 characters")
 
 type Usecase struct {
-	db        *sql.DB
-	repo      Repository
-	teamRepo  team.Repository
-	matchRepo match.Repository
+	db             *sql.DB
+	repo           Repository
+	teamRepo       team.Repository
+	matchRepo      match.Repository
+	scoreBoardRepo scoreboard.Repository
 }
 
 func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
 	return u.matchRepo.GetFixtureByLeagueId(context, leagueId)
 }
 
-func NewUsecase(db *sql.DB, repo Repository, teamRepo team.Repository, matchRepo match.Repository) *Usecase {
-	return &Usecase{db: db, repo: repo, teamRepo: teamRepo, matchRepo: matchRepo}
+func NewUsecase(db *sql.DB, repo Repository,
+	teamRepo team.Repository,
+	matchRepo match.Repository,
+	scoreBoardRepo scoreboard.Repository) *Usecase {
+	return &Usecase{db: db, repo: repo,
+		teamRepo:       teamRepo,
+		matchRepo:      matchRepo,
+		scoreBoardRepo: scoreBoardRepo}
 }
 
 func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) error {
@@ -48,19 +56,25 @@ func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) e
 	}
 
 	var matches []*match.PersistLeagueMatch
+	var teamIds []string
+
 	for i := 0; i < len(teams); i++ {
+
+		teamIds = append(teamIds, teams[i].ID)
 		for j := i + 1; j < len(teams); j++ { // j=i+1 → tekrar ve kendisiyle maç yok
 			match := &match.PersistLeagueMatch{
 				LeagueId: leagueId,
 				Team1Id:  teams[i].ID,
 				Team2Id:  teams[j].ID,
 			}
+
 			matches = append(matches, match)
 		}
 	}
 
 	defer tx.Rollback()
 	u.matchRepo.SaveLeagueMatches(ctx, tx, matches)
+	u.scoreBoardRepo.SaveFixture(ctx, tx, leagueId, teamIds)
 	tx.Commit()
 
 	return nil

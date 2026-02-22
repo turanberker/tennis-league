@@ -11,17 +11,20 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery/dto"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
+	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 )
 
 type Handler struct {
-	uc     *league.Usecase
-	teamUc *team.UseCase
+	uc           *league.Usecase
+	teamUc       *team.UseCase
+	scoreBaordUc *scoreboard.UseCase
 }
 
-func NewHandler(uc *league.Usecase, teamUc *team.UseCase) *Handler {
+func NewHandler(uc *league.Usecase, teamUc *team.UseCase, scoreBaordUc *scoreboard.UseCase) *Handler {
 	return &Handler{uc: uc,
-		teamUc: teamUc}
+		teamUc:       teamUc,
+		scoreBaordUc: scoreBaordUc}
 }
 
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
@@ -35,6 +38,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.GET("/:id/teams", h.getTeams)
 		leagues.POST("/:id/teams", h.newTeam)
 		leagues.GET("/:id/fixture", h.getFixture)
+		leagues.GET("/:id/standings", h.getScoreBoard)
 	}
 
 }
@@ -187,6 +191,37 @@ func (h *Handler) getFixture(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+func (h *Handler) getScoreBoard(c *gin.Context) {
+	leagueId := c.Param("id")
+
+	board, err := h.scoreBaordUc.GetScoreBoard(c.Request.Context(), leagueId)
+	if err != nil {
+		res := delivery.NewErrorResponse(err.Error())
+		c.JSON(http.StatusOK, res)
+		return
+	}
+
+	var result []*ScoreBoardResponse
+	for o, b := range board {
+		team := &ScoreBoardResponse{
+			TeamRef:   TeamRef{Id: b.Team.Id, Name: b.Team.Name},
+			Order:     o + 1,
+			Played:    b.Played,
+			Won:       b.Won,
+			Lost:      b.Lost,
+			WonSets:   b.WonSets,
+			LostSets:  b.LostSets,
+			WonGames:  b.WonGames,
+			LostGames: b.LostGames,
+			Score:     b.Score,
+		}
+		result = append(result, team)
+	}
+	res := delivery.NewSuccessResponse(result)
+	c.JSON(http.StatusOK, res)
+	return
+}
+
 func toLeagueResponse(l *league.League) *LeagueResponse {
 	if l == nil {
 		return nil
@@ -216,8 +251,8 @@ func toFixtureResponse(l *match.LeagueFixtureMatch) *LeagueFixtureMatchResponse 
 	}
 	return &LeagueFixtureMatchResponse{
 		Id:        l.Id,
-		Team1:     TeamRefResponse{Id: l.Team1.Id, Name: l.Team1.Name,Score: l.Team1.Score,Winner: l.Team1.Winner},
-		Team2:     TeamRefResponse{Id: l.Team2.Id, Name: l.Team2.Name,Score: l.Team2.Score,Winner: l.Team2.Winner},
+		Team1:     TeamRefResponse{TeamRef: TeamRef{Id: l.Team1.Id, Name: l.Team1.Name}, Score: l.Team1.Score, Winner: l.Team1.Winner},
+		Team2:     TeamRefResponse{TeamRef: TeamRef{Id: l.Team2.Id, Name: l.Team2.Name}, Score: l.Team2.Score, Winner: l.Team2.Winner},
 		Status:    l.Status,
 		MatchDate: l.MatchDate,
 	}

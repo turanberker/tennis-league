@@ -1,3 +1,5 @@
+import { TeamRef } from './team.model';
+
 export enum Status {
   PERDING = 'PENDING',
   COMPLETED = 'COMPLETED',
@@ -20,9 +22,7 @@ export interface LeagueFixtureMatchResponse {
   matchDate: Date;
 }
 
-export interface TeamRefResponse {
-  id: string;
-  name: string;
+export interface TeamRefResponse extends TeamRef {
   score?: number;
   winner?: boolean;
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
+	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
 	"github.com/turanberker/tennis-league-service/internal/infrastructure/persistence/postgres"
@@ -38,12 +39,13 @@ func main() {
 	teamPlayerRepository := postgres.NewTeamPlayerRepository(db)
 	matchRepository := postgres.NewMatchRepository(db)
 	matchSetRepository := postgres.NewMatchSetRepository(db)
+	scoreBoardRepository := postgres.NewScoreBoardRepository(db)
 
-	leagueUseCase := league.NewUsecase(db, leagueRepository, teamRepository, matchRepository)
+	leagueUseCase := league.NewUsecase(db, leagueRepository, teamRepository, matchRepository, scoreBoardRepository)
 	teamUseCase := team.NewUseCase(db, teamRepository, teamPlayerRepository)
 	matchUseCase := match.NewUseCase(db, matchRepository, matchSetRepository)
-
-	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase)
+	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
+	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc)
 
 	playerRepository := postgres.NewPlayerRepository(db)
 	playerUc := player.NewUsecase(db, playerRepository)

@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios';
 import { CreateTeamRequest, TeamResponse } from '../model/team.model';
 import { LeagueFixtureMatchResponse } from '../model/match.model';
 import axiosClient from './axiosClient';
+import { ScoreBoardResponse } from '../model/standing.model';
 
 export const getLeagues = async (params?: { name?: string }) => {
   return await axiosClient.get('leagues/list', { params });
@@ -38,5 +39,13 @@ export const getFixture = async (
 ): Promise<LeagueFixtureMatchResponse[]> => {
   return await axiosClient.get<LeagueFixtureMatchResponse[]>(
     `leagues/${leagueId}/fixture`,
+  );
+};
+
+export const getStandings = async (
+  leagueId: string,
+): Promise<ScoreBoardResponse[]> => {
+  return await axiosClient.get<ScoreBoardResponse[]>(
+    `leagues/${leagueId}/standings`,
   );
 };
