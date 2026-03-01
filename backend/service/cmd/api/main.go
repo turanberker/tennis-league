@@ -40,10 +40,11 @@ func main() {
 	matchRepository := postgres.NewMatchRepository(db)
 	matchSetRepository := postgres.NewMatchSetRepository(db)
 	scoreBoardRepository := postgres.NewScoreBoardRepository(db)
+	outboxRepository := postgres.NewOutboxRepository(db)
 
 	leagueUseCase := league.NewUsecase(db, leagueRepository, teamRepository, matchRepository, scoreBoardRepository)
 	teamUseCase := team.NewUseCase(db, teamRepository, teamPlayerRepository)
-	matchUseCase := match.NewUseCase(db, matchRepository, matchSetRepository)
+	matchUseCase := match.NewUseCase(db, matchRepository, matchSetRepository, outboxRepository)
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
 	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc)
 

@@ -3,14 +3,14 @@ import { TeamRef } from './team.model';
 export enum Status {
   PERDING = 'PENDING',
   COMPLETED = 'COMPLETED',
-  APPROVED = 'APPROVED',
+  SCORE_APPROVED = 'SCORE_APPROVED',
   CANCELLED = 'CANCELLED',
 }
 
 export const MatchStatusLabels: Record<Status, string> = {
   [Status.PERDING]: 'Beklemede',
   [Status.COMPLETED]: 'Tamamlandı',
-  [Status.APPROVED]: 'Onaylandı',
+  [Status.SCORE_APPROVED]: 'Skor Onaylandı',
   [Status.CANCELLED]: 'İptal Edildi',
 };
 

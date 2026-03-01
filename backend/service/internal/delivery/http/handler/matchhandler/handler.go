@@ -25,9 +25,18 @@ func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
 		matches.GET("/:id/set-scores", h.getSetScore)
 		matches.PUT("/:id/score", h.updateScore)
 		matches.PUT("/:id/update-date", h.updateDate)
+		matches.PUT("/:id/approve", h.approveScore)
 	}
 }
-
+func (h *MatchHandler) approveScore(c *gin.Context) {
+	matchId := c.Param("id")
+	err := h.u.ApproveScore(c.Request.Context(),matchId)
+	if err != nil {
+		c.JSON(http.StatusOK, delivery.NewErrorResponse(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
+}
 func (h *MatchHandler) getSetScore(c *gin.Context) {
 
 	// path param

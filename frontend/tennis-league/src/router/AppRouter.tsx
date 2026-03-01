@@ -6,7 +6,7 @@ import Leagues from '../pages/Leagues';
 import Players from '../pages/Players';
 import Matches from '../pages/Matches';
 import ProtectedRoute from './ProtectedRoute';
-import Fixtures from '../pages/Fixtures';
+import Fixtures from '../pages/leagues/Fixtures';
 import Teams from '../pages/Teams';
 import NewPlayer from '../pages/player/NewPlayer';
 import PlayerDetail from '../pages/player/PlayerDetail';

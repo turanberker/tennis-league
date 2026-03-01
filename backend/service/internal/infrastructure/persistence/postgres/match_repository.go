@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"fmt"
 	"log"
@@ -116,6 +117,32 @@ func (r *MatchRepository) UpdateMatchScore(ctx context.Context, tx *sql.Tx, macS
 	if err != nil {
 		log.Printf("Maç Skoru güncellenirken hata oluştu:%+v", err)
 		return err
+	}
+	return nil
+}
+
+func (r *MatchRepository) ApproveScore(ctx context.Context, tx *sql.Tx, matchId string) error {
+	query := "Update matches set status=$1, approve_date=current_date where id=$2 and status=$3"
+
+	result, err := tx.ExecContext(
+		ctx,
+		query,
+		match.StatusApproved, // yeni status
+		matchId,
+		match.StatusCompleted, // eski status
+	)
+	if err != nil {
+		log.Printf("Maç Skoru Onaylanırken hata oluştu:%+v", err)
+		return err
+	}
+
+	c, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Maç Skoru Onaylanırken hata oluştu:%+v", err)
+		return err
+	}
+	if c == 0 {
+		return errors.New("Onaylanacak Maç bulunamadı")
 	}
 	return nil
 }

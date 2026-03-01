@@ -52,3 +52,7 @@ type teamRef struct {
 	Score  *int8
 	Winner *bool
 }
+
+type MatchApprovedEvent struct {
+	MatchID string `json:"matchId"`
+}

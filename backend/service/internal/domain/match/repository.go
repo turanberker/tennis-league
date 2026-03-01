@@ -11,4 +11,5 @@ type Repository interface {
 	UpdateMatchDate(ctx context.Context, tx *sql.Tx, data UpdateMatchDate) error
 	GetMatchTeamIds(ctx context.Context, matchId string) *MatchTeamIds
 	UpdateMatchScore(ctx context.Context, tx *sql.Tx, macScore *UpdateMatchScore) error
+	ApproveScore(ctx context.Context, tx *sql.Tx, matchId string) error
 }

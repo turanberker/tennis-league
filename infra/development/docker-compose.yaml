@@ -44,6 +44,18 @@ services:
     depends_on:
       - redis
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
   migrate:
     image: migrate/migrate:4
@@ -63,3 +75,4 @@ services:
 volumes:
   tennis-league-postgres_data:
   tennis-league-redis_data:
+  rabbitmq_data:

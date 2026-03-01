@@ -3,16 +3,19 @@ package match
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"time"
 
 	matchSet "github.com/turanberker/tennis-league-service/internal/domain/matchset"
+	"github.com/turanberker/tennis-league-service/internal/domain/outbox"
 )
 
 type UseCase struct {
-	db              *sql.DB
-	repository      Repository
-	scoreRepository matchSet.Repository
+	db               *sql.DB
+	repository       Repository
+	scoreRepository  matchSet.Repository
+	outboxRepository outbox.Repository
 }
 type SaveScore struct {
 	Team1Score int8
@@ -26,8 +29,43 @@ type SaveMatchScore struct {
 	SuperTie *SaveScore
 }
 
-func NewUseCase(db *sql.DB, r Repository, scoreRepository matchSet.Repository) *UseCase {
-	return &UseCase{db: db, repository: r, scoreRepository: scoreRepository}
+func NewUseCase(db *sql.DB, r Repository,
+	scoreRepository matchSet.Repository,
+	outboxRepository outbox.Repository,
+) *UseCase {
+	return &UseCase{db: db,
+		repository:      r,
+		scoreRepository: scoreRepository, outboxRepository: outboxRepository}
+}
+func (u *UseCase) ApproveScore(ctx context.Context, matchId string) error {
+	tx, err := u.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	err = u.repository.ApproveScore(ctx, tx, matchId)
+
+	if err != nil {
+		return err
+	}
+
+	event := MatchApprovedEvent{
+		MatchID: matchId,
+	}
+	payload, _ := json.Marshal(event)
+	outboxEntity := &outbox.PersistEntity{
+		AggregateType: "match",
+		AggregateID:   matchId,
+		EventType:     "MatchApproved",
+		Payload:       payload,
+	}
+	err = u.outboxRepository.Save(ctx, tx, outboxEntity)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+
 }
 
 func (u *UseCase) UpdateMatchDate(ctx context.Context, matchId string, matchDate *time.Time) error {
