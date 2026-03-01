@@ -31,7 +31,7 @@ func LoadRabbitConfig() *RabbitConfig {
 		Password: getEnv("RABBIT_PASSWORD", "admin123"),
 		Host:     getEnv("RABBIT_HOST", "localhost"),
 		Port:     getEnv("RABBIT_PORT", "5672"),
-		VHost:    getEnv("RABBIT_VHOST", "/"),
+		VHost:    getEnv("RABBIT_VHOST", "%2F"),
 	}
 }
 

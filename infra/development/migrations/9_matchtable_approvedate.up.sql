@@ -1,0 +1,1 @@
+alter table tennisleague.matches add column approve_date  TIMESTAMPTZ NULL;
