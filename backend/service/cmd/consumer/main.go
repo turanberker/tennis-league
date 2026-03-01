@@ -10,7 +10,10 @@ import (
 	"syscall"
 
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/turanberker/tennis-league-service/internal/delivery/message"
+	matchapproved "github.com/turanberker/tennis-league-service/internal/delivery/message/match_approved"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 	"github.com/turanberker/tennis-league-service/internal/platform/messaging"
 )
 
@@ -27,7 +30,14 @@ func main() {
 	}
 	defer rabbit.Close()
 
-	// Queue + binding
+	db, err := database.NewPostgres()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	matchApprovedConsumer := matchapproved.NewMatchApprovedEventConsumer(db)
+	message.RegisterConsumer(rabbit, ctx, matchApprovedConsumer.Consumer)
+	/* // Queue + binding
 	err = rabbit.DeclareQueue("match_events_queue", "MatchApproved")
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +46,7 @@ func main() {
 	err = rabbit.Consume(ctx, "match_events_queue", handleMatchApproved)
 	if err != nil {
 		log.Fatal(err)
-	}
+	} */
 
 	log.Println("📥 Consumer running...")
 

@@ -95,10 +95,10 @@ func (r *MatchRepository) UpdateMatchDate(ctx context.Context, tx *sql.Tx, data 
 func (r *MatchRepository) GetMatchTeamIds(ctx context.Context, matchId string) *match.MatchTeamIds {
 
 	var response match.MatchTeamIds
-	query := "select team_1_id ,team_2_id ,status  from matches m where id=$1"
+	query := "select league_id, team_1_id ,team_2_id ,status  from matches m where id=$1"
 
 	err := r.db.QueryRowContext(ctx, query, matchId).
-		Scan(&response.Team1Id, &response.Team2Id, &response.Status)
+		Scan(&response.LeagueId, &response.Team1Id, &response.Team2Id, &response.Status)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

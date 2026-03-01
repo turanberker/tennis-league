@@ -25,6 +25,7 @@ type UpdateMatchDate struct {
 }
 
 type MatchTeamIds struct {
+	LeagueId string
 	Team1Id string
 	Team2Id string
 	Status  Status

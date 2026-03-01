@@ -76,3 +76,48 @@ func (f *ScoreBoardRepository) GetScoreBoard(ctx context.Context, leagueId strin
 	return fixtures, nil
 
 }
+
+func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, tx *sql.Tx, update scoreboard.IncreaseTeamScore) error {
+	query := `
+		UPDATE score_board
+		SET 
+			played = played+1,
+			won_sets = won_sets + $1,
+			lost_sets = lost_sets + $2,
+			won_games = won_games + $3,
+			lost_games = lost_games + $4,
+			score = score + $5,
+			won = won + CASE WHEN $6 THEN 1 ELSE 0 END,
+			lost = lost + CASE WHEN $6 THEN 0 ELSE 1 END
+		WHERE league_id = $7
+		  AND team_id = $8
+	`
+
+	result, err := tx.ExecContext(
+		ctx,
+		query,
+		update.WonSets,
+		update.LostSets,
+		update.WonGames,
+		update.LostGames,
+		update.IncreaseScore,
+		update.Won,
+		update.LeagueId,
+		update.TeamId,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("scoreboard not found for team %s", update.TeamId)
+	}
+
+	return nil
+}
