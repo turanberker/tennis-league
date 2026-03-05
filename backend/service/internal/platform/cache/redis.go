@@ -1,4 +1,4 @@
-package redis
+package cache
 
 import (
 	"context"
@@ -9,15 +9,11 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/platform"
 )
 
-var redisCtx = context.Background()
-
 func NewRedis() (*redis.Client, error) {
 	config := platform.LoadRedisConfig()
-	addr := fmt.Sprintf(
-		"%s:%s",
-		config.Host,
-		config.Port,
-	)
+
+	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         addr,
 		Password:     config.Password,
@@ -29,8 +25,10 @@ func NewRedis() (*redis.Client, error) {
 		MinIdleConns: 2,
 	})
 
-	// bağlantıyı doğrula
-	if err := rdb.Ping(redisCtx).Err(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := rdb.Ping(ctx).Err(); err != nil {
 		return nil, err
 	}
 

@@ -7,7 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
+	"github.com/turanberker/tennis-league-service/internal/domain/user"
 )
 
 type PlayerHandler struct {
@@ -23,7 +25,7 @@ func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
 	leagues := r.Group("/player")
 	{
 		leagues.GET("/list", h.getAll)
-		leagues.POST("", h.save)
+		leagues.POST("", middleware.RequireRole(user.RoleAdmin), h.save)
 		leagues.GET("/:uuid", h.getByUuid)
 	}
 

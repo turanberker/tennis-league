@@ -28,7 +28,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
   const handleLogin = async () => {
     try {
       setLoading(true);
+
       const res = await login({ email, password });
+
       if (res) {
         onLogin(res);
         toast.current?.show({
@@ -42,7 +44,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({
         toast.current?.show({
           severity: 'error',
           summary: 'Hata',
-          detail:  'Giriş başarısız',
+          detail: 'Giriş başarısız',
           life: 3000,
         });
       }

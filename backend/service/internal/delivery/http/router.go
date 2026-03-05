@@ -5,10 +5,14 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 )
 
-func NewRouter(handlers ...RegisterableHandler) *gin.Engine {
+func NewRouter(auth *middleware.AuthMiddleware,
+	handlers ...RegisterableHandler) *gin.Engine {
 	r := gin.Default()
+	// 🔥 Global JWT kontrolü
+	r.Use(auth.GetToken())
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"}, // frontend URL

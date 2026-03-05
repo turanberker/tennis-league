@@ -1,4 +1,5 @@
 CREATE TABLE tennisleague.leagues (
-    id  VARCHAR(100) PRIMARY KEY,   
-    name  VARCHAR(100) NOT NULL unique
+    id  VARCHAR(100) PRIMARY KEY  DEFAULT gen_random_uuid(),
+    name  VARCHAR(100) NOT NULL unique,
+    fixture_created_date TIMESTAMP
 );

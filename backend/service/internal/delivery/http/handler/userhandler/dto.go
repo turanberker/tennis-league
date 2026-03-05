@@ -8,10 +8,11 @@ type RegisterRequest struct {
 }
 
 type CurrentUserDTO struct {
-	UserID  int64  `json:"userId"`
-	Name    string `json:"name"`
-	Surname string `json:"surname"`
-	Role    string `json:"role"`
+	UserID   string  `json:"userId"`
+	Name     string  `json:"name"`
+	Surname  string  `json:"surname"`
+	Role     string  `json:"role"`
+	PlayerId *string `json:"playerId,omitempty"`
 }
 
 type LoginResponse struct {

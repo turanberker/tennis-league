@@ -1,5 +1,5 @@
 CREATE TABLE tennisleague.teams (
-     id VARCHAR(100) PRIMARY KEY ,
+     id VARCHAR(100) PRIMARY KEY DEFAULT gen_random_uuid(),
      league_id VARCHAR(100) NOT NULL,
      name VARCHAR(100) NOT NULL,
       CONSTRAINT fk_team_league

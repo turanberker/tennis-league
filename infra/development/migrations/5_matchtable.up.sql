@@ -12,8 +12,8 @@ CREATE TABLE tennisleague.matches (
     match_date TIMESTAMPTZ NULL,
 
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-
-       CONSTRAINT fk_matches_league
+    approve_date  TIMESTAMPTZ NULL,
+    CONSTRAINT fk_matches_league
         FOREIGN KEY (league_id)
         REFERENCES tennisleague.leagues(id)
         ON DELETE CASCADE,

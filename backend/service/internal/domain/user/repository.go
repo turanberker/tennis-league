@@ -10,5 +10,5 @@ type Repository interface {
 
 	ExistsByEmail(ctx context.Context, email string) bool
 
-	SaveUser(ctx context.Context, tx *sql.Tx, u *User) (*User, error)
+	SaveUser(ctx context.Context, tx *sql.Tx, u *PersistUser) (string, error)
 }

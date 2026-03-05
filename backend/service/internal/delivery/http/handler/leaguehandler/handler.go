@@ -9,10 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
 	"github.com/turanberker/tennis-league-service/internal/delivery/dto"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
+	"github.com/turanberker/tennis-league-service/internal/domain/user"
 )
 
 type Handler struct {
@@ -32,7 +34,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	leagues := r.Group("/leagues")
 	{
 		leagues.GET("/list", h.getAll)
-		leagues.POST("", h.save)
+		leagues.POST("", middleware.RequireRole(user.RoleAdmin), h.save)
 		leagues.GET("/:id", h.getById)
 		leagues.POST("/:id/create-fixture", h.createFixture)
 		leagues.GET("/:id/teams", h.getTeams)

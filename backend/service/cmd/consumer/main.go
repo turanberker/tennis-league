@@ -37,16 +37,7 @@ func main() {
 
 	matchApprovedConsumer := matchapproved.NewMatchApprovedEventConsumer(db)
 	message.RegisterConsumer(rabbit, ctx, matchApprovedConsumer.Consumer)
-	/* // Queue + binding
-	err = rabbit.DeclareQueue("match_events_queue", "MatchApproved")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = rabbit.Consume(ctx, "match_events_queue", handleMatchApproved)
-	if err != nil {
-		log.Fatal(err)
-	} */
+	
 
 	log.Println("📥 Consumer running...")
 

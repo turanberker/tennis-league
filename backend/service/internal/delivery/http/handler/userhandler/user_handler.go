@@ -2,22 +2,21 @@ package userhandler
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-chi/jwtauth/v5"
-	"github.com/google/uuid"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
+
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
 )
 
 type UserHandler struct {
-	uc        *user.Usecase
-	tokenAuth *jwtauth.JWTAuth
+	uc           *user.Usecase
+	tokenService *middleware.TokenService
 }
 
-func NewUserHandler(uc *user.Usecase, tokenAuth *jwtauth.JWTAuth) *UserHandler {
-	return &UserHandler{uc: uc, tokenAuth: tokenAuth}
+func NewUserHandler(uc *user.Usecase, tokenService *middleware.TokenService) *UserHandler {
+	return &UserHandler{uc: uc, tokenService: tokenService}
 }
 
 func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
@@ -42,7 +41,7 @@ func (h *UserHandler) login(c *gin.Context) {
 		return
 	}
 
-	tokenString, _ := h.createToken(usr)
+	tokenString, _ := h.tokenService.Generate(usr.SessionId)
 	// JWT oluştur
 
 	response := delivery.NewSuccessResponse(LoginResponse{
@@ -52,20 +51,11 @@ func (h *UserHandler) login(c *gin.Context) {
 			Name:    usr.Name,
 			Surname: usr.Surname,
 			Role:    string(usr.Role),
+			PlayerId: usr.PlayerId,
 		},
 	})
 
 	c.JSON(http.StatusOK, response)
-}
-
-func (h *UserHandler) createToken(usr *user.User) (string, error) {
-	_, tokenString, err := h.tokenAuth.Encode(map[string]interface{}{
-		"session_id": uuid.New(),
-		"user_id":    usr.ID,
-		"role":       usr.Role,
-		"exp":        time.Now().Add(time.Hour * 72).Unix(),
-	})
-	return tokenString, err
 }
 
 func (h *UserHandler) register(c *gin.Context) {
@@ -91,7 +81,7 @@ func (h *UserHandler) register(c *gin.Context) {
 		return
 	}
 
-	tokenString, _ := h.createToken(usr)
+	tokenString, _ := h.tokenService.Generate(usr.SessionId)
 	// JWT oluştur
 	response := delivery.NewSuccessResponse(LoginResponse{
 		Token: tokenString,
