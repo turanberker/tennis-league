@@ -3,8 +3,9 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"log"
 
-	"github.com/turanberker/tennis-league-service/internal/domain/user"
+	user "github.com/turanberker/tennis-league-service/internal/domain/user"
 )
 
 type UserRepository struct {
@@ -15,12 +16,13 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.User, error) {
-	u := &user.User{}
-	query := `SELECT u.id, u.email, u.phone, u.name,u.surname, u.password_hash, u.role, p.id as player_id FROM users u 
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.LoginUserCheck, error) {
+	u := &user.LoginUserCheck{}
+	query := `SELECT u.id, u.email,  u.name,u.surname, u.password_hash, u.role, p.id as player_id FROM users u 
 		left join players p on p.user_id=u.id WHERE email=$1`
-	err := r.db.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.Email, &u.Phone, &u.Name, &u.Surname, &u.PasswordHash, &u.Role, &u.PlayerId)
+	err := r.db.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.Email, &u.Name, &u.Surname, &u.PasswordHash, &u.Role, &u.PlayerId)
 	if err != nil {
+		log.Fatal(err)
 		return nil, err
 	}
 	return u, nil
@@ -40,7 +42,42 @@ func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) bool {
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)`
 	err := r.db.QueryRowContext(ctx, query, email).Scan(&exists)
 	if err != nil {
+		log.Fatal(err)
 		return false
 	}
 	return exists
+}
+
+func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
+	
+	query := `SELECT u.id, u.email,  u.name,u.surname,  u.role,u.approved, p.id as player_id FROM users u 
+		left join players p on p.user_id=u.id`
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		log.Println("Player listesi çekerken hata oluştu:", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var users []*user.User
+	for rows.Next() {
+		user := &user.User{}
+		err := rows.Scan(
+			&user.Id, 
+			&user.Email,
+			&user.Name,
+			&user.Surname,
+			&user.Role,
+			&user.Approved,
+			&user.PlayerId)
+
+		if err != nil {
+			log.Println("Playerları maplerken hata oluştu:", err)
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+
 }

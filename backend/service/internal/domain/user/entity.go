@@ -8,10 +8,9 @@ const (
 	RolePlayer      Role = "PLAYER"
 )
 
-type User struct {
+type LoginUserCheck struct {
 	ID           string
 	Email        string
-	Phone        string
 	Name         string
 	Surname      string
 	PasswordHash string
@@ -41,4 +40,14 @@ type RegisterUserInput struct {
 	Name     string
 	Surname  string
 	Password string
+}
+
+type User struct {
+	Id       string
+	Name     string
+	Surname string
+	Email    string
+	Approved bool
+	Role     Role
+	PlayerId *string
 }

@@ -21,6 +21,10 @@ func NewErrorResponse(message string) *Response {
 	}
 }
 
+var (
+	UnexpectedError = NewErrorResponse("Beklenmedik bir hata oluştu")
+)
+
 func NewValidationErrorResponse(errors map[string]string) *Response {
 	return &Response{
 		Success: false,

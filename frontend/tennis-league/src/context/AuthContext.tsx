@@ -22,6 +22,7 @@ interface AuthContextType {
   login: (userData: AuthUser) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 /* ============================= */
@@ -40,12 +41,14 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Yüklenme durumu eklendi
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
       setUser(JSON.parse(stored));
     }
+    setIsLoading(false); // Okuma bitti
   }, []);
 
   const login = (userData: AuthUser) => {
@@ -64,11 +67,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     isAuthenticated: !!user,
+    isLoading, // Bunu da dışarı aktaralım
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!isLoading && children} {/* Yükleme bitene kadar çocukları basma */}
     </AuthContext.Provider>
   );
 }

@@ -11,9 +11,13 @@ import Teams from '../pages/Teams';
 import NewPlayer from '../pages/player/NewPlayer';
 import PlayerDetail from '../pages/player/PlayerDetail';
 import Scoreboard from '../pages/leagues/Scoreboard';
+import { useAuth } from '../context/AuthContext';
+import Users from '../pages/admin/Users';
+import Profile from '../pages/protected/Profile';
 
 export function SidebarLinks() {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Kullanıcı bilgisini alıyoruz
 
   return (
     <div className="flex flex-column gap-2">
@@ -41,6 +45,16 @@ export function SidebarLinks() {
         icon="pi pi-calendar"
         onClick={() => navigate('/matches')}
       />
+
+      {user?.role === 'ADMIN' && (
+        <Button
+          label="Kullanıcı Yönetimi"
+          className="p-button-danger" // Admin olduğu belli olsun diye stil eklenebilir
+          text
+          icon="pi pi-user-edit"
+          onClick={() => navigate('/admin/users')}
+        />
+      )}
     </div>
   );
 }
@@ -59,6 +73,27 @@ export function AppRoutes() {
       <Route path="/players/:uuid" element={<PlayerDetail />} />
 
       <Route path="/matches" element={<Matches />} />
+
+      <Route path="*" element={<Navigate to="/" />} />
+
+      {/* Sadece giriş yapanların erişebileceği sayfalar */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <Users /> {/* Buraya kendi kullanıcı listenin olduğu sayfayı koy */}
+          </ProtectedRoute>
+        }
+      />
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

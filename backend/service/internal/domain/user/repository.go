@@ -6,9 +6,11 @@ import (
 )
 
 type Repository interface {
-	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetByEmail(ctx context.Context, email string) (*LoginUserCheck, error)
 
 	ExistsByEmail(ctx context.Context, email string) bool
 
 	SaveUser(ctx context.Context, tx *sql.Tx, u *PersistUser) (string, error)
+
+	List(ctx context.Context) ([]*User, error)
 }

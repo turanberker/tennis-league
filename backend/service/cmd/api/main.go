@@ -4,11 +4,13 @@ import (
 	"log"
 
 	"github.com/turanberker/tennis-league-service/internal/delivery/http"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/authhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/leaguehandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/matchhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/playerhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/userhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
+	"github.com/turanberker/tennis-league-service/internal/domain/auth"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
@@ -38,10 +40,10 @@ func main() {
 	sessionRepository := redis.NewSessionRepository(redisClient)
 
 	userRepo := postgres.NewUserRepository(db)
-	userUC := user.NewUsecase(db, userRepo, sessionRepository)
-	tokenService := middleware.NewTokenService("tennis")
+	userUC := user.NewUsecase(db, userRepo)
 
-	userHandler := userhandler.NewUserHandler(userUC, tokenService)
+	authUC := auth.NewUsecase(db, userRepo, sessionRepository)
+	tokenService := middleware.NewTokenService("tennis")
 
 	leagueRepository := postgres.NewLeagueRepository(db)
 	teamRepository := postgres.NewTeamRepository(db)
@@ -56,16 +58,19 @@ func main() {
 	matchUseCase := match.NewUseCase(db, matchRepository, matchSetRepository, outboxRepository)
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
 	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc)
+	authHandler := authhandler.NewAuthHandler(authUC, tokenService)
+	userHandler := userhandler.NewUserHandler(userUC)
 
 	playerRepository := postgres.NewPlayerRepository(db)
 	playerUc := player.NewUsecase(db, playerRepository)
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 	r := http.NewRouter(middleware.NewAuthMiddleware("tennis", sessionRepository),
-		userHandler,
+		authHandler,
 		leagueHandler,
 		playerhandler,
-		matchHandler)
+		matchHandler,
+		userHandler)
 
 	log.Println("Server running on :8500")
 	r.Run(":8500")
