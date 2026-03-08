@@ -25,3 +25,9 @@ const (
 	SexMale   Sex = "M"
 	SexFemale Sex = "F"
 )
+
+type ListQueryParameters struct {
+	Name    *string
+	Sex     *Sex
+	HasUser *bool
+}

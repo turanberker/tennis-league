@@ -10,6 +10,10 @@ type Usecase struct {
 	repo Repository
 }
 
+func (u *Usecase) AssignToUser(ctx context.Context, playerId string, userId string) error {
+	return u.repo.AssignToUser(ctx, playerId, userId)
+}
+
 func (u Usecase) GetByUuid(ctx context.Context, uuid string) (*Player, error) {
 	return u.repo.GetByUuid(ctx, uuid)
 }
@@ -27,6 +31,6 @@ func (u *Usecase) Save(ctx context.Context, persistPlayer *PersistPlayer) (*stri
 	return u.repo.Save(ctx, persistPlayer)
 }
 
-func (u *Usecase) List(ctx context.Context, name string) ([]*Player, error) {
-	return u.repo.List(ctx, name)
+func (u *Usecase) List(ctx context.Context, queryParams ListQueryParameters) ([]*Player, error) {
+	return u.repo.List(ctx, queryParams)
 }

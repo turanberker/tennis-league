@@ -3,9 +3,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type PlayerRepository struct {
@@ -40,10 +42,28 @@ func (r *PlayerRepository) GetByUuid(ctx context.Context, uuid string) (*player.
 	return player, nil
 
 }
-func (r *PlayerRepository) List(ctx context.Context, name string) ([]*player.Player, error) {
+func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQueryParameters) ([]*player.Player, error) {
 
-	query := `SELECT id, name, surname, sex, user_id FROM players WHERE name ILIKE '%' || $1 || '%'`
-	rows, err := r.db.QueryContext(ctx, query, name)
+	query := `SELECT id, name, surname, sex, user_id FROM players WHERE 1=1 and `
+	args := []interface{}{}
+	if queryParams.Name != nil {
+		query += query + " and name ILIKE '%' || $1 || '%'"
+		args = append(args, queryParams.Name)
+	}
+
+	if queryParams.Sex != nil {
+		query = query + " and sex $2"
+		args = append(args, queryParams.Sex)
+	}
+	if queryParams.HasUser != nil {
+		if *queryParams.HasUser {
+			query += " AND user_id IS NOT NULL"
+		} else {
+			query += " AND user_id IS NULL"
+		}
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		log.Println("Player listesi çekerken hata oluştu:", err)
 		return nil, err
@@ -74,4 +94,26 @@ func (r *PlayerRepository) Save(ctx context.Context, persistPlayer *player.Persi
 		return nil, err
 	}
 	return &id, nil
+}
+
+func (r *PlayerRepository) AssignToUser(ctx context.Context, playerId string, userId string) error {
+
+	tx, ok := database.GetTxFromContext(ctx)
+	if !ok {
+		panic("Aktif Transaction yok")
+	}
+	query := `UPDATE players SET user_id = $1 WHERE id = $2`
+
+	result, err := tx.ExecContext(ctx, query, userId, playerId)
+	if err != nil {
+		return fmt.Errorf("Oyuncuya kullanıcı ataması başarısız:")
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil || rowsAffected != 1 {
+		return fmt.Errorf("Güncellenecek oyuncu bulunamadı: %w", err)
+	}
+
+	return nil
+
 }

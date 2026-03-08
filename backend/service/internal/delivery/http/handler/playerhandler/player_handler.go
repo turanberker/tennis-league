@@ -6,18 +6,21 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/turanberker/tennis-league-service/internal/delivery"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type PlayerHandler struct {
+	tm *database.TransactionManager
 	uc *player.Usecase
 }
 
-func NewPlayerHandler(uc *player.Usecase) *PlayerHandler {
-	return &PlayerHandler{uc: uc}
+func NewPlayerHandler(uc *player.Usecase, tm *database.TransactionManager) *PlayerHandler {
+	return &PlayerHandler{uc: uc, tm: tm}
 }
 
 func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
@@ -26,6 +29,7 @@ func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
 	{
 		leagues.GET("/list", h.getAll)
 		leagues.POST("", middleware.RequireRole(user.RoleAdmin), h.save)
+		leagues.PUT("/:id", middleware.RequireRole(user.RoleAdmin), h.assignToUser)
 		leagues.GET("/:uuid", h.getByUuid)
 	}
 
@@ -81,9 +85,54 @@ func (h *PlayerHandler) save(c *gin.Context) {
 	}
 }
 
+func (h *PlayerHandler) assignToUser(c *gin.Context) {
+	playerId := c.Param("id")
+	userId := c.Query("userId")
+
+	if userId == "" {
+		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse("UserId boş olamaz"))
+		return
+	}
+	var err error
+	ctx := c.Request.Context()
+
+	ctx, err = h.tm.StartTransaction(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, delivery.NewErrorResponse)
+		return
+	}
+	defer database.DeferRollback(ctx, &err)
+
+	err = h.uc.AssignToUser(ctx, playerId, userId)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse(err.Error()))
+		return // Burada return olduğunda defer çalışır ve Rollback yapar.
+	}
+	err = database.Commit(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, delivery.UnexpectedError)
+		return
+	}
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse("İşlem başarılı"))
+}
+
 func (h *PlayerHandler) getAll(c *gin.Context) {
-	name := c.Query("name") // query param
-	players, _ := h.uc.List(c.Request.Context(), name)
+	var req struct {
+		Name    *string     `form:"name"`
+		Sex     *player.Sex `form:"sex"`
+		HasUser *bool       `form:"hasUser"`
+	}
+
+	// Gin otomatik olarak URL'deki ?name=...&sex=... kısımlarını struct'a doldurur
+	if err := c.ShouldBindQuery(&req); err != nil {
+		errorMessage := delivery.ValidationError(err)
+		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+		return
+	}
+
+	players, _ := h.uc.List(c.Request.Context(), player.ListQueryParameters{Name: req.Name,
+		HasUser: req.HasUser, Sex: req.Sex})
 
 	playersResponse := make([]*PlayerResponse, 0, len(players))
 
