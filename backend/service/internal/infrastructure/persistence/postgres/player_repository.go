@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
@@ -44,41 +46,52 @@ func (r *PlayerRepository) GetByUuid(ctx context.Context, uuid string) (*player.
 }
 func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQueryParameters) ([]*player.Player, error) {
 
-	query := `SELECT id, name, surname, sex, user_id FROM players WHERE 1=1 and `
-	args := []interface{}{}
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	sqlBuilder := psql.Select("id", "name", "surname", "sex", "user_id").From("players")
+
 	if queryParams.Name != nil {
-		query += query + " and name ILIKE '%' || $1 || '%'"
-		args = append(args, queryParams.Name)
+		sqlBuilder = sqlBuilder.Where("name ILIKE ?", "%"+*queryParams.Name+"%")
 	}
 
 	if queryParams.Sex != nil {
-		query = query + " and sex $2"
-		args = append(args, queryParams.Sex)
+		sqlBuilder = sqlBuilder.Where(squirrel.Eq{"sex": *queryParams.Sex})
 	}
 	if queryParams.HasUser != nil {
 		if *queryParams.HasUser {
-			query += " AND user_id IS NOT NULL"
+			sqlBuilder = sqlBuilder.Where("user_id IS NOT NULL")
 		} else {
-			query += " AND user_id IS NULL"
+			sqlBuilder = sqlBuilder.Where("user_id IS NULL")
 		}
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	query, args, err := sqlBuilder.ToSql()
 	if err != nil {
-		log.Println("Player listesi çekerken hata oluştu:", err)
-		return nil, err
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %v", err)
 	}
-	defer rows.Close()
-	var players []*player.Player
-	for rows.Next() {
-		player := &player.Player{}
-		err := rows.Scan(&player.ID, &player.Name, &player.Surname, &player.Sex, &player.UserId)
 
-		if err != nil {
-			log.Println("Playerları maplerken hata oluştu:", err)
-			return nil, err
-		}
-		players = append(players, player)
+	type row struct {
+		ID      string  `db:"id"`
+		Name    string  `db:"name"`
+		Surname string  `db:"surname"`
+		Sex     string  `db:"sex"`
+		UserID  *string `db:"user_id"` // Null gelebileceği için pointer kullanmak güvenlidir
+	}
+	var rowsData []row
+	err = sqlscan.Select(ctx, r.db, &rowsData, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("veritabanı hatası: %v", err)
+	}
+
+	// Gelen ham veriyi kendi Player modelinize dönüştürme (Mapping)
+	var players []*player.Player
+	for _, d := range rowsData {
+		players = append(players, &player.Player{
+			ID:      d.ID,
+			Name:    d.Name,
+			Surname: d.Surname,
+			Sex:     player.Sex(d.Sex),
+			UserId:  d.UserID,
+		})
 	}
 
 	return players, nil

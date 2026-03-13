@@ -5,7 +5,7 @@ type Player struct {
 	Name    string
 	Surname string
 	Sex     Sex
-	UserId  *int64
+	UserId  *string
 }
 
 type PersistPlayer struct {

@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import { Player, CreatePlayerRequest } from '../model/player.model';
+import { Player, CreatePlayerRequest, Sex } from '../model/player.model';
 
 export const getPlayers = async (name?: string): Promise<Player[]> => {
   return axiosClient.get<Player[]>('/player/list', {
@@ -13,4 +13,10 @@ export const getPlayerByUuid = async (uuid: string) => {
 
 export const createPlayer = async (payload: CreatePlayerRequest) => {
   return axiosClient.post<number>('/player', payload);
+};
+
+export const getUnassignedPlayers = async (sex: Sex) => {
+  return axiosClient.get<Player[]>('/player/unassigned-players', {
+    params: { sex: sex },
+  });
 };

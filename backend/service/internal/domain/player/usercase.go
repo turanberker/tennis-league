@@ -23,7 +23,6 @@ func NewUsecase(db *sql.DB, r Repository) *Usecase {
 }
 
 func (u *Usecase) GetById(ctx context.Context, id int64) (*Player, error) {
-
 	return u.repo.GetById(ctx, id)
 }
 
