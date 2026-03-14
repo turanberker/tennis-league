@@ -11,8 +11,8 @@ import (
 func NewRouter(auth *middleware.AuthMiddleware,
 	handlers ...RegisterableHandler) *gin.Engine {
 	r := gin.Default()
-	// 🔥 Global JWT kontrolü
-	r.Use(auth.GetToken())
+	r.Use(middleware.ErrorHandler())
+	r.Use(auth.GetToken()) // 🔥 Global JWT kontrolü
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"}, // frontend URL

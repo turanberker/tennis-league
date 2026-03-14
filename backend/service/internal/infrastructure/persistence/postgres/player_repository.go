@@ -34,7 +34,7 @@ func (r *PlayerRepository) GetById(ctx context.Context, id int64) (*player.Playe
 
 func (r *PlayerRepository) GetByUuid(ctx context.Context, uuid string) (*player.Player, error) {
 	player := &player.Player{}
-	query := `SELECT id,  name, surname, sex, user_id FROM players WHERE uuid=$1`
+	query := `SELECT id,  name, surname, sex, user_id FROM players WHERE id=$1`
 	err := r.db.QueryRowContext(ctx, query, uuid).
 		Scan(&player.ID, &player.Name, &player.Surname, &player.Sex, &player.UserId)
 	if err != nil {

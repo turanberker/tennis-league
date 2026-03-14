@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
 	"github.com/turanberker/tennis-league-service/internal/infrastructure/persistence/redis"
 )
@@ -78,30 +79,31 @@ func (a *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 func RequireRole(roles ...user.Role) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		roleValue, exists := c.Get("Role")
+		roleValue, hasRole := c.Get("Role")
 
 		roleStrings := make([]string, len(roles))
 		for i, r := range roles {
 			roleStrings[i] = string(r)
 		}
 
-		if !exists {
+		if !hasRole {
 
-			c.AbortWithStatusJSON(
-				http.StatusForbidden,
-				delivery.NewErrorResponse(
-					"Kullanıcı şu rollerden birine sahip olmalı: "+strings.Join(roleStrings, ", "),
-				),
-			)
+			// Özel bir business hatası oluşturuyoruz
+			err := &customerror.BusinnesException{
+				StatusCode: http.StatusUnauthorized,
+				ErrorCode:  customerror.INSUFFICIENT_PERMISSIONS,
+				Message:    "Kullanıcı şu rollerden birine sahip olmalı: " + strings.Join(roleStrings, ", "),
+			}
+			c.Error(err) // Hatayı Gin'in listesine ekle
+			c.Abort()    // İsteği durdur (Handler'a gitmesin)
 			return
 		}
 
 		userRole, ok := roleValue.(user.Role)
 		if !ok {
-			c.AbortWithStatusJSON(
-				http.StatusForbidden,
-				delivery.NewErrorResponse("Geçersiz rol tipi"),
-			)
+			err := customerror.NewInternalError(errors.New("Geçersiz Rol Tipi"))
+			c.Error(err)
+			c.Abort()
 			return
 		}
 
@@ -111,8 +113,47 @@ func RequireRole(roles ...user.Role) gin.HandlerFunc {
 				return
 			}
 		}
+		err := &customerror.BusinnesException{
+			StatusCode: http.StatusUnauthorized,
+			ErrorCode:  customerror.INSUFFICIENT_PERMISSIONS,
+			Message:    "Kullanıcı şu rollerden birine sahip olmalı: " + strings.Join(roleStrings, ", "),
+		}
+		c.Error(err) // Hatayı Gin'in listesine ekle
+		c.Abort()    // İsteği durdur (Handler'a gitmesin)
+	}
+}
 
-		c.AbortWithStatusJSON(http.StatusForbidden, delivery.NewErrorResponse(
-			fmt.Sprintf("Kullanıcı %v rollerinden birine sahip olmalı", strings.Join(roleStrings, ", "))))
+func ErrorHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next() // Önce handler çalışsın
+
+		// Eğer bir hata varsa
+		if len(c.Errors) > 0 {
+			err := c.Errors.Last().Err
+
+			// 1. Business Exception Kontrolü
+			var businessErr *customerror.BusinnesException
+			if errors.As(err, &businessErr) {
+				c.JSON(http.StatusUnprocessableEntity, delivery.NewBusinnesErrorResponse(*businessErr))
+				return // Yanıt gönderildikten sonra durmalı
+			}
+
+			// 2. Internal Exception Kontrolü
+			var internalErr *customerror.InternalException
+			if errors.As(err, &internalErr) {
+				// appErr.Message kontrolü yerine direkt RawError kontrolü daha mantıklı olabilir
+				if internalErr.RawError != nil {
+					log.Printf("[SİSTEM HATASI]: %v", internalErr.RawError)
+				}
+
+				// Kullanıcıya teknik detay değil, InternalException içindeki güvenli mesajı dönüyoruz
+				c.JSON(http.StatusInternalServerError, delivery.UnexpectedError)
+				return
+			}
+
+			// 3. Beklenmedik Hatalar
+			log.Printf("[KRİTİK HATA]: %v", err)
+			c.JSON(http.StatusInternalServerError, delivery.UnexpectedError)
+		}
 	}
 }

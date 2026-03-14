@@ -1,7 +1,6 @@
 package userhandler
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,18 +22,19 @@ func NewUserHandler(tm *database.TransactionManager, userUc *user.Usecase) *User
 
 func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 
-	leagues := r.Group("/user")
+	userRoute := r.Group("/user")
 	{
-		leagues.GET("/list", middleware.RequireRole(user.RoleAdmin), h.getAll)
+		userRoute.GET("/list", middleware.RequireRole(user.RoleAdmin), h.getAll)
 	}
 }
 
 func (h *UserHandler) getAll(c *gin.Context) {
 	users, error := h.userUc.GetAll(c.Request.Context())
 	if error != nil {
-		log.Fatal(error.Error())
-		c.JSON(http.StatusInternalServerError, delivery.UnexpectedError)
+		c.Error(error)
+		c.Abort()
 		return
+
 	}
 	usersResponse := make([]*UserResponse, 0, len(users))
 
