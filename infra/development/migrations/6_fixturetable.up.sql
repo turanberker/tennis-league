@@ -19,12 +19,12 @@ CREATE TABLE tennisleague.score_board (
 
     CONSTRAINT fk_scorboard_league
             FOREIGN KEY (league_id)
-            REFERENCES tennisleague.leagues(id)
+            REFERENCES tennisleague.league(id)
             ON DELETE CASCADE,
 
     CONSTRAINT fk_scorboard_team
             FOREIGN KEY (team_id)
-            REFERENCES tennisleague.teams(id)
+            REFERENCES tennisleague.team(id)
             ON DELETE CASCADE
 );
 

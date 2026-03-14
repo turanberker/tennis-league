@@ -20,7 +20,7 @@ func NewTeamPlayerRepository(db *sql.DB) *TeamPlayerRepository {
 }
 
 func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId string) ([]*player.Player, error) {
-	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id FROM team_players tp inner join players p on p.id=tp.player_id WHERE team_id=$1`
+	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id FROM team_player tp inner join player p on p.id=tp.player_id WHERE team_id=$1`
 	rows, err := r.db.QueryContext(ctx, query, teamId)
 
 	if err != nil {
@@ -50,7 +50,7 @@ func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId 
 }
 
 func (r *TeamPlayerRepository) Save(ctx context.Context, tx *sql.Tx, teamPlayer *teamplayer.PersistTeamPlayer) error {
-	query := `INSERT INTO team_players ( team_id, player_id) VALUES ($1, $2) `
+	query := `INSERT INTO team_player ( team_id, player_id) VALUES ($1, $2) `
 
 	_, err := tx.ExecContext(ctx, query, teamPlayer.TeamID, teamPlayer.PlayerID)
 	if err != nil {

@@ -1,10 +1,10 @@
-CREATE TABLE tennisleague.teams (
+CREATE TABLE tennisleague.team (
      id VARCHAR(100) PRIMARY KEY DEFAULT gen_random_uuid(),
      league_id VARCHAR(100) NOT NULL,
      name VARCHAR(100) NOT NULL,
       CONSTRAINT fk_team_league
              FOREIGN KEY (league_id)
-             REFERENCES tennisleague.leagues(id)
+             REFERENCES tennisleague.league(id)
 );
 
 
@@ -15,8 +15,8 @@ CREATE TABLE tennisleague.team_players (
 
     PRIMARY KEY (team_id, player_id),
 
-    CONSTRAINT fk_team_players_team FOREIGN KEY (team_id) REFERENCES tennisleague.teams(id) ON DELETE CASCADE,
-    CONSTRAINT fk_team_players FOREIGN KEY (player_id) REFERENCES tennisleague.players(id)
+    CONSTRAINT fk_team_players_team FOREIGN KEY (team_id) REFERENCES tennisleague.team(id) ON DELETE CASCADE,
+    CONSTRAINT fk_team_players FOREIGN KEY (player_id) REFERENCES tennisleague.player(id)
 );
 
 CREATE OR REPLACE FUNCTION tennisleague.check_team_player_limit()

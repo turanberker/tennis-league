@@ -1,4 +1,4 @@
-CREATE TABLE tennisleague.outbox_events (
+CREATE TABLE tennisleague.outbox_event (
     id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 
     aggregate_type  varchar(100) NOT NULL,   -- örn: 'match'
@@ -14,4 +14,4 @@ CREATE TABLE tennisleague.outbox_events (
     processed_at    timestamp NULL
 );
 
-CREATE INDEX idx_outbox_pending ON tennisleague.outbox_events (status, created_at);
+CREATE INDEX idx_outbox_pending ON tennisleague.outbox_event (status, created_at);

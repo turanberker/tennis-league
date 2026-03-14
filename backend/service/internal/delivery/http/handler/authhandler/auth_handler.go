@@ -8,6 +8,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 
 	"github.com/turanberker/tennis-league-service/internal/domain/auth"
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
 )
 
@@ -38,7 +39,9 @@ func (h *AuthHandler) login(c *gin.Context) {
 
 	usr, err := h.uc.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, delivery.NewErrorResponse("invalid email or password"))
+		c.Error(customerror.NewBussinnessError(http.StatusUnauthorized,
+			 customerror.INVALID_CREDENTIAL, "invalid email or password"))
+		c.Abort()
 		return
 	}
 
@@ -63,7 +66,7 @@ func (h *AuthHandler) register(c *gin.Context) {
 	var req RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-			errorMessage := delivery.ValidationError(err)
+		errorMessage := delivery.ValidationError(err)
 		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
 		return
 	}

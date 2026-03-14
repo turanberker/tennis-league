@@ -1,4 +1,4 @@
-CREATE TABLE tennisleague.players (
+CREATE TABLE tennisleague.player (
     id VARCHAR(100) PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     surname VARCHAR(100) NOT NULL,
@@ -6,9 +6,9 @@ CREATE TABLE tennisleague.players (
     user_id VARCHAR(100) UNIQUE,
     CONSTRAINT fk_player_user
         FOREIGN KEY (user_id)
-        REFERENCES tennisleague.users(id)
+        REFERENCES tennisleague.user(id)
         ON DELETE SET NULL
 );
 
 CREATE  INDEX sex
-ON tennisleague.players (sex);
+ON tennisleague.player (sex);

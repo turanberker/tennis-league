@@ -1,4 +1,4 @@
-CREATE TABLE tennisleague.matches (
+CREATE TABLE tennisleague.matche (
     id varchar(100) PRIMARY KEY DEFAULT gen_random_uuid(),
 
     league_id varchar(100) ,
@@ -15,29 +15,29 @@ CREATE TABLE tennisleague.matches (
     approve_date  TIMESTAMPTZ NULL,
     CONSTRAINT fk_matches_league
         FOREIGN KEY (league_id)
-        REFERENCES tennisleague.leagues(id)
+        REFERENCES tennisleague.league(id)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_matches_team1
         FOREIGN KEY (team_1_id)
-        REFERENCES tennisleague.teams(id)
+        REFERENCES tennisleague.team(id)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_matches_team2
         FOREIGN KEY (team_2_id)
-        REFERENCES tennisleague.teams(id)
+        REFERENCES tennisleague.team(id)
         ON DELETE CASCADE,
 
      CONSTRAINT fk_matches_team_winner
             FOREIGN KEY (winner_id)
-            REFERENCES tennisleague.teams(id)
+            REFERENCES tennisleague.team(id)
             ON DELETE CASCADE,
 
     CONSTRAINT chk_different_teams
         CHECK (team_1_id <> team_2_id)
 );
 
-CREATE TABLE tennisleague.match_sets (
+CREATE TABLE tennisleague.match_set (
     id varchar(100) PRIMARY KEY DEFAULT gen_random_uuid(),
 
     match_id varchar(100) NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE tennisleague.match_sets (
 
     CONSTRAINT fk_set_match
         FOREIGN KEY (match_id)
-        REFERENCES tennisleague.matches(id)
+        REFERENCES tennisleague.matche(id)
         ON DELETE CASCADE,
 
     CONSTRAINT uq_fixture_set UNIQUE (match_id, set_number),
