@@ -134,7 +134,7 @@ func ErrorHandler() gin.HandlerFunc {
 			// 1. Business Exception Kontrolü
 			var businessErr *customerror.BusinnesException
 			if errors.As(err, &businessErr) {
-				c.JSON(http.StatusUnprocessableEntity, delivery.NewBusinnesErrorResponse(*businessErr))
+				c.JSON(businessErr.StatusCode, delivery.NewBusinnesErrorResponse(*businessErr))
 				return // Yanıt gönderildikten sonra durmalı
 			}
 

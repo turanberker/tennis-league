@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net/http"
 
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
@@ -25,7 +27,8 @@ func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match
 	return u.matchRepo.GetFixtureByLeagueId(context, leagueId)
 }
 
-func NewUsecase(db *sql.DB, repo Repository,
+func NewUsecase(db *sql.DB,
+	repo Repository,
 	teamRepo team.Repository,
 	matchRepo match.Repository,
 	scoreBoardRepo scoreboard.Repository) *Usecase {
@@ -91,13 +94,16 @@ func (u *Usecase) GetAll(ctx context.Context, name string) ([]*League, error) {
 }
 
 func (u *Usecase) Save(ctx context.Context, persistLeague *PersistLeague) (*string, error) {
-	if persistLeague.Name == "" {
-		return nil, ErrNameFieldRequired
+	id, err := u.repo.Save(ctx, persistLeague)
+	if err != nil {
+		if errors.Is(err, LEAGE_WITH_NAME_EXISTS) {
+			return nil, customerror.NewBussinnessError(http.StatusConflict,
+				customerror.ErrLeagueAlreadyExists, "Bu isimli bir lig tanımlıdır")
+		}
+	} else {
+		return nil, customerror.NewInternalError(err)
 	}
 
-	if len(persistLeague.Name) < 5 || len(persistLeague.Name) > 75 {
-		return nil, ErrNameLenghtError
-	}
+	return id, nil
 
-	return u.repo.Save(ctx, persistLeague)
 }

@@ -102,7 +102,8 @@ func (h *PlayerHandler) assignToUser(c *gin.Context) {
 
 	ctx, err = h.tm.StartTransaction(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, delivery.NewErrorResponse)
+		c.Error(err)
+		c.Abort()
 		return
 	}
 	defer database.DeferRollback(ctx, &err)
@@ -110,12 +111,14 @@ func (h *PlayerHandler) assignToUser(c *gin.Context) {
 	err = h.uc.AssignToUser(ctx, playerId, req.UserId)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse(err.Error()))
-		return // Burada return olduğunda defer çalışır ve Rollback yapar.
+		c.Error(err)
+		c.Abort()
+		return
 	}
 	err = database.Commit(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, delivery.UnexpectedError)
+		c.Error(err)
+		c.Abort()
 		return
 	}
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse("İşlem başarılı"))

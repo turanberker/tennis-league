@@ -7,9 +7,11 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
 	"github.com/turanberker/tennis-league-service/internal/delivery/dto"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
@@ -78,8 +80,15 @@ func (h *Handler) save(c *gin.Context) {
 		Name string `json:"name" binding:"min=3,max=75,required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
 	}
 
 	persistLeague := &league.PersistLeague{
@@ -89,8 +98,9 @@ func (h *Handler) save(c *gin.Context) {
 	leagueId, err := h.uc.Save(c.Request.Context(), persistLeague)
 
 	if err != nil {
-		res := delivery.NewErrorResponse(err.Error())
-		c.JSON(http.StatusOK, res)
+		c.Error(err)
+		c.Abort()
+		return
 	} else {
 		res := delivery.NewSuccessResponse(leagueId)
 		c.JSON(http.StatusOK, res)
@@ -121,8 +131,8 @@ func (h *Handler) getTeams(c *gin.Context) {
 	teams, err := h.teamUc.GetByLeagueId(c.Request.Context(), idParam)
 
 	if err != nil {
-		res := delivery.NewErrorResponse("Takımlar Çekilemedi")
-		c.JSON(http.StatusOK, res)
+		c.Error(err)
+		c.Abort()
 		return
 	}
 
@@ -144,8 +154,15 @@ func (h *Handler) newTeam(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
 	}
 
 	id, err := h.teamUc.Save(c.Request.Context(), &team.CreateTeamRequest{
@@ -154,9 +171,8 @@ func (h *Handler) newTeam(c *gin.Context) {
 		PlayerIDs: req.PlayerIDs,
 	})
 	if err != nil {
-
-		res := delivery.NewErrorResponse(err.Error())
-		c.JSON(http.StatusOK, res)
+		c.Error(err)
+		c.Abort()
 		return
 	}
 

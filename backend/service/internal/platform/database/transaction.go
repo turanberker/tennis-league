@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 )
 
 type contextKey string
@@ -12,7 +14,7 @@ const (
 	txKey contextKey = "db_transaction"
 )
 
-var CAN_NOT_START_TRANSACTION = errors.New("Transaction Error")
+var CAN_NOT_START_TRANSACTION = customerror.NewInternalError(errors.New("Transaction Error"))
 
 type TransactionManager struct {
 	db *sql.DB

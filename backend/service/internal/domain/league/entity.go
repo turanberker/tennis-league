@@ -1,6 +1,9 @@
 package league
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type League struct {
 	ID                 string
@@ -11,3 +14,5 @@ type League struct {
 type PersistLeague struct {
 	Name string
 }
+
+var LEAGE_WITH_NAME_EXISTS = errors.New("league name already exists")

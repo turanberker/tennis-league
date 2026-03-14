@@ -71,6 +71,7 @@ export default function Leagues() {
         <Button
           label="Yeni Lig Tanımla"
           icon="pi pi-plus"
+          size="small"
           onClick={() => setCreateVisible(true)}
         />
       </div>
