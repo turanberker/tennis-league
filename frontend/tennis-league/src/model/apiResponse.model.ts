@@ -1,8 +1,12 @@
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean;
   data?: T;
-  error?: string;
-  errorCode?: string;
+  error?: ErrorDetail;
+}
+
+export interface ErrorDetail {
+  code: string;
+  message: string;
 }
 
 export class ApiError extends Error {

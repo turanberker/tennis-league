@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { showGlobalError } from './toastService';
-import { ApiError } from '../model/apiResponse.model';
+import { ApiError, ApiResponse } from '../model/apiResponse.model';
 
 const instance = axios.create({
   baseURL: 'http://localhost:8500',
@@ -19,39 +19,51 @@ instance.interceptors.request.use((config) => {
 // RESPONSE INTERCEPTOR
 instance.interceptors.response.use(
   (response) => {
-    const apiResponse = response.data;
+    // DURUM 1: HTTP 200-299 arası bir kod döndü
+    const apiResponse = response.data as ApiResponse<any>;
 
+    // Backend 200 dönse bile kendi içinde success: false göndermiş olabilir
     if (!apiResponse.success) {
-      const message =
-        apiResponse.error || apiResponse.errorDetail || 'Bilinmeyen hata';
-
-      showGlobalError(message); // 🔥 burada toast
-
-      throw new ApiError(message, response.status);
+      const errorDetail = apiResponse.error || {
+        code: 'UNKNOWN',
+        message: 'İşlem başarısız',
+      };
+      showGlobalError(errorDetail.message);
+      return Promise.reject(
+        new ApiError(errorDetail.message, response.status, errorDetail.code),
+      );
     }
 
-    return apiResponse.data;
+    return apiResponse.data; // Componente sadece 'T' tipindeki data gider
   },
   (error: AxiosError<any>) => {
-    if (error.response) {
-      const status = error.response.status;
-      const message =
-        error.response.data?.error ||
-        error.response.data?.message ||
-        'Sunucu hatası';
+    // DURUM 2: HTTP 400, 500 vb. bir hata kodu döndü
+    let message = 'Bir hata oluştu';
+    let status = error.response?.status;
+    let code = 'NETWORK_ERROR';
 
-      if (status === 401) {
-        localStorage.removeItem('user');
-        window.location.href = '/';
+    if (error.response && error.response.data) {
+      // Backend 400 dönerken senin ApiResponse formatını gönderiyor:
+      // { success: false, error: { code: '...', message: '...' } }
+      const apiResponse = error.response.data;
+
+      if (apiResponse.error) {
+        message = apiResponse.error.message;
+        code = apiResponse.error.code;
+      } else if ((apiResponse as any).message) {
+        // Eğer backend bazen standart Error objesi dönerse (fallback)
+        message = (apiResponse as any).message;
       }
-
-      showGlobalError(message); // 🔥 burada toast
-
-      throw new ApiError(message, status);
+    } else if (error.request) {
+      message =
+        'Sunucuya ulaşılamıyor. Lütfen internet bağlantınızı kontrol edin.';
     }
 
-    showGlobalError('Network hatası');
-    throw new ApiError('Network hatası');
+    // 🔥 Toast gösterimi
+    showGlobalError(message);
+
+    // Hataları her zaman Promise.reject ile fırlatmak asenkron akışı korur
+    return Promise.reject(new ApiError(message, status, code));
   },
 );
 

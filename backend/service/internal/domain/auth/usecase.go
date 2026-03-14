@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net/http"
 
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/session"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
 	"golang.org/x/crypto/bcrypt"
@@ -68,6 +70,13 @@ func (u Usecase) RegisterUser(ctx context.Context, req *user.RegisterUserInput) 
 		Role:         user.RolePlayer,
 	})
 	if err != nil {
+		if errors.Is(err, user.USER_EXISTS_ERROR) {
+			return nil, &customerror.BusinnesException{
+				StatusCode: http.StatusOK,
+				ErrorCode:  customerror.ErrCodeEmailAlreadyExists, // "EMAIL_ALREADY_EXISTS"
+				Message:    "Bu e-posta adresiyle daha önce kayıt olunmuş.",
+			}
+		}
 		return nil, err
 	}
 

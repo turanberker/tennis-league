@@ -3,8 +3,10 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 
+	"github.com/lib/pq"
 	user "github.com/turanberker/tennis-league-service/internal/domain/user"
 )
 
@@ -33,7 +35,18 @@ func (r *UserRepository) SaveUser(ctx context.Context, tx *sql.Tx, u *user.Persi
 	query := `INSERT INTO "user" (email,  name, surname,password_hash, role) 
 	VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	err := tx.QueryRowContext(ctx, query, u.Email, u.Name, u.Surname, u.PasswordHash, u.Role).Scan(&userId)
-	return userId, err
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			// 23505: unique_violation (Benzersizlik kısıtlaması ihlali)
+			if pqErr.Code == "23505" {
+				return "", user.USER_EXISTS_ERROR
+			}
+		}
+		return "", err
+	}
+
+	return userId, nil
 }
 
 func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) bool {

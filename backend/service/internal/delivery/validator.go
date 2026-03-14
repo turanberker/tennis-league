@@ -12,14 +12,14 @@ func ValidationError(err error) map[string]string {
 	if ve, ok := err.(validator.ValidationErrors); ok {
 		for _, fe := range ve {
 			field := strings.ToLower(fe.Field())
-			errors[field] = validationMessage(fe)
+			errors[field] = ValidationMessage(fe)
 		}
 	}
 
 	return errors
 }
 
-func validationMessage(fe validator.FieldError) string {
+func ValidationMessage(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
 		return "Bu alan zorunludur"

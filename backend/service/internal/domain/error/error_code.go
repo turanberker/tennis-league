@@ -1,4 +1,6 @@
 package customerror
 
+var CONSTRAINT_VALIDATION = "CONTS_100"
 var INSUFFICIENT_PERMISSIONS = "AUTH_100"
 var INVALID_CREDENTIAL = "AUTH_101"
+var ErrCodeEmailAlreadyExists = "AUTH_102"

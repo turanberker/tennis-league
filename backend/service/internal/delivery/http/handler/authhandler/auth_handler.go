@@ -1,9 +1,11 @@
 package authhandler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 
@@ -40,7 +42,7 @@ func (h *AuthHandler) login(c *gin.Context) {
 	usr, err := h.uc.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		c.Error(customerror.NewBussinnessError(http.StatusUnauthorized,
-			 customerror.INVALID_CREDENTIAL, "invalid email or password"))
+			customerror.INVALID_CREDENTIAL, "invalid email or password"))
 		c.Abort()
 		return
 	}
@@ -66,9 +68,15 @@ func (h *AuthHandler) register(c *gin.Context) {
 	var req RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
-		return
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
 	}
 
 	usr, err := h.uc.RegisterUser(
@@ -82,8 +90,16 @@ func (h *AuthHandler) register(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		var be *customerror.BusinnesException
+		if errors.As(err, &be) {
+			c.Error(be)
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
 	}
 
 	tokenString, _ := h.tokenService.Generate(usr.SessionId)

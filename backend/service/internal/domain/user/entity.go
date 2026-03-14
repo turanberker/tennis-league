@@ -1,5 +1,7 @@
 package user
 
+import "errors"
+
 type Role string
 
 const (
@@ -45,9 +47,11 @@ type RegisterUserInput struct {
 type User struct {
 	Id       string
 	Name     string
-	Surname string
+	Surname  string
 	Email    string
 	Approved bool
 	Role     Role
 	PlayerId *string
 }
+
+var USER_EXISTS_ERROR = errors.New("Bu Kullanıcı Mevcut")
