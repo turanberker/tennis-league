@@ -2,18 +2,34 @@ package user
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type Usecase struct {
-	db   *sql.DB
+	tm   *database.TransactionManager
 	repo Repository
 }
 
-func NewUsecase(db *sql.DB, r Repository) *Usecase {
-	return &Usecase{db: db, repo: r}
+func (u *Usecase) SetUserAsCoordinator(ctx context.Context, userId string) error {
+	// 1. İşlemi atomik hale getirmek için Transaction başlatıyoruz
+	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
+
+		// 4. Aksiyon: Rolü güncelle
+		err := u.repo.UpdateRoleAsCoordinator(txCtx, userId)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
-func (u *Usecase) GetAll(ctx context.Context) ([]*User,error){
+func NewUsecase(r Repository,
+	tm *database.TransactionManager) *Usecase {
+	return &Usecase{repo: r, tm: tm}
+}
+
+func (u *Usecase) GetAll(ctx context.Context) ([]*User, error) {
 	return u.repo.List(ctx)
 }

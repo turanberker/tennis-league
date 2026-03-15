@@ -4,7 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
+	"time"
 
+	"github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/lib/pq"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
 )
@@ -17,9 +22,7 @@ func NewLeagueRepository(db *sql.DB) *LeagueRepository {
 	return &LeagueRepository{db: db}
 }
 
-
-
-func (r *LeagueRepository) GetById(ctx context.Context, id int64) (*league.League, error) {
+func (r *LeagueRepository) GetById(ctx context.Context, id string) (*league.League, error) {
 	league := &league.League{}
 	query := `SELECT id, name,fixture_created_date FROM league WHERE id=$1`
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&league.ID, &league.Name, &league.FixtureCreatedDate)
@@ -29,26 +32,53 @@ func (r *LeagueRepository) GetById(ctx context.Context, id int64) (*league.Leagu
 	return league, err
 }
 
-func (r *LeagueRepository) GetAll(ctx context.Context, name string) ([]*league.League, error) {
-	query := `SELECT id, name, fixture_created_date FROM league WHERE name ILIKE '%' || $1 || '%'`
-	rows, err := r.db.QueryContext(ctx, query, name)
+func (r *LeagueRepository) GetAll(ctx context.Context, name *string) ([]*league.League, error) {
+
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	sqlBuilder := psql.Select("l.id",
+		"l.name",
+		"l.fixture_created_date",
+		"COALESCE(string_agg(concat(u.name, ' ', u.surname), ','),'') AS coordinators",
+		"COALESCE(string_agg(u.id,','),'') as coordinator_user_ids ").
+		From("league l").
+		LeftJoin("league_coordinator lc ON lc.league_id = l.id").
+		LeftJoin("\"user\" u ON u.id = lc.user_id").
+		GroupBy("l.id", "l.name", "l.fixture_created_date")
+	if name != nil && len(*name) > 0 {
+		sqlBuilder = sqlBuilder.Where("l.name ILIKE ?", "%"+*name+"%")
+	}
+
+	query, args, err := sqlBuilder.ToSql()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %v", err)
 	}
 
-	defer rows.Close()
+	type row struct {
+		ID                 string     `db:"id"`
+		Name               string     `db:"name"`
+		FixtureCreatedDate *time.Time `db:"fixture_created_date"`
+		Coordinators       string     `db:"coordinators"`
+		CoordinatorIds     string     `db:"coordinator_user_ids"`
+	}
+	var rowsData []row
+	err = sqlscan.Select(ctx, r.db, &rowsData, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("veritabanı hatası: %v", err)
+	}
+
 	var leagues []*league.League
+	for _, d := range rowsData {
 
-	for rows.Next() {
-		league := &league.League{}
-		err := rows.Scan(&league.ID, &league.Name, &league.FixtureCreatedDate)
-
-		if err != nil {
-			return nil, err
-		}
-		leagues = append(leagues, league)
-
+		leagues = append(leagues, &league.League{
+			ID:                 d.ID,
+			Name:               d.Name,
+			FixtureCreatedDate: d.FixtureCreatedDate,
+			Cootrinators:       strings.Split(d.Coordinators, ","),
+			CoordinatorUserId:  strings.Split(d.CoordinatorIds, ","),
+		})
 	}
+
 	return leagues, nil
 }
 

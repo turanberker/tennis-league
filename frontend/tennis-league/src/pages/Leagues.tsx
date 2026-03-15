@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Card } from 'primereact/card';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
 import { createFixture, getLeagues, saveLeague } from '../api/leagueService';
 import * as yup from 'yup';
@@ -13,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Sidebar } from 'primereact/sidebar';
+import { formatDate } from '../helper/date.helper';
 
 // ================= TYPES =================
 
@@ -32,8 +32,8 @@ const schema = yup.object({
 export default function Leagues() {
   const navigate = useNavigate();
   const [leagues, setLeagues] = useState<League[]>([]);
+  const [selectedLeague, setSelectedLeague] = useState<League | null>();
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [createVisible, setCreateVisible] = useState<boolean>(false);
   const toast = useRef<Toast>(null);
 
@@ -48,17 +48,14 @@ export default function Leagues() {
     defaultValues: { name: '' },
   });
 
-  const loadLeagues = () => {
+  const loadLeagues = async () => {
     setLoading(true);
-    getLeagues()
-      .then((data: League[]) => {
-        setLeagues(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('League fetch error:', err);
-        setError('Ligler yüklenemedi');
-      });
+    // Hata olursa 'data' null gelecek ve alt satırlar patlamayacak
+    const data = await getLeagues();
+    if (data) {
+      setLeagues(data);
+    }
+    setLoading(false); // Hata ol
   };
 
   useEffect(() => {
@@ -74,31 +71,74 @@ export default function Leagues() {
           size="small"
           onClick={() => setCreateVisible(true)}
         />
+        <Button
+          disabled={!selectedLeague}
+          rounded
+          text
+          label="Takımlar & Oyuncular"
+          icon="pi pi-chart-bar"
+          outlined
+          size="small"
+          onClick={() => handleTeams()}
+        />
+
+        <Button
+          disabled={!selectedLeague || !selectedLeague.fixtureCreatedDate}
+          rounded
+          text
+          label="Fikstürü Gör"
+          icon="pi pi-calendar"
+          outlined
+          size="small"
+          onClick={() => handleFixtures()}
+        />
+        <Button
+          rounded
+          disabled={!selectedLeague || !selectedLeague.fixtureCreatedDate}
+          text
+          label="Puan Durumu"
+          icon="pi pi-chart-bar"
+          outlined
+          size="small"
+          onClick={() => handleStandings()}
+        />
+        <Button
+          rounded
+          disabled={!selectedLeague || !!selectedLeague.fixtureCreatedDate}
+          text
+          label="Fikstür Oluştur"
+          icon="pi pi-plus-circle"
+          severity="success"
+          size="small"
+          onClick={() => handleCreateFixture()}
+        />
       </div>
     );
   };
 
-  const handleStandings = (league: League) => {
-    navigate(`/leagues/${league.id}/standings`);
+  const handleStandings = () => {
+    navigate(`/leagues/${selectedLeague!.id}/standings`);
   };
 
-  const handleFixtures = (league: League) => {
-    navigate(`/leagues/${league.id}/fixtures`);
+  const handleFixtures = () => {
+    navigate(`/leagues/${selectedLeague!.id}/fixtures`);
   };
 
-  const handleTeams = (league: League) => {
-    navigate(`/leagues/${league.id}/teams`);
+  const handleTeams = () => {
+    navigate(`/leagues/${selectedLeague!.id}/teams`);
   };
 
-  const handleCreateFixture = async (league: League) => {
-    await createFixture(league.id);
-    toast.current?.show({
-      severity: 'success',
-      summary: 'Başarılı',
-      detail: 'Fikstür başarıyla oluşturuldu',
-      life: 3000,
-    });
-    loadLeagues();
+  const handleCreateFixture = async () => {
+    const data = await createFixture(selectedLeague!.id);
+    if (data) {
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Başarılı',
+        detail: 'Fikstür başarıyla oluşturuldu',
+        life: 3000,
+      });
+      loadLeagues();
+    }
   };
 
   const onSubmit = async (data: FormData) => {
@@ -126,51 +166,6 @@ export default function Leagues() {
     }
   };
 
-  const getButtons = (league: League) => {
-    const hasFixture = !!league.fixtureCreatedDate;
-
-    return (
-      <div className="flex gap-2">
-        <Button
-          rounded
-          text
-          label="Takımlar & Oyuncular"
-          icon="pi pi-chart-bar"
-          outlined
-          onClick={() => handleTeams(league)}
-        />
-        {hasFixture ? (
-          <>
-            <Button
-              rounded
-              text
-              label="Fikstürü Gör"
-              icon="pi pi-calendar"
-              outlined
-              onClick={() => handleFixtures(league)}
-            />
-            <Button
-              rounded
-              text
-              label="Puan Durumu"
-              icon="pi pi-chart-bar"
-              outlined
-              onClick={() => handleStandings(league)}
-            />
-          </>
-        ) : (
-          <Button
-            rounded
-            text
-            label="Fikstür Oluştur"
-            icon="pi pi-plus-circle"
-            severity="success"
-            onClick={() => handleCreateFixture(league)}
-          />
-        )}
-      </div>
-    );
-  };
   const customIcons = (
     <React.Fragment>
       <Button
@@ -190,8 +185,6 @@ export default function Leagues() {
         title="Ligler"
         subTitle="Mevcut ligleri görüntüleyebilir veya yeni lig tanımlayabilirsiniz."
       >
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-
         <DataTable
           value={leagues}
           header={header}
@@ -199,12 +192,19 @@ export default function Leagues() {
           emptyMessage="Lig bulunamadı"
           loading={loading}
           tableStyle={{ minWidth: '50rem' }}
+          dataKey="id"
+          selectionMode="single"
+          selection={selectedLeague!}
+          onSelectionChange={(e) => setSelectedLeague(e.value as League)}
         >
-          <Column field="name" header="Lig Adı" />
           <Column
-            header="İşlem"
-            body={(rowData) => getButtons(rowData)}
+            selectionMode="single"
+            headerStyle={{ width: '3rem' }}
           ></Column>
+          <Column field="name" header="Lig Adı" />
+          <Column field="coordinators" header="Lig Başlangıç Zamanı" />
+          <Column  body={(league:League)=>formatDate(league.fixtureCreatedDate) } header="Lig Başlangıç Tarihi"/>
+          <Column  body={(league:League)=>league.coordinators.join(",")} header="Koordinatörler"/>
         </DataTable>
       </Card>
 

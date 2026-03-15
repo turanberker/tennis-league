@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/lib/pq"
 	user "github.com/turanberker/tennis-league-service/internal/domain/user"
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type UserRepository struct {
@@ -92,4 +94,26 @@ func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
 	}
 	return users, nil
 
+}
+
+func (r *UserRepository) UpdateRoleAsCoordinator(ctx context.Context, userId string) error {
+	query := `UPDATE "user" SET role = $1 WHERE id = $2 and role = $3`
+
+	// 1. Context içinde bir transaction var mı kontrol et
+	tx, ok := database.GetTxFromContext(ctx)
+
+	var err error
+	if ok {
+		// Transaction varsa onun üzerinden çalıştır
+		_, err = tx.ExecContext(ctx, query, user.RoleCoordinator, userId, user.RolePlayer)
+	} else {
+		// Transaction yoksa ana DB bağlantısı üzerinden çalıştır
+		_, err = r.db.ExecContext(ctx, query, user.RoleCoordinator, userId, user.RolePlayer)
+	}
+
+	if err != nil {
+		return fmt.Errorf("kullanıcı rolü güncellenirken hata: %w", err)
+	}
+
+	return nil
 }

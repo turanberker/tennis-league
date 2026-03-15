@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { showGlobalError } from './toastService';
 import { ApiError, ApiResponse } from '../model/apiResponse.model';
 
-const instance = axios.create({
+export const instance = axios.create({
   baseURL: 'http://localhost:8500',
   headers: { 'Content-Type': 'application/json' },
 });
@@ -19,51 +19,28 @@ instance.interceptors.request.use((config) => {
 // RESPONSE INTERCEPTOR
 instance.interceptors.response.use(
   (response) => {
-    // DURUM 1: HTTP 200-299 arası bir kod döndü
     const apiResponse = response.data as ApiResponse<any>;
-
-    // Backend 200 dönse bile kendi içinde success: false göndermiş olabilir
-    if (!apiResponse.success) {
-      const errorDetail = apiResponse.error || {
-        code: 'UNKNOWN',
-        message: 'İşlem başarısız',
-      };
-      showGlobalError(errorDetail.message);
-      return Promise.reject(
-        new ApiError(errorDetail.message, response.status, errorDetail.code),
-      );
+    if (apiResponse.success) {
+      return apiResponse.data;
     }
 
-    return apiResponse.data; // Componente sadece 'T' tipindeki data gider
+    // Backend success: false döndü
+    showGlobalError(apiResponse.error?.message || 'İşlem başarısız');
+
+    // 🔥 KRİTİK: Reject fırlatmak yerine null dönüyoruz.
+    // Böylece .tsx tarafında .catch yazmaya gerek kalmıyor.
+    return null;
   },
   (error: AxiosError<any>) => {
-    // DURUM 2: HTTP 400, 500 vb. bir hata kodu döndü
-    let message = 'Bir hata oluştu';
-    let status = error.response?.status;
-    let code = 'NETWORK_ERROR';
+    const message = error.response?.data?.error?.message || 'Sistem hatası';
 
-    if (error.response && error.response.data) {
-      // Backend 400 dönerken senin ApiResponse formatını gönderiyor:
-      // { success: false, error: { code: '...', message: '...' } }
-      const apiResponse = error.response.data;
-
-      if (apiResponse.error) {
-        message = apiResponse.error.message;
-        code = apiResponse.error.code;
-      } else if ((apiResponse as any).message) {
-        // Eğer backend bazen standart Error objesi dönerse (fallback)
-        message = (apiResponse as any).message;
-      }
-    } else if (error.request) {
-      message =
-        'Sunucuya ulaşılamıyor. Lütfen internet bağlantınızı kontrol edin.';
+    if (error.response?.data.code === "AUTH_102") {
+      //burada logout u tetiklemek istiyorum. 
     }
-
-    // 🔥 Toast gösterimi
     showGlobalError(message);
 
-    // Hataları her zaman Promise.reject ile fırlatmak asenkron akışı korur
-    return Promise.reject(new ApiError(message, status, code));
+    // 🔥 HTTP hatalarında da (401, 500 vb.) sessiz kalıyoruz
+    return null;
   },
 );
 

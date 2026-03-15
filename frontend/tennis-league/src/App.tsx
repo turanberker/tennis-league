@@ -8,13 +8,10 @@ import { Toast } from 'primereact/toast';
 
 import 'primeflex/primeflex.css';
 import LoginDialog from './components/auth/LoginDialog';
-import RegisterDialog, {
-  RegisterForm,
-} from './components/auth/RegisterDialog';
+import RegisterDialog, { RegisterForm } from './components/auth/RegisterDialog';
 import { SidebarLinks, AppRoutes } from './router/AppRouter';
 import { AuthProvider, useAuth, AuthUser } from './context/AuthContext';
 import { login as loginApi, register as registerApi } from './api/authService';
-import { registerToast } from './api/toastService';
 
 function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -22,21 +19,35 @@ function Layout() {
   const [registerDialogVisible, setRegisterDialogVisible] = useState(false);
   const menuRef = useRef<Menu>(null);
   const toast = useRef<Toast>(null);
-
-useEffect(() => {
-  const handler = (e: any) => {
-    toast.current?.show({
-      severity: 'error',
-      summary: 'Hata',
-      detail: e.detail,
-      life: 3000,
-    });
-  };
-
-  window.addEventListener('api-error', handler);
-  return () => window.removeEventListener('api-error', handler);
-}, []);
   const { user, login, logout, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    // 1. Toast'ı tetikleyen event handler
+    const apiErrorHandler = (e: any) => {
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Hata',
+        detail: e.detail,
+        life: 3000,
+      });
+    };
+
+    // 2. Konsol kirliliğini önleyen handler
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
+      // Eğer hata bizim tanımladığımız ApiError ise veya axios hatasıysa sessize al
+      if (event.reason?.isAxiosError || event.reason?.name === 'ApiError') {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('api-error', apiErrorHandler);
+    window.addEventListener('unhandledrejection', rejectionHandler);
+
+    return () => {
+      window.removeEventListener('api-error', apiErrorHandler);
+      window.removeEventListener('unhandledrejection', rejectionHandler);
+    };
+  }, []);
 
   const profileItems = [
     {
@@ -70,7 +81,11 @@ useEffect(() => {
       {/* HEADER */}
       <header
         className="flex align-items-center justify-content-between px-4"
-        style={{ height: 64, borderBottom: '1px solid #e5e7eb', background: '#fff' }}
+        style={{
+          height: 64,
+          borderBottom: '1px solid #e5e7eb',
+          background: '#fff',
+        }}
       >
         <div className="flex align-items-center gap-3">
           <Button
@@ -79,7 +94,9 @@ useEffect(() => {
             rounded
             onClick={() => setSidebarVisible(true)}
           />
-          <span style={{ fontSize: 20, fontWeight: 600 }}>🎾 Tennis League</span>
+          <span style={{ fontSize: 20, fontWeight: 600 }}>
+            🎾 Tennis League
+          </span>
         </div>
 
         <div className="flex align-items-center gap-2">

@@ -13,4 +13,6 @@ type Repository interface {
 	SaveUser(ctx context.Context, tx *sql.Tx, u *PersistUser) (string, error)
 
 	List(ctx context.Context) ([]*User, error)
+
+	UpdateRoleAsCoordinator(txCtx context.Context, userId string) error
 }

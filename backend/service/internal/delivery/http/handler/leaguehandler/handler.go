@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -17,9 +16,11 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type Handler struct {
+	tm           *database.TransactionManager
 	uc           *league.Usecase
 	teamUc       *team.UseCase
 	scoreBaordUc *scoreboard.UseCase
@@ -38,29 +39,73 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.GET("/list", h.getAll)
 		leagues.POST("", middleware.RequireRole(user.RoleAdmin), h.save)
 		leagues.GET("/:id", h.getById)
-		leagues.POST("/:id/create-fixture", h.createFixture)
+		leagues.POST("/:id/create-fixture",
+			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
+			h.checkIfCoordinator,
+			h.createFixture)
 		leagues.GET("/:id/teams", h.getTeams)
-		leagues.POST("/:id/teams", h.newTeam)
+		leagues.POST("/:id/teams",
+			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
+			h.checkIfCoordinator,
+			h.newTeam)
 		leagues.GET("/:id/fixture", h.getFixture)
 		leagues.GET("/:id/standings", h.getScoreBoard)
+		leagues.POST("/:id/coordinator",
+			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
+			h.checkIfCoordinator, h.newCoordinator)
 	}
 
+}
+
+func (h *Handler) checkIfCoordinator(c *gin.Context) {
+	roleValue, _ := c.Get("Role")
+	leagueId := c.Param("id")
+	userIdValue, _ := c.Get("UserId")
+	userId, _ := userIdValue.(string)
+
+	if role, ok := roleValue.(user.Role); ok {
+
+		// 3. Karşılaştırma yap
+		if role == user.RoleCoordinator {
+			coordinator, err := h.uc.IsUserCoordinator(c.Request.Context(), leagueId, userId)
+			if err != nil {
+				c.Error(customerror.NewInternalError(err))
+				c.Abort()
+			}
+			if coordinator {
+				c.Next()
+			} else {
+				err := &customerror.BusinnesException{
+					StatusCode: http.StatusForbidden,
+					ErrorCode:  customerror.INSUFFICIENT_PERMISSIONS,
+					Message:    "Bu ligde koordinatör değilsiniz",
+				}
+				c.Error(err)
+				c.Abort()
+			}
+		}
+
+		if role == user.RoleAdmin {
+			c.Next()
+		}
+	} else {
+		err := &customerror.BusinnesException{
+			StatusCode: http.StatusForbidden,
+			ErrorCode:  customerror.INSUFFICIENT_PERMISSIONS,
+			Message:    "Bu ligde yetkiniz yok",
+		}
+		c.Error(err)
+		c.Abort()
+	}
 }
 
 func (h *Handler) getById(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// path param
-	idParam := c.Param("id")
+	leagueId := c.Param("id")
 
-	id, err := strconv.ParseInt(idParam, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse("invalid id"))
-
-		return
-	}
-
-	league, err := h.uc.GetById(ctx, id)
+	league, err := h.uc.GetById(ctx, leagueId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusInternalServerError, delivery.NewErrorResponse("league not found"))
@@ -111,8 +156,12 @@ func (h *Handler) save(c *gin.Context) {
 func (h *Handler) getAll(c *gin.Context) {
 
 	name := c.Query("name") // query param
-	leagues, _ := h.uc.GetAll(c.Request.Context(), name)
-
+	leagues, err := h.uc.GetAll(c.Request.Context(), name)
+	if err != nil {
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
+		return
+	}
 	leagueResponse := make([]*LeagueResponse, 0, len(leagues))
 
 	for _, l := range leagues {
@@ -237,7 +286,38 @@ func (h *Handler) getScoreBoard(c *gin.Context) {
 	}
 	res := delivery.NewSuccessResponse(result)
 	c.JSON(http.StatusOK, res)
-	return
+
+}
+
+func (h *Handler) newCoordinator(c *gin.Context) {
+	leagueId := c.Param("id")
+	var req struct {
+		UserId string `form:"userId" binding:"required"`
+	}
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
+	}
+
+	added, err := h.uc.AddNewCoordinator(c.Request.Context(), leagueId, req.UserId)
+
+	if err != nil {
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
+		return
+	}
+
+	res := delivery.NewSuccessResponse(added)
+	c.JSON(http.StatusOK, res)
+
 }
 
 func toLeagueResponse(l *league.League) *LeagueResponse {
@@ -249,6 +329,8 @@ func toLeagueResponse(l *league.League) *LeagueResponse {
 		ID:                 l.ID,
 		Name:               l.Name,
 		FixtureCreatedDate: l.FixtureCreatedDate,
+		Coordinators:       l.Cootrinators,
+		CoordinatorUserIds: l.CoordinatorUserId,
 	}
 }
 

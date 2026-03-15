@@ -78,3 +78,30 @@ func Commit(ctx context.Context) error {
 
 	return tx.Commit()
 }
+
+// TransactionManager içine bu metodu ekle
+func (tm *TransactionManager) WithTransaction(ctx context.Context, fn func(txCtx context.Context) error) (err error) {
+	// 1. KONTROL: Eğer zaten bir transaction varsa, mevcudu kullan ve ÇIK
+	if _, ok := GetTxFromContext(ctx); ok {
+		// Zaten bir tx içindeyiz. Yeni bir tx başlatmıyoruz.
+		// Bu yüzden defer DeferRollback veya Commit de çağırmıyoruz.
+		// Sorumluluk bu transaction'ı başlatan en dıştaki fonksiyondur.
+		return fn(ctx)
+	}
+
+	// 2. Eğer tx yoksa (ilk defa çağrılıyorsa) başlat
+	txCtx, err := tm.StartTransaction(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Bu kısımdan sonrası sadece "Transaction Sahibi" (en dıştaki metod) için çalışır
+	defer DeferRollback(txCtx, &err)
+
+	err = fn(txCtx)
+	if err != nil {
+		return err
+	}
+
+	return Commit(txCtx)
+}

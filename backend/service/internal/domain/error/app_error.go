@@ -41,7 +41,10 @@ type InternalException struct {
 }
 
 func (e *InternalException) Error() string {
-	return e.Error()
+	if e.RawError != nil {
+		return e.RawError.Error() // İçteki gerçek hatanın mesajını döndürür
+	}
+	return "bilinmeyen dahili hata"
 }
 
 func NewInternalError(rawError error) *InternalException {

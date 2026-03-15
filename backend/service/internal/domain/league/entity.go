@@ -9,6 +9,8 @@ type League struct {
 	ID                 string
 	Name               string
 	FixtureCreatedDate *time.Time
+	Cootrinators       []string
+	CoordinatorUserId  []string
 }
 
 type PersistLeague struct {

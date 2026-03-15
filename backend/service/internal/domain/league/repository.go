@@ -6,9 +6,9 @@ import (
 )
 
 type Repository interface {
-	GetById(ctx context.Context, id int64) (*League, error)
+	GetById(ctx context.Context, id string) (*League, error)
 
-	GetAll(ctx context.Context, name string) ([]*League, error)
+	GetAll(ctx context.Context, name *string) ([]*League, error)
 
 	Save(ctx context.Context, persistLeague *PersistLeague) (*string, error)
 

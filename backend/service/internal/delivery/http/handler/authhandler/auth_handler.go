@@ -35,8 +35,15 @@ func (h *AuthHandler) login(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse(err.Error()))
-		return
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
 	}
 
 	usr, err := h.uc.Login(c.Request.Context(), req.Email, req.Password)

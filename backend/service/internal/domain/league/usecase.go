@@ -7,20 +7,64 @@ import (
 	"net/http"
 
 	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
+	"github.com/turanberker/tennis-league-service/internal/domain/leaguecoordinator"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
+	"github.com/turanberker/tennis-league-service/internal/domain/user"
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 var ErrNameFieldRequired = errors.New("Name can not be null or empty string")
 var ErrNameLenghtError = errors.New("Name size must between 5 and 75 characters")
 
 type Usecase struct {
-	db             *sql.DB
-	repo           Repository
-	teamRepo       team.Repository
-	matchRepo      match.Repository
-	scoreBoardRepo scoreboard.Repository
+	db                    *sql.DB
+	tm                    *database.TransactionManager
+	userUsecase           *user.Usecase
+	repo                  Repository
+	teamRepo              team.Repository
+	matchRepo             match.Repository
+	scoreBoardRepo        scoreboard.Repository
+	coordinatorRepository leaguecoordinator.Repository
+}
+
+func (u *Usecase) AddNewCoordinator(ctx context.Context, leagueId string, userId string) (*bool, error) {
+
+	var isAdded bool
+
+	// TransactionManager (tm) üzerinden süreci sarmalıyoruz
+	err := u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
+
+		// 1. Koordinatörü ekle (txCtx kullanarak transaction'ı taşıyoruz)
+		added, err := u.coordinatorRepository.Add(txCtx, leagueId, userId)
+		if err != nil {
+			return err
+		}
+
+		// 2. Eğer eklendiyse rolü güncelle
+		if *added {
+			// DİKKAT: userUsecase de txCtx almalı ki aynı transaction'da kalsın
+			err = u.userUsecase.SetUserAsCoordinator(txCtx, userId)
+			if err != nil {
+				return err
+			}
+			isAdded = true
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &isAdded, nil
+
+}
+
+func (u *Usecase) IsUserCoordinator(context context.Context, leagueId string, userId string) (bool, error) {
+	return u.coordinatorRepository.Exists(context, leagueId, userId)
 }
 
 func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
@@ -28,14 +72,21 @@ func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match
 }
 
 func NewUsecase(db *sql.DB,
+	tm *database.TransactionManager,
 	repo Repository,
 	teamRepo team.Repository,
 	matchRepo match.Repository,
-	scoreBoardRepo scoreboard.Repository) *Usecase {
+	scoreBoardRepo scoreboard.Repository,
+	coordinatorRepository leaguecoordinator.Repository,
+	userUseCase *user.Usecase) *Usecase {
 	return &Usecase{db: db, repo: repo,
-		teamRepo:       teamRepo,
-		matchRepo:      matchRepo,
-		scoreBoardRepo: scoreBoardRepo}
+		teamRepo:              teamRepo,
+		matchRepo:             matchRepo,
+		scoreBoardRepo:        scoreBoardRepo,
+		coordinatorRepository: coordinatorRepository,
+		userUsecase:           userUseCase,
+		tm:                    tm,
+	}
 }
 
 func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) error {
@@ -83,14 +134,14 @@ func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) e
 	return nil
 }
 
-func (u *Usecase) GetById(ctx context.Context, id int64) (*League, error) {
+func (u *Usecase) GetById(ctx context.Context, id string) (*League, error) {
 
 	return u.repo.GetById(ctx, id)
 }
 
 func (u *Usecase) GetAll(ctx context.Context, name string) ([]*League, error) {
 
-	return u.repo.GetAll(ctx, name)
+	return u.repo.GetAll(ctx, &name)
 }
 
 func (u *Usecase) Save(ctx context.Context, persistLeague *PersistLeague) (*string, error) {

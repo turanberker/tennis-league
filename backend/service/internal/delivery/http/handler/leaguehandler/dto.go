@@ -10,6 +10,8 @@ type LeagueResponse struct {
 	ID                 string     `json:"id"`
 	Name               string     `json:"name"`
 	FixtureCreatedDate *time.Time `json:"fixtureCreatedDate,omitempty"`
+	Coordinators       []string   `json:"coordinators"`
+	CoordinatorUserIds []string   `json:"coordinatorUserIds"`
 }
 
 type LeagueFixtureMatchResponse struct {
@@ -28,7 +30,7 @@ type TeamRefResponse struct {
 
 type ScoreBoardResponse struct {
 	TeamRef
-	Order     int `json:"order"`
+	Order     int   `json:"order"`
 	Played    int16 `json:"played"`
 	Won       int16 `json:"won"`
 	Lost      int16 `json:"lost"`

@@ -113,7 +113,7 @@ func (r *PlayerRepository) AssignToUser(ctx context.Context, playerId string, us
 
 	tx, ok := database.GetTxFromContext(ctx)
 	if !ok {
-		panic("Aktif Transaction yok")
+		fmt.Errorf("Aktif Transaction yok")
 	}
 	query := `UPDATE players SET user_id = $1 WHERE id = $2`
 

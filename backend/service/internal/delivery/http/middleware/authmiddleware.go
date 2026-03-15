@@ -40,7 +40,13 @@ func (a *AuthMiddleware) GetToken() gin.HandlerFunc {
 
 		token, err := jwtauth.VerifyToken(a.tokenAuth, tokenString)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			err := &customerror.BusinnesException{
+				StatusCode: http.StatusUnauthorized,
+				ErrorCode:  customerror.ErrSessionExpired,
+				Message:    "Oturumunuz bitmiştir.",
+			}
+			c.Error(err) // Hatayı Gin'in listesine ekle
+			c.Abort()    // İsteği durdur (Handler'a gitmesin)
 			return
 		}
 
@@ -49,8 +55,14 @@ func (a *AuthMiddleware) GetToken() gin.HandlerFunc {
 		// Context'e user bilgilerini koy
 		c.Set("session_id", sessionId)
 		session, err := a.sessionRepository.Get(c, sessionId)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		if err != nil || session ==nil {
+				err := &customerror.BusinnesException{
+				StatusCode: http.StatusUnauthorized,
+				ErrorCode:  customerror.ErrSessionExpired,
+				Message:    "Oturumunuz bitmiştir.",
+			}
+			c.Error(err) // Hatayı Gin'in listesine ekle
+			c.Abort()    // İsteği durdur (Handler'a gitmesin)
 			return
 		}
 		c.Set("Role", user.Role(session.Role))

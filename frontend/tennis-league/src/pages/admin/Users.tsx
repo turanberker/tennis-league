@@ -135,7 +135,7 @@ export default function Users() {
         <DataTable
           value={users}
           selection={selectedUser!}
-          onSelectionChange={(e) => setSelectedUser(e.value as User)} // Tip dönüşümünü (cast) yapın
+          onSelectionChange={(e) => setSelectedUser(e.value as User)} 
           header={header}
           dataKey="id"
           selectionMode="single"
