@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"os"
 	"os/signal"
@@ -28,7 +27,7 @@ func main() {
 		log.Fatal(err)
 	}
 	repository := postgres.NewOutboxRepository(db)
-
+	transactionManager := database.NewTransactionManager(db)
 	// --- Rabbit ---
 	rabbit, err := messaging.NewRabbitMQ()
 	if err != nil {
@@ -48,43 +47,45 @@ func main() {
 			return
 
 		case <-ticker.C:
-			if err := processOutbox(ctx, db, repository, rabbit); err != nil {
-				log.Println("outbox error:", err)
+
+			// 1. Adayları belirle (Kilitleme yok)
+			ids, err := repository.GetPendingIDs(ctx, 10)
+			if err != nil {
+				log.Println("Adaylar çekilemedi:", err)
+				continue
 			}
+
+			for _, id := range ids {
+				// 2. Her aday için kendi küçük dünyasını (Transaction) kur
+				_ = transactionManager.WithTransaction(ctx, func(txCtx context.Context) error {
+
+					// 3. Gerçekten kilitle (Eğer başka publisher kapmadıysa)
+					event, err := repository.GetEventForUpdate(txCtx, id)
+					if err != nil {
+						// Eğer SKIP LOCKED yüzünden boş dönerse veya hata varsa sessizce geç
+						return nil
+					}
+
+					// 4. Publish et ve statüyü PUBLISHED yap
+					return processOutbox(txCtx, event, repository, rabbit)
+				})
+			}
+
 		}
 	}
 }
 
-func processOutbox(ctx context.Context, db *sql.DB, repository outbox.Repository, rabbit *messaging.RabbitMQ) error {
+func processOutbox(ctx context.Context, event *outbox.EventToPublish, repository outbox.Repository, rabbit *messaging.RabbitMQ) error {
 
-	tx, err := db.BeginTx(ctx, nil)
+	err := rabbit.Publish(ctx, event.EventType, event.Payload)
 	if err != nil {
-		return err
+		log.Println("publish failed:", err)
+		repository.IncreaseRetryCount(ctx, event.Id)
+		return nil
 	}
-	defer tx.Rollback()
-	events, err := repository.GetEventsToPublish(ctx, tx)
+	err = repository.UpdateToPublished(ctx, event.Id)
 
-	if err != nil {
-		return err
-	}
-
-	for _, e := range events {
-
-		err := rabbit.Publish(ctx, e.EventType, e.Payload)
-		if err != nil {
-			log.Println("publish failed:", err)
-			repository.IncreaseRetryCount(ctx, tx, e.Id)
-			continue
-		}
-		err = repository.UpdateToPublished(ctx, tx, e.Id)
-
-		if err != nil {
-			return err
-		}
-
-	}
-
-	return tx.Commit()
+	return nil
 }
 
 func handleShutdown(cancel context.CancelFunc) {

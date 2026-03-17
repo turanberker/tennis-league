@@ -56,13 +56,7 @@ func (u Usecase) RegisterUser(ctx context.Context, req *user.RegisterUserInput) 
 		return nil, err
 	}
 
-	tx, err := u.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	userId, err := u.repo.SaveUser(ctx, tx, &user.PersistUser{
+	userId, err := u.repo.SaveUser(ctx, &user.PersistUser{
 		Email:        req.Email,
 		Name:         req.Name,
 		Surname:      req.Surname,
@@ -80,9 +74,6 @@ func (u Usecase) RegisterUser(ctx context.Context, req *user.RegisterUserInput) 
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	session, err := u.sessionRepository.Start(ctx, userId, string(user.RolePlayer), nil)
 	if err != nil {
 		return nil, err

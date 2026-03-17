@@ -40,7 +40,7 @@ func main() {
 	sessionRepository := redis.NewSessionRepository(redisClient)
 	transactionManager := database.NewTransactionManager(db)
 	userRepo := postgres.NewUserRepository(db)
-	userUC := user.NewUsecase(userRepo, transactionManager)
+	userUC := user.NewUsecase(transactionManager, userRepo)
 
 	authUC := auth.NewUsecase(db, userRepo, sessionRepository)
 	tokenService := middleware.NewTokenService("tennis")
@@ -55,17 +55,17 @@ func main() {
 	playerRepository := postgres.NewPlayerRepository(db)
 	leagueCoordinatorRepository := postgres.NewLeagueCoordinatorRepository(db)
 
-	leagueUseCase := league.NewUsecase(db, transactionManager, leagueRepository, teamRepository,
+	leagueUseCase := league.NewUsecase(transactionManager, leagueRepository, teamRepository,
 		matchRepository, scoreBoardRepository, leagueCoordinatorRepository, userUC)
-	teamUseCase := team.NewUseCase(db, teamRepository, teamPlayerRepository)
-	matchUseCase := match.NewUseCase(db, matchRepository, matchSetRepository, outboxRepository)
+	teamUseCase := team.NewUseCase(transactionManager, teamRepository, teamPlayerRepository)
+	matchUseCase := match.NewUseCase(transactionManager, matchRepository, matchSetRepository, outboxRepository)
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
 	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc)
 	authHandler := authhandler.NewAuthHandler(authUC, tokenService)
 	userHandler := userhandler.NewUserHandler(transactionManager, userUC)
 
-	playerUc := player.NewUsecase(db, playerRepository)
-	playerhandler := playerhandler.NewPlayerHandler(playerUc, transactionManager)
+	playerUc := player.NewUsecase(transactionManager, playerRepository)
+	playerhandler := playerhandler.NewPlayerHandler(playerUc)
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 	r := http.NewRouter(middleware.NewAuthMiddleware("tennis", sessionRepository),
 		authHandler,

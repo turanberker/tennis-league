@@ -202,7 +202,6 @@ export default function Leagues() {
             headerStyle={{ width: '3rem' }}
           ></Column>
           <Column field="name" header="Lig Adı" />
-          <Column field="coordinators" header="Lig Başlangıç Zamanı" />
           <Column  body={(league:League)=>formatDate(league.fixtureCreatedDate) } header="Lig Başlangıç Tarihi"/>
           <Column  body={(league:League)=>league.coordinators.join(",")} header="Koordinatörler"/>
         </DataTable>

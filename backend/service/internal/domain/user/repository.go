@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"database/sql"
 )
 
 type Repository interface {
@@ -10,7 +9,7 @@ type Repository interface {
 
 	ExistsByEmail(ctx context.Context, email string) bool
 
-	SaveUser(ctx context.Context, tx *sql.Tx, u *PersistUser) (string, error)
+	SaveUser(ctx context.Context, u *PersistUser) (string, error)
 
 	List(ctx context.Context) ([]*User, error)
 

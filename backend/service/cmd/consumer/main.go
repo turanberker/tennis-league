@@ -13,6 +13,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery/message"
 	matchapproved "github.com/turanberker/tennis-league-service/internal/delivery/message/match_approved"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
+	"github.com/turanberker/tennis-league-service/internal/infrastructure/persistence/postgres"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
 	"github.com/turanberker/tennis-league-service/internal/platform/messaging"
 )
@@ -20,6 +21,7 @@ import (
 func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	defer cancel()
 
 	go handleShutdown(cancel)
@@ -31,13 +33,16 @@ func main() {
 	defer rabbit.Close()
 
 	db, err := database.NewPostgres()
+	transactionManager := database.NewTransactionManager(db)
+	matchRepository := postgres.NewMatchRepository(db)
+	setRepository := postgres.NewMatchSetRepository(db)
+	scoreboardRepository := postgres.NewScoreBoardRepository(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	matchApprovedConsumer := matchapproved.NewMatchApprovedEventConsumer(db)
+	matchApprovedConsumer := matchapproved.NewMatchApprovedEventConsumer(transactionManager, matchRepository, setRepository, scoreboardRepository)
 	message.RegisterConsumer(rabbit, ctx, matchApprovedConsumer.Consumer)
-	
 
 	log.Println("📥 Consumer running...")
 

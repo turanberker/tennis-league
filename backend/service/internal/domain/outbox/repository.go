@@ -2,15 +2,16 @@ package outbox
 
 import (
 	"context"
-	"database/sql"
 )
 
 type Repository interface {
-	Save(ctx context.Context, tx *sql.Tx, entity *PersistEntity) error
+	Save(ctx context.Context, entity *PersistEntity) error
 
-	GetEventsToPublish(ctx context.Context, tx *sql.Tx) ([]*EventToPublish, error)
+	GetEventForUpdate(ctx context.Context, id string) (*EventToPublish, error)
 
-	IncreaseRetryCount(ctx context.Context, tx *sql.Tx, id string)
+	GetPendingIDs(ctx context.Context, limit int) ([]string, error)
 
-	UpdateToPublished(ctx context.Context, tx *sql.Tx, id string) error
+	IncreaseRetryCount(ctx context.Context, id string) error
+
+	UpdateToPublished(ctx context.Context, id string) error
 }

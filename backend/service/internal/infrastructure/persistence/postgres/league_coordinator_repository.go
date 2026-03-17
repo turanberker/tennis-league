@@ -4,24 +4,24 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type LeagueCoordinatorRepository struct {
-	db *sql.DB
+	BaseRepository
 }
 
 func NewLeagueCoordinatorRepository(db *sql.DB) *LeagueCoordinatorRepository {
-	return &LeagueCoordinatorRepository{db: db}
+	return &LeagueCoordinatorRepository{BaseRepository: BaseRepository{db: db}}
 }
 
 func (r *LeagueCoordinatorRepository) Exists(ctx context.Context, leagueId string, userId string) (bool, error) {
+
+	executor := r.GetExecutor(ctx)
 	query := "SELECT 1 FROM league_coordinator WHERE user_id = $1 AND league_id = $2 LIMIT 1"
 
 	var exists int
 	// r.db'nin sql.DB veya sqlx.DB olduğunu varsayıyorum
-	err := r.db.QueryRowContext(ctx, query, userId, leagueId).Scan(&exists)
+	err := executor.QueryRowContext(ctx, query, userId, leagueId).Scan(&exists)
 
 	if err != nil {
 		// Eğer kayıt bulunamadıysa bu bir hata değil, 'false' durumudur
@@ -37,12 +37,7 @@ func (r *LeagueCoordinatorRepository) Exists(ctx context.Context, leagueId strin
 }
 
 func (r *LeagueCoordinatorRepository) Add(ctx context.Context, leagueId string, userId string) (*bool, error) {
-	// 1. Context'ten transaction'ı çekiyoruz
-	tx, ok := database.GetTxFromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("Aktif Transaction yok")
-
-	}
+	executor := r.GetExecutor(ctx)
 
 	// SQL sorgusu (PostgreSQL için en performanslı hali)
 	query := `INSERT INTO league_coordinator (league_id, user_id) 
@@ -52,7 +47,7 @@ func (r *LeagueCoordinatorRepository) Add(ctx context.Context, leagueId string, 
 	var result sql.Result
 	var err error
 
-	result, err = tx.ExecContext(ctx, query, leagueId, userId)
+	result, err = executor.ExecContext(ctx, query, leagueId, userId)
 
 	if err != nil {
 		return nil, fmt.Errorf("koordinatör eklenirken SQL hatası: %w", err)

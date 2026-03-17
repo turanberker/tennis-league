@@ -9,21 +9,22 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/sqlscan"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
-	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type PlayerRepository struct {
-	db *sql.DB
+	BaseRepository
 }
 
 func NewPlayerRepository(db *sql.DB) *PlayerRepository {
-	return &PlayerRepository{db: db}
+	return &PlayerRepository{
+		BaseRepository: BaseRepository{db: db}, // Base'deki db'yi dolduruyoruz
+	}
 }
 
 func (r *PlayerRepository) GetById(ctx context.Context, id int64) (*player.Player, error) {
 	player := &player.Player{}
-	query := `SELECT id,  name, surname, sex,user_id FROM players WHERE id=$1`
-	err := r.db.QueryRowContext(ctx, query, id).
+	query := `SELECT id,  name, surname, sex,user_id FROM player WHERE id=$1`
+	err := r.GetExecutor(ctx).QueryRowContext(ctx, query, id).
 		Scan(&player.ID, &player.Name, &player.Surname, &player.Sex, &player.UserId)
 	if err != nil {
 		log.Println("Playerı maplerken hata oluştu:", err)
@@ -32,22 +33,10 @@ func (r *PlayerRepository) GetById(ctx context.Context, id int64) (*player.Playe
 	return player, nil
 }
 
-func (r *PlayerRepository) GetByUuid(ctx context.Context, uuid string) (*player.Player, error) {
-	player := &player.Player{}
-	query := `SELECT id,  name, surname, sex, user_id FROM players WHERE id=$1`
-	err := r.db.QueryRowContext(ctx, query, uuid).
-		Scan(&player.ID, &player.Name, &player.Surname, &player.Sex, &player.UserId)
-	if err != nil {
-		log.Println("Playerı maplerken hata oluştu:", err)
-		return nil, err
-	}
-	return player, nil
-
-}
 func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQueryParameters) ([]*player.Player, error) {
 
 	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	sqlBuilder := psql.Select("id", "name", "surname", "sex", "user_id").From("players")
+	sqlBuilder := psql.Select("id", "name", "surname", "sex", "user_id").From("player")
 
 	if queryParams.Name != nil {
 		sqlBuilder = sqlBuilder.Where("name ILIKE ?", "%"+*queryParams.Name+"%")
@@ -77,7 +66,7 @@ func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQuer
 		UserID  *string `db:"user_id"` // Null gelebileceği için pointer kullanmak güvenlidir
 	}
 	var rowsData []row
-	err = sqlscan.Select(ctx, r.db, &rowsData, query, args...)
+	err = sqlscan.Select(ctx, r.GetExecutor(ctx), &rowsData, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("veritabanı hatası: %v", err)
 	}
@@ -98,9 +87,11 @@ func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQuer
 }
 
 func (r *PlayerRepository) Save(ctx context.Context, persistPlayer *player.PersistPlayer) (*string, error) {
-	query := `INSERT INTO players (id, name, surname,sex, user_id) VALUES (gen_random_uuid(), $1, $2, $3,$4) RETURNING id`
+	exec := r.GetExecutor(ctx)
+
+	query := `INSERT INTO player ( name, surname,sex, user_id) VALUES ($1, $2, $3,$4) RETURNING id`
 	var id string
-	err := r.db.QueryRowContext(ctx, query, persistPlayer.Name, persistPlayer.Surname, persistPlayer.Sex, persistPlayer.UserId).
+	err := exec.QueryRowContext(ctx, query, persistPlayer.Name, persistPlayer.Surname, persistPlayer.Sex, persistPlayer.UserId).
 		Scan(&id)
 	if err != nil {
 		log.Println("Player insert ederken hata oluştu:", err)
@@ -111,13 +102,10 @@ func (r *PlayerRepository) Save(ctx context.Context, persistPlayer *player.Persi
 
 func (r *PlayerRepository) AssignToUser(ctx context.Context, playerId string, userId string) error {
 
-	tx, ok := database.GetTxFromContext(ctx)
-	if !ok {
-		fmt.Errorf("Aktif Transaction yok")
-	}
-	query := `UPDATE players SET user_id = $1 WHERE id = $2`
+	exec := r.GetExecutor(ctx)
+	query := `UPDATE player SET user_id = $1 WHERE id = $2`
 
-	result, err := tx.ExecContext(ctx, query, userId, playerId)
+	result, err := exec.ExecContext(ctx, query, userId, playerId)
 	if err != nil {
 		return fmt.Errorf("Oyuncuya kullanıcı ataması başarısız:")
 	}

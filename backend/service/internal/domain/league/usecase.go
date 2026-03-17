@@ -2,7 +2,6 @@ package league
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"net/http"
 
@@ -19,7 +18,6 @@ var ErrNameFieldRequired = errors.New("Name can not be null or empty string")
 var ErrNameLenghtError = errors.New("Name size must between 5 and 75 characters")
 
 type Usecase struct {
-	db                    *sql.DB
 	tm                    *database.TransactionManager
 	userUsecase           *user.Usecase
 	repo                  Repository
@@ -71,7 +69,7 @@ func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match
 	return u.matchRepo.GetFixtureByLeagueId(context, leagueId)
 }
 
-func NewUsecase(db *sql.DB,
+func NewUsecase(
 	tm *database.TransactionManager,
 	repo Repository,
 	teamRepo team.Repository,
@@ -79,7 +77,7 @@ func NewUsecase(db *sql.DB,
 	scoreBoardRepo scoreboard.Repository,
 	coordinatorRepository leaguecoordinator.Repository,
 	userUseCase *user.Usecase) *Usecase {
-	return &Usecase{db: db, repo: repo,
+	return &Usecase{repo: repo,
 		teamRepo:              teamRepo,
 		matchRepo:             matchRepo,
 		scoreBoardRepo:        scoreBoardRepo,
@@ -90,48 +88,44 @@ func NewUsecase(db *sql.DB,
 }
 
 func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) error {
-	created, err := u.repo.IsFixtureCreated(ctx, leagueId)
 
-	if created {
-		return errors.New("Fikstür zaten oluşturulmuş")
-	}
+	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-	tx, err := u.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	u.repo.SetFitxtureCreatedDate(ctx, tx, leagueId)
-	teams, err := u.teamRepo.GetByLeagueId(ctx, leagueId)
-
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	var matches []*match.PersistLeagueMatch
-	var teamIds []string
-
-	for i := 0; i < len(teams); i++ {
-
-		teamIds = append(teamIds, teams[i].ID)
-		for j := i + 1; j < len(teams); j++ { // j=i+1 → tekrar ve kendisiyle maç yok
-			match := &match.PersistLeagueMatch{
-				LeagueId: leagueId,
-				Team1Id:  teams[i].ID,
-				Team2Id:  teams[j].ID,
-			}
-
-			matches = append(matches, match)
+		created, err := u.repo.IsFixtureCreated(txCtx, leagueId)
+		if err != nil {
+			return err
 		}
-	}
+		if created {
+			return errors.New("Fikstür zaten oluşturulmuş")
+		}
 
-	defer tx.Rollback()
-	u.matchRepo.SaveLeagueMatches(ctx, tx, matches)
-	u.scoreBoardRepo.SaveFixture(ctx, tx, leagueId, teamIds)
-	tx.Commit()
+		u.repo.SetFitxtureCreatedDate(txCtx, leagueId)
+		teams, err := u.teamRepo.GetByLeagueId(txCtx, leagueId)
 
-	return nil
+		var matches []*match.PersistLeagueMatch
+		var teamIds []string
+
+		for i := 0; i < len(teams); i++ {
+
+			teamIds = append(teamIds, teams[i].ID)
+			for j := i + 1; j < len(teams); j++ { // j=i+1 → tekrar ve kendisiyle maç yok
+				match := &match.PersistLeagueMatch{
+					LeagueId: leagueId,
+					Team1Id:  teams[i].ID,
+					Team2Id:  teams[j].ID,
+				}
+
+				matches = append(matches, match)
+			}
+		}
+
+		u.matchRepo.SaveLeagueMatches(txCtx, matches)
+		u.scoreBoardRepo.SaveFixture(txCtx, leagueId, teamIds)
+
+		return nil
+
+	})
+
 }
 
 func (u *Usecase) GetById(ctx context.Context, id string) (*League, error) {

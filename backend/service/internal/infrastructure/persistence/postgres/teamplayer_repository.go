@@ -12,16 +12,17 @@ import (
 )
 
 type TeamPlayerRepository struct {
-	db *sql.DB
+	BaseRepository
 }
 
 func NewTeamPlayerRepository(db *sql.DB) *TeamPlayerRepository {
-	return &TeamPlayerRepository{db: db}
+	return &TeamPlayerRepository{BaseRepository{db: db}}
 }
 
 func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId string) ([]*player.Player, error) {
+	exec := r.GetExecutor(ctx)
 	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id FROM team_player tp inner join player p on p.id=tp.player_id WHERE team_id=$1`
-	rows, err := r.db.QueryContext(ctx, query, teamId)
+	rows, err := exec.QueryContext(ctx, query, teamId)
 
 	if err != nil {
 		log.Println("Takım Oyuncuları çekilirken hata oluştu:", err)
@@ -49,10 +50,11 @@ func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId 
 	return teamPlayers, nil
 }
 
-func (r *TeamPlayerRepository) Save(ctx context.Context, tx *sql.Tx, teamPlayer *teamplayer.PersistTeamPlayer) error {
+func (r *TeamPlayerRepository) Save(ctx context.Context, teamPlayer *teamplayer.PersistTeamPlayer) error {
+	exec := r.GetExecutor(ctx)
 	query := `INSERT INTO team_player ( team_id, player_id) VALUES ($1, $2) `
 
-	_, err := tx.ExecContext(ctx, query, teamPlayer.TeamID, teamPlayer.PlayerID)
+	_, err := exec.ExecContext(ctx, query, teamPlayer.TeamID, teamPlayer.PlayerID)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {

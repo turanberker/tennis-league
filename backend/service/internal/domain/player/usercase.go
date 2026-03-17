@@ -2,24 +2,24 @@ package player
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type Usecase struct {
-	db   *sql.DB
+	tm   *database.TransactionManager
 	repo Repository
 }
 
 func (u *Usecase) AssignToUser(ctx context.Context, playerId string, userId string) error {
-	return u.repo.AssignToUser(ctx, playerId, userId)
+	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
+		return u.repo.AssignToUser(txCtx, playerId, userId)
+	})
+
 }
 
-func (u Usecase) GetByUuid(ctx context.Context, uuid string) (*Player, error) {
-	return u.repo.GetByUuid(ctx, uuid)
-}
-
-func NewUsecase(db *sql.DB, r Repository) *Usecase {
-	return &Usecase{db: db, repo: r}
+func NewUsecase(tm *database.TransactionManager, r Repository) *Usecase {
+	return &Usecase{tm: tm, repo: r}
 }
 
 func (u *Usecase) GetById(ctx context.Context, id int64) (*Player, error) {
@@ -27,7 +27,19 @@ func (u *Usecase) GetById(ctx context.Context, id int64) (*Player, error) {
 }
 
 func (u *Usecase) Save(ctx context.Context, persistPlayer *PersistPlayer) (*string, error) {
-	return u.repo.Save(ctx, persistPlayer)
+	var userId *string
+
+	err := u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
+		newUserId, err := u.repo.Save(txCtx, persistPlayer)
+		if err == nil {
+			userId = newUserId
+			return nil
+		} else {
+			return nil
+		}
+	})
+
+	return userId, err
 }
 
 func (u *Usecase) List(ctx context.Context, queryParams ListQueryParameters) ([]*Player, error) {

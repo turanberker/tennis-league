@@ -12,14 +12,16 @@ import (
 )
 
 type MatchRepository struct {
-	db *sql.DB
+	BaseRepository
 }
 
 func NewMatchRepository(db *sql.DB) *MatchRepository {
-	return &MatchRepository{db: db}
+	return &MatchRepository{BaseRepository: BaseRepository{db: db}}
 }
 
-func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, tx *sql.Tx, matches []*match.PersistLeagueMatch) error {
+func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, matches []*match.PersistLeagueMatch) error {
+
+	executor := r.GetExecutor(ctx)
 	if len(matches) == 0 {
 		return nil // insert edilecek maç yok
 	}
@@ -38,7 +40,7 @@ func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, tx *sql.Tx, mat
 	}
 
 	// Bulk insert
-	_, err := tx.ExecContext(ctx, query, args...)
+	_, err := executor.ExecContext(ctx, query, args...)
 	if err != nil {
 		log.Println("League fixture'ları insert edilirken hata oluştu:", err)
 		return err
@@ -48,6 +50,7 @@ func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, tx *sql.Tx, mat
 }
 
 func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
+	executor := r.GetExecutor(ctx)
 	query := `
 		SELECT m.id, m.team_1_id, t1.name,m.team_1_score, m.winner_id =m.team_1_id, 
 		m.team_2_id, t2.name,m.team_2_score ,m.winner_id =m.team_2_id, m.status, m.match_date
@@ -56,7 +59,7 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 		JOIN tennisleague.teams t2 ON m.team_2_id = t2.id
 		WHERE m.league_id = $1 order by m.match_date asc
 	`
-	rows, err := r.db.QueryContext(ctx, query, leagueId)
+	rows, err := executor.QueryContext(ctx, query, leagueId)
 	if err != nil {
 		log.Println("Maç listesi çekerken hata oluştu:", err)
 		return nil, err
@@ -81,10 +84,11 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 	return matches, nil
 }
 
-func (r *MatchRepository) UpdateMatchDate(ctx context.Context, tx *sql.Tx, data match.UpdateMatchDate) error {
+func (r *MatchRepository) UpdateMatchDate(ctx context.Context, data match.UpdateMatchDate) error {
+	executor := r.GetExecutor(ctx)
 	query := "Update matches set match_date=$1 where id=$2"
 
-	_, err := tx.ExecContext(ctx, query, data.MatchDate, data.Id)
+	_, err := executor.ExecContext(ctx, query, data.MatchDate, data.Id)
 	if err != nil {
 		log.Println("Maç tarihi güncellenirken hata oluştu:", err)
 		return err
@@ -93,11 +97,11 @@ func (r *MatchRepository) UpdateMatchDate(ctx context.Context, tx *sql.Tx, data 
 }
 
 func (r *MatchRepository) GetMatchTeamIds(ctx context.Context, matchId string) *match.MatchTeamIds {
-
+	executor := r.GetExecutor(ctx)
 	var response match.MatchTeamIds
 	query := "select league_id, team_1_id ,team_2_id ,status  from matches m where id=$1"
 
-	err := r.db.QueryRowContext(ctx, query, matchId).
+	err := executor.QueryRowContext(ctx, query, matchId).
 		Scan(&response.LeagueId, &response.Team1Id, &response.Team2Id, &response.Status)
 
 	if err != nil {
@@ -110,10 +114,11 @@ func (r *MatchRepository) GetMatchTeamIds(ctx context.Context, matchId string) *
 	return &response
 }
 
-func (r *MatchRepository) UpdateMatchScore(ctx context.Context, tx *sql.Tx, macScore *match.UpdateMatchScore) error {
+func (r *MatchRepository) UpdateMatchScore(ctx context.Context, macScore *match.UpdateMatchScore) error {
+	executor := r.GetExecutor(ctx)
 	query := "Update matches set team_1_score=$1, team_2_score=$2, winner_id=$3, status=$4 where id=$5"
 
-	_, err := tx.ExecContext(ctx, query, macScore.Team1Score, macScore.Team2Score, macScore.WinnerTeamId, match.StatusCompleted, macScore.Id)
+	_, err := executor.ExecContext(ctx, query, macScore.Team1Score, macScore.Team2Score, macScore.WinnerTeamId, match.StatusCompleted, macScore.Id)
 	if err != nil {
 		log.Printf("Maç Skoru güncellenirken hata oluştu:%+v", err)
 		return err
@@ -121,10 +126,11 @@ func (r *MatchRepository) UpdateMatchScore(ctx context.Context, tx *sql.Tx, macS
 	return nil
 }
 
-func (r *MatchRepository) ApproveScore(ctx context.Context, tx *sql.Tx, matchId string) error {
+func (r *MatchRepository) ApproveScore(ctx context.Context, matchId string) error {
+	executor := r.GetExecutor(ctx)
 	query := "Update matches set status=$1, approve_date=current_date where id=$2 and status=$3"
 
-	result, err := tx.ExecContext(
+	result, err := executor.ExecContext(
 		ctx,
 		query,
 		match.StatusApproved, // yeni status

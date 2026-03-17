@@ -64,6 +64,7 @@ export default function Users() {
       option ? option.name + ' ' + option.surname : 'Oyuncu seçin'
     ) as string;
   };
+  
 
   const header = () => {
     return (
@@ -76,6 +77,7 @@ export default function Users() {
           icon="pi pi-plus"
           size="small"
           onClick={(e) => {
+            setSexFilter(null)
             setUnassignedPlayes([]);
             setSelectedPlayer(null);
             op.current?.toggle(e);

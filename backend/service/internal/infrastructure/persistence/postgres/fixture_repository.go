@@ -11,14 +11,17 @@ import (
 )
 
 type ScoreBoardRepository struct {
-	db *sql.DB
+	BaseRepository
 }
 
 func NewScoreBoardRepository(db *sql.DB) *ScoreBoardRepository {
-	return &ScoreBoardRepository{db: db}
+	return &ScoreBoardRepository{BaseRepository: BaseRepository{db: db}} // Base'deki db'yi dolduruyoruz
+
 }
 
-func (f *ScoreBoardRepository) SaveFixture(ctx context.Context, tx *sql.Tx, leagueId string, teams []string) error {
+func (f *ScoreBoardRepository) SaveFixture(ctx context.Context, leagueId string, teams []string) error {
+
+	tx := f.GetExecutor(ctx)
 
 	if len(teams) == 0 {
 		return errors.New("Takım Listesi boş olamaz")
@@ -48,13 +51,14 @@ func (f *ScoreBoardRepository) SaveFixture(ctx context.Context, tx *sql.Tx, leag
 }
 
 func (f *ScoreBoardRepository) GetScoreBoard(ctx context.Context, leagueId string) ([]*scoreboard.ScoreBoard, error) {
+	exec := f.GetExecutor(ctx)
 	query := `Select f.team_id,t.name ,f.played,f.won, f.lost,
 		f.won_sets, f.lost_sets,f.won_games,f.lost_games,score
 		from score_board f 
 		inner join teams  t on t.id =f.team_id 
 		where f.league_id=$1 order by score desc`
 
-	rows, err := f.db.QueryContext(ctx, query, leagueId)
+	rows, err := exec.QueryContext(ctx, query, leagueId)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +81,9 @@ func (f *ScoreBoardRepository) GetScoreBoard(ctx context.Context, leagueId strin
 
 }
 
-func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, tx *sql.Tx, update scoreboard.IncreaseTeamScore) error {
+func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, update scoreboard.IncreaseTeamScore) error {
+
+	exec := f.GetExecutor(ctx)
 	query := `
 		UPDATE score_board
 		SET 
@@ -93,7 +99,7 @@ func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, tx *sql.Tx, upda
 		  AND team_id = $8
 	`
 
-	result, err := tx.ExecContext(
+	result, err := exec.ExecContext(
 		ctx,
 		query,
 		update.WonSets,

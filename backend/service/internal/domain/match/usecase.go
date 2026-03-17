@@ -2,17 +2,17 @@ package match
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"time"
 
 	matchSet "github.com/turanberker/tennis-league-service/internal/domain/matchset"
 	"github.com/turanberker/tennis-league-service/internal/domain/outbox"
+	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type UseCase struct {
-	db               *sql.DB
+	tm               *database.TransactionManager
 	repository       Repository
 	scoreRepository  matchSet.Repository
 	outboxRepository outbox.Repository
@@ -29,105 +29,107 @@ type SaveMatchScore struct {
 	SuperTie *SaveScore
 }
 
-func NewUseCase(db *sql.DB, r Repository,
+func NewUseCase(tm *database.TransactionManager,
+	r Repository,
 	scoreRepository matchSet.Repository,
 	outboxRepository outbox.Repository,
 ) *UseCase {
-	return &UseCase{db: db,
+	return &UseCase{tm: tm,
 		repository:      r,
 		scoreRepository: scoreRepository, outboxRepository: outboxRepository}
 }
 func (u *UseCase) ApproveScore(ctx context.Context, matchId string) error {
-	tx, err := u.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	err = u.repository.ApproveScore(ctx, tx, matchId)
 
-	if err != nil {
-		return err
-	}
+	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-	event := MatchApprovedEvent{
-		MatchID: matchId,
-	}
-	payload, _ := json.Marshal(event)
-	outboxEntity := &outbox.PersistEntity{
-		AggregateType: "match",
-		AggregateID:   matchId,
-		EventType:     "MatchApproved",
-		Payload:       payload,
-	}
-	err = u.outboxRepository.Save(ctx, tx, outboxEntity)
-	if err != nil {
-		return err
-	}
+		err := u.repository.ApproveScore(txCtx, matchId)
 
-	return tx.Commit()
+		if err != nil {
+			return err
+		}
+
+		event := MatchApprovedEvent{
+			MatchID: matchId,
+		}
+		payload, _ := json.Marshal(event)
+		outboxEntity := &outbox.PersistEntity{
+			AggregateType: "match",
+			AggregateID:   matchId,
+			EventType:     "MatchApproved",
+			Payload:       payload,
+		}
+		err = u.outboxRepository.Save(txCtx, outboxEntity)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 }
 
 func (u *UseCase) UpdateMatchDate(ctx context.Context, matchId string, matchDate *time.Time) error {
-	tx, err := u.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 
-	err = u.repository.UpdateMatchDate(ctx, tx, UpdateMatchDate{Id: matchId, MatchDate: matchDate})
-	if err != nil {
-		return err
-	}
+	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-	return tx.Commit()
+		err := u.repository.UpdateMatchDate(txCtx, UpdateMatchDate{Id: matchId, MatchDate: matchDate})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (u *UseCase) SaveMatchScore(ctx context.Context, score *SaveMatchScore) (*UpdateMatchScore, error) {
 
 	macScore, err := calculateMatchScore(score)
+	if err != nil {
+		return nil, err
+	}
+	err = u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
+
+		if err != nil {
+			return err
+		}
+
+		teamIds := u.repository.GetMatchTeamIds(txCtx, score.MatchId)
+		if teamIds == nil {
+			return errors.New("Maç bulunamadı")
+		}
+
+		if teamIds.Status == StatusApproved {
+			return errors.New("Maç skoru onaylandığı için güncelleyemezsiniz")
+		}
+
+		if macScore.Team1Score > macScore.Team2Score {
+			macScore.WinnerTeamId = teamIds.Team1Id
+		} else {
+			macScore.WinnerTeamId = teamIds.Team2Id
+		}
+
+		u.scoreRepository.DeleteSetScores(txCtx, score.MatchId)
+		u.scoreRepository.SaveSetScore(txCtx, &matchSet.UpdateSetScore{MatchId: score.MatchId,
+			Set:        1,
+			Team1Score: score.Set1.Team1Score,
+			Team2Score: score.Set1.Team2Score})
+		u.scoreRepository.SaveSetScore(txCtx, &matchSet.UpdateSetScore{MatchId: score.MatchId,
+			Set:        2,
+			Team1Score: score.Set2.Team1Score,
+			Team2Score: score.Set2.Team2Score})
+		if score.SuperTie != nil {
+			u.scoreRepository.SaveSuperTieScore(txCtx, &matchSet.UpdateSuperTieScore{MatchId: score.MatchId,
+				Team1Score: score.SuperTie.Team1Score,
+				Team2Score: score.SuperTie.Team2Score})
+		}
+
+		u.repository.UpdateMatchScore(txCtx, macScore)
+
+		return nil
+	})
 
 	if err != nil {
 		return nil, err
 	}
-
-	teamIds := u.repository.GetMatchTeamIds(ctx, score.MatchId)
-	if teamIds == nil {
-		return nil, errors.New("Maç bulunamadı")
-	}
-
-	if teamIds.Status == StatusApproved {
-		return nil, errors.New("Maç skoru onaylandığı için güncelleyemezsiniz")
-	}
-
-	if macScore.Team1Score > macScore.Team2Score {
-		macScore.WinnerTeamId = teamIds.Team1Id
-	} else {
-		macScore.WinnerTeamId = teamIds.Team2Id
-	}
-
-	tx, err := u.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	u.scoreRepository.DeleteSetScores(ctx, tx, score.MatchId)
-	u.scoreRepository.SaveSetScore(ctx, tx, &matchSet.UpdateSetScore{MatchId: score.MatchId,
-		Set:        1,
-		Team1Score: score.Set1.Team1Score,
-		Team2Score: score.Set1.Team2Score})
-	u.scoreRepository.SaveSetScore(ctx, tx, &matchSet.UpdateSetScore{MatchId: score.MatchId,
-		Set:        2,
-		Team1Score: score.Set2.Team1Score,
-		Team2Score: score.Set2.Team2Score})
-	if score.SuperTie != nil {
-		u.scoreRepository.SaveSuperTieScore(ctx, tx, &matchSet.UpdateSuperTieScore{MatchId: score.MatchId,
-			Team1Score: score.SuperTie.Team1Score,
-			Team2Score: score.SuperTie.Team2Score})
-	}
-
-	u.repository.UpdateMatchScore(ctx, tx, macScore)
-	tx.Commit()
 	return macScore, nil
 }
 
@@ -160,14 +162,3 @@ func findSetWinner(score SaveScore, matchScore *UpdateMatchScore) {
 		matchScore.Team2Score += 1
 	}
 }
-
-type winner int
-type totalScore struct {
-	team1 int
-	team2 int
-}
-
-const (
-	team1 winner = iota
-	team2
-)

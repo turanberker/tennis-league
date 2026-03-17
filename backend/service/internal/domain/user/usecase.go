@@ -25,8 +25,9 @@ func (u *Usecase) SetUserAsCoordinator(ctx context.Context, userId string) error
 	})
 }
 
-func NewUsecase(r Repository,
-	tm *database.TransactionManager) *Usecase {
+func NewUsecase(
+	tm *database.TransactionManager,
+	r Repository) *Usecase {
 	return &Usecase{repo: r, tm: tm}
 }
 

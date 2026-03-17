@@ -9,23 +9,26 @@ import (
 )
 
 type TeamRepository struct {
-	db *sql.DB
+	BaseRepository
 }
 
 func NewTeamRepository(db *sql.DB) *TeamRepository {
-	return &TeamRepository{db: db}
+	return &TeamRepository{BaseRepository{db: db}}
 }
 
 func (r *TeamRepository) GetById(ctx context.Context, id string) (*team.Team, error) {
+
+	exec := r.GetExecutor(ctx)
 	team := &team.Team{}
-	query := `SELECT id, league_id, name FROM teams WHERE id=$1`
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&team.ID, &team.LeagueID, &team.Name)
+	query := `SELECT id, league_id, name FROM team WHERE id=$1`
+	err := exec.QueryRowContext(ctx, query, id).Scan(&team.ID, &team.LeagueID, &team.Name)
 	return team, err
 }
 
 func (r *TeamRepository) GetByLeagueId(ctx context.Context, leagueId string) ([]*team.Team, error) {
-	query := `SELECT id, league_id, name FROM teams WHERE league_id=$1`
-	rows, err := r.db.QueryContext(ctx, query, leagueId)
+	exec := r.GetExecutor(ctx)
+	query := `SELECT id, league_id, name FROM team WHERE league_id=$1`
+	rows, err := exec.QueryContext(ctx, query, leagueId)
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +48,11 @@ func (r *TeamRepository) GetByLeagueId(ctx context.Context, leagueId string) ([]
 	return teams, nil
 }
 
-func (r *TeamRepository) Save(ctx context.Context, tx *sql.Tx, persistTeam *team.PersistTeam) (*string, error) {
-	query := `INSERT INTO teams (id, league_id, name) VALUES (gen_random_uuid(), $1, $2) RETURNING id`
+func (r *TeamRepository) Save(ctx context.Context, persistTeam *team.PersistTeam) (*string, error) {
+	exec := r.GetExecutor(ctx)
+	query := `INSERT INTO team (league_id, name) VALUES ($1, $2) RETURNING id`
 	var id string
-	err := tx.QueryRowContext(ctx, query, persistTeam.LeagueID, persistTeam.Name).Scan(&id)
+	err := exec.QueryRowContext(ctx, query, persistTeam.LeagueID, persistTeam.Name).Scan(&id)
 	if err != nil {
 		log.Println("Takım insert ederken hata oluştu:", err)
 		return nil, err

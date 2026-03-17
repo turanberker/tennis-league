@@ -1,8 +1,6 @@
 package playerhandler
 
 import (
-	"database/sql"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,16 +9,14 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
-	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type PlayerHandler struct {
-	tm *database.TransactionManager
 	uc *player.Usecase
 }
 
-func NewPlayerHandler(uc *player.Usecase, tm *database.TransactionManager) *PlayerHandler {
-	return &PlayerHandler{uc: uc, tm: tm}
+func NewPlayerHandler(uc *player.Usecase) *PlayerHandler {
+	return &PlayerHandler{uc: uc}
 }
 
 func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
@@ -30,30 +26,8 @@ func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
 		group.GET("/list", h.getAll)
 		group.POST("", middleware.RequireRole(user.RoleAdmin), h.save)
 		group.PUT("/:id", middleware.RequireRole(user.RoleAdmin), h.assignToUser)
-		group.GET("/:uuid", h.getByUuid)
 		group.GET("/unassigned-players", h.unassignedPlayers)
 	}
-
-}
-
-func (h *PlayerHandler) getByUuid(c *gin.Context) {
-	uuidParam := c.Param("uuid")
-	if uuidParam == "" {
-		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse("Uuid is required"))
-		return
-	}
-	player, err := h.uc.GetByUuid(c.Request.Context(), uuidParam)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			c.JSON(http.StatusInternalServerError, delivery.NewErrorResponse("player is not found"))
-			return
-		}
-		c.JSON(http.StatusInternalServerError, delivery.NewErrorResponse("internal error"))
-
-		return
-	}
-	response := toPlayerResponse(player)
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
 
 }
 
@@ -100,14 +74,6 @@ func (h *PlayerHandler) assignToUser(c *gin.Context) {
 	var err error
 	ctx := c.Request.Context()
 
-	ctx, err = h.tm.StartTransaction(c.Request.Context())
-	if err != nil {
-		c.Error(err)
-		c.Abort()
-		return
-	}
-	defer database.DeferRollback(ctx, &err)
-
 	err = h.uc.AssignToUser(ctx, playerId, req.UserId)
 
 	if err != nil {
@@ -115,12 +81,7 @@ func (h *PlayerHandler) assignToUser(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	err = database.Commit(ctx)
-	if err != nil {
-		c.Error(err)
-		c.Abort()
-		return
-	}
+
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse("İşlem başarılı"))
 }
 

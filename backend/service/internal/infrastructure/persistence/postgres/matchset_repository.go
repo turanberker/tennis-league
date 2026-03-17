@@ -11,17 +11,19 @@ import (
 )
 
 type MatchSetRepository struct {
-	db *sql.DB
+	BaseRepository
 }
 
 func NewMatchSetRepository(db *sql.DB) *MatchSetRepository {
-	return &MatchSetRepository{db: db}
+	return &MatchSetRepository{BaseRepository: BaseRepository{db: db}}
 }
 
-func (r *MatchSetRepository) SaveSetScore(ctx context.Context, tx *sql.Tx, setScore *matchSet.UpdateSetScore) error {
+func (r *MatchSetRepository) SaveSetScore(ctx context.Context, setScore *matchSet.UpdateSetScore) error {
+
+	exec := r.GetExecutor(ctx)
 	query := `INSERT INTO match_sets ( match_id, set_number,team_1_games, team_2_games) VALUES ($1, $2,$3,$4)`
 
-	_, err := tx.ExecContext(ctx, query, setScore.MatchId, setScore.Set, setScore.Team1Score, setScore.Team2Score)
+	_, err := exec.ExecContext(ctx, query, setScore.MatchId, setScore.Set, setScore.Team1Score, setScore.Team2Score)
 
 	if err != nil {
 		var pqErr *pq.Error
@@ -40,9 +42,10 @@ func (r *MatchSetRepository) SaveSetScore(ctx context.Context, tx *sql.Tx, setSc
 	return nil
 }
 
-func (r *MatchSetRepository) SaveSuperTieScore(ctx context.Context, tx *sql.Tx, setScore *matchSet.UpdateSuperTieScore) error {
+func (r *MatchSetRepository) SaveSuperTieScore(ctx context.Context, setScore *matchSet.UpdateSuperTieScore) error {
+	exec := r.GetExecutor(ctx)
 	query := `INSERT INTO match_sets ( match_id, set_number,team_1_tie_break_score, team_2_tie_break_score) VALUES ($1, 3,$2,$3)`
-	_, err := tx.ExecContext(ctx, query, setScore.MatchId, setScore.Team1Score, setScore.Team2Score)
+	_, err := exec.ExecContext(ctx, query, setScore.MatchId, setScore.Team1Score, setScore.Team2Score)
 
 	if err != nil {
 		var pqErr *pq.Error
@@ -61,10 +64,11 @@ func (r *MatchSetRepository) SaveSuperTieScore(ctx context.Context, tx *sql.Tx, 
 	return nil
 }
 
-func (r *MatchSetRepository) DeleteSetScores(ctx context.Context, tx *sql.Tx, matchId string) error {
+func (r *MatchSetRepository) DeleteSetScores(ctx context.Context, matchId string) error {
+	exec := r.GetExecutor(ctx)
 	query := "delete from match_sets where match_id =$1"
 
-	_, err := tx.ExecContext(ctx, query, matchId)
+	_, err := exec.ExecContext(ctx, query, matchId)
 	if err != nil {
 		log.Printf("%s id li mac skorları silinemedi", matchId)
 		return err
@@ -73,9 +77,10 @@ func (r *MatchSetRepository) DeleteSetScores(ctx context.Context, tx *sql.Tx, ma
 }
 
 func (r *MatchSetRepository) GetSetScoreList(ctx context.Context, matchId string) []*matchSet.MatchSetScores {
+	exec := r.GetExecutor(ctx)
 	query := "select set_number, team_1_games ,team_2_games ,team_1_tie_break_score ,team_2_tie_break_score  from match_sets ms  where match_id =$1"
 
-	rows, err := r.db.QueryContext(ctx, query, matchId)
+	rows, err := exec.QueryContext(ctx, query, matchId)
 
 	if err != nil {
 		log.Printf("Setler çekilirken hata oluştu:%+v", err)
