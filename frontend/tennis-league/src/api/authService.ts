@@ -1,3 +1,4 @@
+import { Role } from '../model/user.model';
 import axiosClient from './axiosClient';
 
 /* ============================= */
@@ -13,7 +14,7 @@ export interface CurrentUser {
   userID: number;
   name: string;
   surname: string;
-  role: string;
+  role: Role;
 }
 
 export interface AuthResponse {

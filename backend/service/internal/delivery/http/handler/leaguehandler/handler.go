@@ -122,8 +122,12 @@ func (h *Handler) getById(c *gin.Context) {
 func (h *Handler) save(c *gin.Context) {
 
 	var req struct {
-		Name string `json:"name" binding:"min=3,max=75,required"`
+		Name        string                     `json:"name" binding:"min=3,max=75,required"`
+		Format      league.LEAGUE_FORMAT       `json:"format" binding:"required"`
+		Categoty    league.LEAGUE_CATEGORY     `json:"category" binding:"required"`
+		ProcessType league.LEAGUE_PROCESS_TYPE `json:"processType" binding:"required"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		if ve, ok := err.(validator.ValidationErrors); ok {
 			c.Error(customerror.NewValidationError(ve))
@@ -137,7 +141,10 @@ func (h *Handler) save(c *gin.Context) {
 	}
 
 	persistLeague := &league.PersistLeague{
-		Name: req.Name,
+		Name:        req.Name,
+		Format:      req.Format,
+		Categoty:    req.Categoty,
+		ProcessType: req.ProcessType,
 	}
 
 	leagueId, err := h.uc.Save(c.Request.Context(), persistLeague)
@@ -155,17 +162,52 @@ func (h *Handler) save(c *gin.Context) {
 
 func (h *Handler) getAll(c *gin.Context) {
 
-	name := c.Query("name") // query param
-	leagues, err := h.uc.GetAll(c.Request.Context(), name)
+	var req struct {
+		Status *league.LEAGUE_STATUS `form:"status" binding:"omitempty"`
+	}
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
+	}
+
+	leagues, err := h.uc.GetAll(c.Request.Context(), req.Status)
 	if err != nil {
 		c.Error(customerror.NewInternalError(err))
 		c.Abort()
 		return
 	}
-	leagueResponse := make([]*LeagueResponse, 0, len(leagues))
+
+	type response struct {
+		ID                 string                     `json:"id"`
+		Name               string                     `json:"name"`
+		Format             league.LEAGUE_FORMAT       `json:"format"`
+		Category           league.LEAGUE_CATEGORY     `json:"category"`
+		ProcessType        league.LEAGUE_PROCESS_TYPE `json:"processType"`
+		Status             league.LEAGUE_STATUS       `json:"status"`
+		TotalAttentance    int32                      `json:"totalAttentance"`
+		CoordinatorUserIds []string                   `json:"coordinatorUserIds"`
+	}
+	leagueResponse := make([]*response, 0, len(leagues))
 
 	for _, l := range leagues {
-		leagueResponse = append(leagueResponse, toLeagueResponse(l))
+		leagueResponse = append(leagueResponse, &response{
+			ID:                 l.ID,
+			Name:               l.Name,
+			Format:             l.Format,
+			Category:           l.Category,
+			ProcessType:        l.Type,
+			Status:             l.Status,
+			TotalAttentance:    l.TotalAttentance,
+			CoordinatorUserIds: l.CoordinatorUserId,
+		})
 	}
 
 	res := delivery.NewSuccessResponse(leagueResponse)

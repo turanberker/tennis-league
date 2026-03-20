@@ -5,6 +5,7 @@ import React, {
   useState,
   ReactNode,
 } from 'react';
+import { Role } from '../model/user.model';
 
 /* ============================= */
 /*            TYPES              */
@@ -14,7 +15,7 @@ export interface AuthUser {
   userID: number;
   name: string;
   surname: string;
-  role: string;
+  role: Role;
 }
 
 interface AuthContextType {

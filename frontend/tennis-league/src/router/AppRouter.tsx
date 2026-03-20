@@ -14,6 +14,7 @@ import Scoreboard from '../pages/leagues/Scoreboard';
 import { useAuth } from '../context/AuthContext';
 import Users from '../pages/admin/Users';
 import Profile from '../pages/protected/Profile';
+import { Role } from '../model/user.model';
 
 export function SidebarLinks() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export function AppRoutes() {
       <Route
         path="/admin/users"
         element={
-          <ProtectedRoute allowedRoles={['ADMIN']}>
+          <ProtectedRoute allowedRoles={[Role.ADMIN]}>
             <Users /> {/* Buraya kendi kullanıcı listenin olduğu sayfayı koy */}
           </ProtectedRoute>
         }

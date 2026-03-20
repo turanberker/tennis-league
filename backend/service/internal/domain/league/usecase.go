@@ -133,9 +133,8 @@ func (u *Usecase) GetById(ctx context.Context, id string) (*League, error) {
 	return u.repo.GetById(ctx, id)
 }
 
-func (u *Usecase) GetAll(ctx context.Context, name string) ([]*League, error) {
-
-	return u.repo.GetAll(ctx, &name)
+func (u *Usecase) GetAll(ctx context.Context, status *LEAGUE_STATUS) ([]*LeagueListSelect, error) {
+	return u.repo.GetAll(ctx, status)
 }
 
 func (u *Usecase) Save(ctx context.Context, persistLeague *PersistLeague) (*string, error) {

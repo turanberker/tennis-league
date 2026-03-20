@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/sqlscan"
@@ -33,21 +32,23 @@ func (r *LeagueRepository) GetById(ctx context.Context, id string) (*league.Leag
 	return league, err
 }
 
-func (r *LeagueRepository) GetAll(ctx context.Context, name *string) ([]*league.League, error) {
+func (r *LeagueRepository) GetAll(ctx context.Context, stauts *league.LEAGUE_STATUS) ([]*league.LeagueListSelect, error) {
 	exec := r.GetExecutor(ctx)
 	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
 	sqlBuilder := psql.Select("l.id",
 		"l.name",
-		"l.fixture_created_date",
-		"COALESCE(string_agg(concat(u.name, ' ', u.surname), ','),'') AS coordinators",
-		"COALESCE(string_agg(u.id,','),'') as coordinator_user_ids ").
+		"l.format",
+		"l.category",
+		"l.process_type",
+		"l.status",
+		"l.total_attendance",
+		"COALESCE(string_agg(lc.user_id,','),'') as coordinator_user_ids").
 		From("league l").
 		LeftJoin("league_coordinator lc ON lc.league_id = l.id").
-		LeftJoin("\"user\" u ON u.id = lc.user_id").
-		GroupBy("l.id", "l.name", "l.fixture_created_date")
-	if name != nil && len(*name) > 0 {
-		sqlBuilder = sqlBuilder.Where("l.name ILIKE ?", "%"+*name+"%")
+		GroupBy("l.id", "l.name", "l.format", "l.process_type", "l.status", "l.total_attendance")
+	if stauts != nil {
+		sqlBuilder = sqlBuilder.Where("l.status = " + *stauts)
 	}
 
 	query, args, err := sqlBuilder.ToSql()
@@ -56,11 +57,14 @@ func (r *LeagueRepository) GetAll(ctx context.Context, name *string) ([]*league.
 	}
 
 	type row struct {
-		ID                 string     `db:"id"`
-		Name               string     `db:"name"`
-		FixtureCreatedDate *time.Time `db:"fixture_created_date"`
-		Coordinators       string     `db:"coordinators"`
-		CoordinatorIds     string     `db:"coordinator_user_ids"`
+		ID               string                     `db:"id"`
+		Name             string                     `db:"name"`
+		Format           league.LEAGUE_FORMAT       `db:"format"`
+		Category         league.LEAGUE_CATEGORY     `db:"category"`
+		Status           league.LEAGUE_STATUS       `db:"status"`
+		Process_Type     league.LEAGUE_PROCESS_TYPE `db:"process_type"`
+		Total_Attancande int32                      `db:"total_attendance"`
+		CoordinatorIds   string                     `db:"coordinator_user_ids"`
 	}
 	var rowsData []row
 	err = sqlscan.Select(ctx, exec, &rowsData, query, args...)
@@ -68,15 +72,18 @@ func (r *LeagueRepository) GetAll(ctx context.Context, name *string) ([]*league.
 		return nil, fmt.Errorf("veritabanı hatası: %v", err)
 	}
 
-	var leagues []*league.League
+	var leagues []*league.LeagueListSelect
 	for _, d := range rowsData {
 
-		leagues = append(leagues, &league.League{
-			ID:                 d.ID,
-			Name:               d.Name,
-			FixtureCreatedDate: d.FixtureCreatedDate,
-			Cootrinators:       strings.Split(d.Coordinators, ","),
-			CoordinatorUserId:  strings.Split(d.CoordinatorIds, ","),
+		leagues = append(leagues, &league.LeagueListSelect{
+			ID:                d.ID,
+			Name:              d.Name,
+			Category:          d.Category,
+			Format:            d.Format,
+			Type:              d.Process_Type,
+			Status:            d.Status,
+			TotalAttentance:   d.Total_Attancande,
+			CoordinatorUserId: strings.Split(d.CoordinatorIds, ","),
 		})
 	}
 
@@ -85,10 +92,11 @@ func (r *LeagueRepository) GetAll(ctx context.Context, name *string) ([]*league.
 
 func (r *LeagueRepository) Save(ctx context.Context, persistLeague *league.PersistLeague) (*string, error) {
 	exec := r.GetExecutor(ctx)
-	query := `INSERT INTO league (id,name) VALUES (gen_random_uuid(),$1) RETURNING id`
+	query := `INSERT INTO league (name,format, category,process_type) VALUES ($1,$2,$3,$4) RETURNING id`
 
 	var id string
-	err := exec.QueryRowContext(ctx, query, persistLeague.Name).Scan(&id)
+	err := exec.QueryRowContext(ctx, query, persistLeague.Name, persistLeague.Format, persistLeague.Categoty, persistLeague.ProcessType).
+		Scan(&id)
 	if err != nil {
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Constraint == "league_name_key" {
