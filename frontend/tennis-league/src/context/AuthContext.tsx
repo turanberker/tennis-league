@@ -12,9 +12,9 @@ import { Role } from '../model/user.model';
 /* ============================= */
 
 export interface AuthUser {
-  userID: number;
-  name: string;
-  surname: string;
+  userID: String;
+  name: String;
+  surname: String;
   role: Role;
 }
 

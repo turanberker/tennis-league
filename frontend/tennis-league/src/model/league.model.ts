@@ -7,14 +7,14 @@ export interface League {
 }
 
 export interface LeagueListResponse {
-  id: string;
-  name: string;
+  id: String;
+  name: String;
   format: LEAGUE_FORMAT;
-  category:LEAGUE_CATEGORY;
-  processType:LEAGUE_PROCESS_TYPE,
-  status:LEAGUE_STATUS,
+  category: LEAGUE_CATEGORY;
+  processType: LEAGUE_PROCESS_TYPE,
+  status: LEAGUE_STATUS,
   totalAttentance: number;
-  coordinatorUserIds: string[];
+  coordinatorUserIds: String[];
 }
 
 export interface PersistLeagueRequest {

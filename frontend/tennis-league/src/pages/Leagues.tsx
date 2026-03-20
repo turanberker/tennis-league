@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Card } from "primereact/card";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
@@ -34,6 +34,7 @@ import ProtectedRoute from "../router/ProtectedRoute";
 import { Role } from "../model/user.model";
 import Guard from "../helper/Guard";
 import { MenuItem } from "primereact/menuitem";
+import { useAuth } from "../context/AuthContext";
 
 
 // ================= VALIDATION SCHEMA =================
@@ -52,6 +53,7 @@ const schema = yup.object({
 
 export default function Leagues() {
   const navigate = useNavigate();
+  const { user } = useAuth()
   const [leagues, setLeagues] = useState<LeagueListResponse[]>([]);
   const [selectedLeague, setSelectedLeague] = useState<LeagueListResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -83,15 +85,31 @@ export default function Leagues() {
     loadLeagues();
   }, []);
 
-  const items: MenuItem[] = [
+  const items: MenuItem[] = useMemo(() => {
+    // 1. Lig seçili mi?
+    const isSelected = !!selectedLeague;
 
-    {
-      label: "Fikstür Oluştur",
-      icon: "pi pi-plus-circle",
-      disabled: !selectedLeague || selectedLeague?.totalAttentance === 0,
-      command: () => handleCreateFixture()
-    }
-  ];
+    // 2. Kullanıcı bu ligin koordinatörü mü? 
+    // (Rol kontrolü üstte yapıldığına göre burada sadece ID check yeterli)
+    const isCoordinator = user && selectedLeague?.coordinatorUserIds?.includes(user.userID);
+
+    return [
+      {
+        label: "Fikstür Oluştur",
+        icon: "pi pi-plus-circle",
+        // ŞART: Seçili değilse VEYA katılım yoksa VEYA listede YOKSA kapat.
+        // !isCoordinator -> "Koordinatör değilse" anlamına gelir.
+        disabled: !isSelected || selectedLeague?.totalAttentance === 0 || !isCoordinator,
+        command: () => handleCreateFixture()
+      },
+      {
+        label: "Takımlar & Oyuncular",
+        icon: "pi pi-users",
+        disabled: !isSelected || !isCoordinator,
+        command: () => handleTeams()
+      }
+    ];
+  }, [selectedLeague, user]);
 
   const header = () => {
     return (

@@ -5,7 +5,7 @@ import axiosClient from "./axiosClient";
 import { ScoreBoardResponse } from "../model/standing.model";
 import { LeagueListResponse, PersistLeagueRequest } from "../model/league.model";
 
-export const getLeagues = async (params?: { name?: string }):Promise<LeagueListResponse[]> => {
+export const getLeagues = async (params?: { name?: string }): Promise<LeagueListResponse[]> => {
   return await axiosClient.get("leagues/list", { params });
 };
 
@@ -33,7 +33,7 @@ export const createTeam = async (
   return await axiosClient.post<string>(`leagues/${leagueId}/teams`, team);
 };
 
-export const createFixture = async (leagueId: string) => {
+export const createFixture = async (leagueId: String) => {
   return await axiosClient.post(`leagues/${leagueId}/create-fixture`);
 };
 
