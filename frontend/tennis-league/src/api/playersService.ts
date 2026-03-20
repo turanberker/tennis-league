@@ -1,9 +1,9 @@
 import axiosClient from './axiosClient';
 import { Player, CreatePlayerRequest, Sex } from '../model/player.model';
 
-export const getPlayers = async (name?: string): Promise<Player[]> => {
+export const getPlayers = async (data?: { name?: string, sex?: Sex }): Promise<Player[]> => {
   return axiosClient.get<Player[]>('/player/list', {
-    params: { name },
+    params: data,
   });
 };
 

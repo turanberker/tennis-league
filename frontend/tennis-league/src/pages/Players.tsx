@@ -19,6 +19,7 @@ import { Role } from '../model/user.model';
 import { useAuth } from '../context/AuthContext';
 import FormItem from '../components/FormItem';
 import { isFieldRequired } from '../helper/form.helper';
+import { League_Process_Type_Options } from '../model/league.model';
 
 // VALIDATION
 const schema = yup.object().shape({
@@ -48,13 +49,12 @@ interface FormData {
 
 export default function Players() {
 
-  const { user } = useAuth()
-
   const methods
     = useForm<FormData>({
       resolver: yupResolver(schema),
       defaultValues: { name: '', surname: '', sex: undefined as any },
     });
+  const [sexFilter, setSexFilter] = useState<Sex>()
   const [selectedPlayer, setSelectedPlayer] = useState<Player>()
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -63,11 +63,13 @@ export default function Players() {
   const toast = useRef<Toast>(null);
   const navigate = useNavigate();
 
+  useEffect(() => { loadPlayers() }, [sexFilter])
+
   // Oyuncuları yükle
   const loadPlayers = async () => {
 
     setLoading(true);
-    const res = await getPlayers();
+    const res = await getPlayers({ sex: sexFilter });
     setPlayers(res);
     setLoading(false);
   };
@@ -106,29 +108,49 @@ export default function Players() {
   };
 
 
-
-
   const header = () => {
     return (
-      <div className="flex justify-content-end">
-        <Guard allowedRoles={[Role.ADMIN, Role.COORDINATOR]}>
-          <Button
-            label="Yeni Oyuncu"
-            icon="pi pi-plus"
-            size='small'
-            onClick={() => setCreateVisible(true)}
-          />
-        </Guard>
+      <>
+        <div className="flex flex-column md:flex-row md:justify-content-between md:align-items-center gap-3 p-2">
+          {/* SOL TARAF: Başlık ve Filtreler */}
+          <div className="flex align-items-center flex-1">
 
-        <Button
-          severity="info"
-          label='Detay'
-          disabled={!selectedPlayer}
-          rounded
-          text
-          onClick={() => handlePlayerDetail(selectedPlayer!.id)}
-        />
-      </div>
+            <Dropdown
+              value={sexFilter}
+              onChange={(e) => setSexFilter(e.value)}
+              options={SexOptions}
+              optionLabel="label"
+              showClear
+              placeholder="Cinsiyet"
+              className="w-full md:w-14rem" // Sabit genişlik filtrede daha iyi durur
+            />
+          </div>
+
+          {/* SAĞ TARAF: Aksiyon Butonları */}
+          <div className="flex align-items-center gap-2">
+            <Guard allowedRoles={[Role.ADMIN, Role.COORDINATOR]}>
+              <Button
+                label="Yeni Oyuncu"
+                icon="pi pi-plus"
+                size="small"
+                onClick={() => setCreateVisible(true)}
+              />
+            </Guard>
+            <Button
+              severity="info"
+              label="Detay"
+              icon="pi pi-search"
+              disabled={!selectedPlayer}
+              outlined // Detay butonu ikincil olduğu için outlined daha şık durabilir
+              size="small"
+              onClick={() => handlePlayerDetail(selectedPlayer!.id)}
+            />
+
+
+          </div>
+        </div>
+
+      </>
     );
   };
   return (
@@ -162,18 +184,7 @@ export default function Players() {
             header="Cinsiyet"
             body={(rowData) => SexLabels[rowData.sex as Sex]}
           />
-          <Column
-            header="İşlem"
-            body={(rowData) => (
-              <Button
-                icon="pi pi-info-circle"
-                severity="info"
-                rounded
-                text
-                onClick={() => handlePlayerDetail(rowData.id)}
-              />
-            )}
-          />
+
         </DataTable>
       </Card>
 
