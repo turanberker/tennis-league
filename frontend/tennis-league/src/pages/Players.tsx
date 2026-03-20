@@ -7,13 +7,18 @@ import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
 import { Player, Sex, SexLabels, SexOptions } from '../model/player.model';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Sidebar } from 'primereact/sidebar';
+import Guard from '../helper/Guard';
+import { Role } from '../model/user.model';
+import { useAuth } from '../context/AuthContext';
+import FormItem from '../components/FormItem';
+import { isFieldRequired } from '../helper/form.helper';
 
 // VALIDATION
 const schema = yup.object().shape({
@@ -42,20 +47,17 @@ interface FormData {
 }
 
 export default function Players() {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({
-    resolver: yupResolver(schema),
-    defaultValues: { name: '', surname: '', sex: undefined as any },
-  });
 
+  const { user } = useAuth()
+
+  const methods
+    = useForm<FormData>({
+      resolver: yupResolver(schema),
+      defaultValues: { name: '', surname: '', sex: undefined as any },
+    });
+  const [selectedPlayer, setSelectedPlayer] = useState<Player>()
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [createVisible, setCreateVisible] = useState<boolean>(false);
 
   const toast = useRef<Toast>(null);
@@ -63,22 +65,11 @@ export default function Players() {
 
   // Oyuncuları yükle
   const loadPlayers = async () => {
-    try {
-      setLoading(true);
-      const res = await getPlayers();
-      setPlayers(res);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Oyuncular yüklenemedi.');
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Hata',
-        detail: err.message || 'Oyuncular yüklenemedi.',
-        life: 3000,
-      });
-    } finally {
-      setLoading(false);
-    }
+
+    setLoading(true);
+    const res = await getPlayers();
+    setPlayers(res);
+    setLoading(false);
   };
 
   // CREATE
@@ -93,7 +84,7 @@ export default function Players() {
         life: 3000,
       });
 
-      reset();
+      methods.reset();
       setCreateVisible(false);
       loadPlayers();
     } catch (err: any) {
@@ -114,30 +105,32 @@ export default function Players() {
     navigate(`/players/${uuid}`);
   };
 
+
+
+
   const header = () => {
     return (
       <div className="flex justify-content-end">
+        <Guard allowedRoles={[Role.ADMIN, Role.COORDINATOR]}>
+          <Button
+            label="Yeni Oyuncu"
+            icon="pi pi-plus"
+            size='small'
+            onClick={() => setCreateVisible(true)}
+          />
+        </Guard>
+
         <Button
-          label="Yeni Oyuncu"
-          icon="pi pi-plus"
-          onClick={() => setCreateVisible(true)}
+          severity="info"
+          label='Detay'
+          disabled={!selectedPlayer}
+          rounded
+          text
+          onClick={() => handlePlayerDetail(selectedPlayer!.id)}
         />
       </div>
     );
   };
-
-  const customIcons = (
-    <React.Fragment>
-      <Button
-        className="p-sidebar-icon p-link mr-2"
-        icon="pi pi-check"
-        tooltip="Kaydet"
-        onClick={handleSubmit(onSubmit)}
-        loading={isSubmitting}
-        tooltipOptions={{ position: 'left' }}
-      ></Button>
-    </React.Fragment>
-  );
   return (
     <>
       <Toast ref={toast} />
@@ -146,16 +139,22 @@ export default function Players() {
         title="Oyuncular"
         subTitle="Mevcut oyuncuları görüntüleyebilir veya yeni oyuncu ekleyebilirsiniz."
       >
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-
         <DataTable
           value={players}
           header={header}
           key="id"
+          dataKey="id"
+          selectionMode="single"
+          selection={selectedPlayer!}
+          onSelectionChange={(e) => setSelectedPlayer(e.value)}
           emptyMessage="Oyuncu bulunamadı"
           loading={loading}
           tableStyle={{ minWidth: '50rem' }}
         >
+          <Column
+            selectionMode="single"
+            headerStyle={{ width: "3rem" }}
+          ></Column>
           <Column field="name" header="Ad" />
           <Column field="surname" header="Soyad" />
           <Column
@@ -182,55 +181,72 @@ export default function Players() {
         visible={createVisible}
         position="right"
         onHide={() => setCreateVisible(false)}
-        icons={() => customIcons}
+
       >
-        {/* NAME */}
-        <div className="flex flex-column gap-2">
-          <label className="font-medium">Adı *</label>
-          <InputText
-            placeholder="Örn: Berker"
-            className={classNames({ 'p-invalid': errors.name })}
-            {...register('name')}
-          />
-          {errors.name && (
-            <small className="p-error">{errors.name.message}</small>
-          )}
-        </div>
-
-        {/* SURNAME */}
-        <div className="flex flex-column gap-2 mt-3">
-          <label className="font-medium">Soyadı *</label>
-          <InputText
-            placeholder="Örn: Turan"
-            className={classNames({ 'p-invalid': errors.surname })}
-            {...register('surname')}
-          />
-          {errors.surname && (
-            <small className="p-error">{errors.surname.message}</small>
-          )}
-        </div>
-
-        {/* SEX */}
-        <div className="flex flex-column gap-2 mt-3">
-          <label className="font-medium">Cinsiyet *</label>
-
-          <Controller
-            name="sex"
-            control={control}
-            render={({ field }) => (
-              <Dropdown
-                {...field}
-                options={SexOptions}
-                placeholder="Cinsiyet seçiniz"
-                className={classNames({ 'p-invalid': errors.sex })}
+        <FormProvider {...methods}>
+          <form onSubmit={methods.handleSubmit(onSubmit)} className="p-fluid">
+            <FormItem
+              label='Adı'
+              name='name'
+              required={isFieldRequired(schema, "name")}>
+              <InputText
+                id="name"
+                placeholder="Örn: Berker"
+                className={classNames({ 'p-invalid': methods.formState.errors.name })}
+                {...methods.register('name')}
               />
-            )}
-          />
+            </FormItem>
+            <FormItem
+              label='Soyadı'
+              name='surname'
+              required={isFieldRequired(schema, "surname")}>
+              <InputText
+                placeholder="Örn: Turan"
+                id="surname"
+                className={classNames({ 'p-invalid': methods.formState.errors.surname })}
+                {...methods.register('surname')}
+              />
+            </FormItem>
+            <FormItem
+              label='Cinsiyet'
+              name='sex'
+              required={isFieldRequired(schema, "sex")}>
 
-          {errors.sex && (
-            <small className="p-error">{errors.sex.message}</small>
-          )}
-        </div>
+              <Controller
+                name="sex"
+                control={methods.control}
+                render={({ field }) => (
+                  <Dropdown
+                    {...field}
+                    options={SexOptions}
+                    placeholder="Cinsiyet seçiniz"
+                    className={classNames({ 'p-invalid': methods.formState.errors.sex })}
+                  />
+                )}
+              />
+            </FormItem>
+            <div className="mt-4 flex gap-2">
+              <Button
+                type="button"
+                label="İptal"
+                icon="pi pi-times"
+                outlined
+                severity="secondary"
+                onClick={() => setCreateVisible(false)}
+                className="w-full"
+              />
+              <Button
+                type="submit"
+                label="Kaydet"
+                icon="pi pi-check"
+                loading={methods.formState.isSubmitting}
+                className="w-full"
+              />
+            </div>
+          </form>
+
+        </FormProvider>
+
       </Sidebar>
       {/* CREATE DIALOG */}
     </>

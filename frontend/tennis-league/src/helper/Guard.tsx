@@ -5,7 +5,7 @@ import { AuthUser, useAuth } from '../context/AuthContext';
 
 interface GuardProps {
     children: React.ReactNode;
-    allowedRoles: Role[];
+    allowedRoles: Role[] | Role;
     condition?: (user: AuthUser) => boolean; // Opsiyonel: Özel fonksiyon (true dönerse gösterir)
     fallback?: React.ReactNode; // Yetkisi yoksa yerine ne görünsün? (Opsiyonel)
 }
@@ -18,10 +18,18 @@ export default function Guard({ children, allowedRoles, condition, fallback = nu
         return <>{fallback}</>;
     }
 
-    // 2. Rol kontrolü (Eğer allowedRoles dizisi verilmişse)
-    const hasRole = allowedRoles
-        ? allowedRoles.includes(user.role as Role)
-        : true; // Belirtilmemişse rol engel teşkil etmez
+    // 2. Rol kontrolü (Refactor edilmiş kısım)
+    let hasRole = true; // Varsayılan olarak izin ver (allowedRoles yoksa)
+
+    if (allowedRoles) {
+        if (Array.isArray(allowedRoles)) {
+            // Eğer diziyse includes kullan
+            hasRole = allowedRoles.includes(user.role as Role);
+        } else {
+            // Eğer tekil değerse direkt karşılaştır
+            hasRole = user.role === allowedRoles;
+        }
+    }
 
     // 3. Custom fonksiyon kontrolü (Eğer condition verilmişse)
     const satisfiesCondition = condition
