@@ -202,7 +202,7 @@ export default function Players() {
               required={isFieldRequired(schema, "name")}>
               <InputText
                 id="name"
-                placeholder="Örn: Berker"
+                placeholder="Örn: Novak"
                 className={classNames({ 'p-invalid': methods.formState.errors.name })}
                 {...methods.register('name')}
               />
@@ -212,7 +212,7 @@ export default function Players() {
               name='surname'
               required={isFieldRequired(schema, "surname")}>
               <InputText
-                placeholder="Örn: Turan"
+                placeholder="Örn: Djokovic"
                 id="surname"
                 className={classNames({ 'p-invalid': methods.formState.errors.surname })}
                 {...methods.register('surname')}
