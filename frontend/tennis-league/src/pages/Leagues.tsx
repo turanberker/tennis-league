@@ -35,6 +35,7 @@ import { Role } from "../model/user.model";
 import Guard from "../helper/Guard";
 import { MenuItem } from "primereact/menuitem";
 import { useAuth } from "../context/AuthContext";
+import { isFieldRequired } from "../helper/form.helper";
 
 
 // ================= VALIDATION SCHEMA =================
@@ -165,12 +166,7 @@ export default function Leagues() {
     navigate(`/leagues/${selectedLeague!.id}/teams`);
   };
 
-  // Şemayı ve alan adını verince true/false döner
-  const isFieldRequired = (schema: any, fieldName: string) => {
-    return schema
-      .describe()
-      .fields[fieldName]?.tests.some((test: any) => test.name === "required");
-  };
+
 
   const handleCreateFixture = async () => {
     const data = await createFixture(selectedLeague!.id);
