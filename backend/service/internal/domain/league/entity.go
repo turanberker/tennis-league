@@ -19,9 +19,14 @@ type LeagueListSelect struct {
 type League struct {
 	ID                 string
 	Name               string
+	Format             LEAGUE_FORMAT
+	Category           LEAGUE_CATEGORY
+	ProcessType        LEAGUE_PROCESS_TYPE
+	Status             LEAGUE_STATUS
+	TotalAttendance    int32
 	FixtureCreatedDate *time.Time
-	Cootrinators       []string
-	CoordinatorUserId  []string
+	StartDate          *time.Time
+	EndDate            *time.Time
 }
 
 type PersistLeague struct {

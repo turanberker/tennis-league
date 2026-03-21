@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
@@ -16,10 +16,8 @@ import { Column } from 'primereact/column';
 import { Sidebar } from 'primereact/sidebar';
 import Guard from '../helper/Guard';
 import { Role } from '../model/user.model';
-import { useAuth } from '../context/AuthContext';
 import FormItem from '../components/FormItem';
 import { isFieldRequired } from '../helper/form.helper';
-import { League_Process_Type_Options } from '../model/league.model';
 
 // VALIDATION
 const schema = yup.object().shape({

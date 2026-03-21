@@ -23,13 +23,31 @@ func NewLeagueRepository(db *sql.DB) *LeagueRepository {
 
 func (r *LeagueRepository) GetById(ctx context.Context, id string) (*league.League, error) {
 	exec := r.GetExecutor(ctx)
-	league := &league.League{}
-	query := `SELECT id, name,fixture_created_date FROM league WHERE id=$1`
-	err := exec.QueryRowContext(ctx, query, id).Scan(&league.ID, &league.Name, &league.FixtureCreatedDate)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	sqlBuilder := psql.Select("l.id",
+		"l.name",
+		"l.format",
+		"l.category",
+		"l.process_type",
+		"l.status",
+		"l.total_attendance",
+		"l.fixture_created_date",
+		"l.start_date",
+		"l.end_date").
+		From("league l").
+		Where(squirrel.Eq{"l.id": id})
+
+	query, args, err := sqlBuilder.ToSql()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %v", err)
 	}
-	return league, err
+	league := &league.League{}
+
+	if err := sqlscan.Get(ctx, exec, league, query, args...); err != nil {
+		return nil, fmt.Errorf("lig getirilemedi (id: %s): %w", id, err)
+	}
+
+	return league, nil
 }
 
 func (r *LeagueRepository) GetAll(ctx context.Context, stauts *league.LEAGUE_STATUS) ([]*league.LeagueListSelect, error) {
@@ -48,7 +66,7 @@ func (r *LeagueRepository) GetAll(ctx context.Context, stauts *league.LEAGUE_STA
 		LeftJoin("league_coordinator lc ON lc.league_id = l.id").
 		GroupBy("l.id", "l.name", "l.format", "l.process_type", "l.status", "l.total_attendance")
 	if stauts != nil {
-		sqlBuilder = sqlBuilder.Where("l.status = " + *stauts)
+		sqlBuilder = sqlBuilder.Where(squirrel.Eq{"l.status": *stauts})
 	}
 
 	query, args, err := sqlBuilder.ToSql()

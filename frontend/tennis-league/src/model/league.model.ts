@@ -1,9 +1,14 @@
 export interface League {
-  id: string;
-  name: string;
-  fixtureCreatedDate: Date;
-  coordinators: string[];
-  coordinatorUserIds: string[];
+  id: String;
+  name: String;
+  format: LEAGUE_FORMAT;
+  category: LEAGUE_CATEGORY;
+  processType: LEAGUE_PROCESS_TYPE,
+  status: LEAGUE_STATUS,
+  totalAttentance: number;
+  fixtureCreatedDate?: Date;
+  startedDate?: Date;
+  endDate?: Date;
 }
 
 export interface LeagueListResponse {

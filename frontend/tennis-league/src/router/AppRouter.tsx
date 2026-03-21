@@ -7,7 +7,7 @@ import Players from '../pages/Players';
 import Matches from '../pages/Matches';
 import ProtectedRoute from './ProtectedRoute';
 import Fixtures from '../pages/leagues/Fixtures';
-import Teams from '../pages/Teams';
+import Teams from '../pages/leagues/Teams';
 import NewPlayer from '../pages/player/NewPlayer';
 import PlayerDetail from '../pages/player/PlayerDetail';
 import Scoreboard from '../pages/leagues/Scoreboard';

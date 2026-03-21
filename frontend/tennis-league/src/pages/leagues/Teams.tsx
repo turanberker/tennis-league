@@ -7,14 +7,17 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
 import { useParams } from 'react-router-dom';
-import { CreateTeamRequest, TeamResponse } from '../model/team.model';
-import { createTeam, getTeams } from '../api/leagueService';
-import { Player } from '../model/player.model';
-import { getPlayers } from '../api/playersService';
+import { CreateTeamRequest, TeamResponse } from '../../model/team.model';
+import { createTeam, getTeams } from '../../api/leagueService';
+import { Player } from '../../model/player.model';
+import { getPlayers } from '../../api/playersService';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { LeagueCard } from '../../components/LeagueCard';
+import { useLeague } from '../../hooks/UseLeague';
+import { ProgressSpinner } from 'primereact/progressspinner';
 
 type CreateTeamForm = {
   name: string;
@@ -47,9 +50,10 @@ const schema = yup.object({
 const Teams: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
+  const { isLoading } = useLeague(id);
   const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+
   const [createDialogVisible, setCreateDialogVisible] =
     useState<boolean>(false);
 
@@ -71,18 +75,10 @@ const Teams: React.FC = () => {
   // Oyuncuları yükle
   useEffect(() => {
     const loadPlayers = async () => {
-      try {
-        const res = await getPlayers();
-        setPlayers(res);
-      } catch (err: any) {
-        console.error('Oyuncular yüklenirken hata oluştu', err);
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Hata',
-          detail: err.message || 'Oyuncular yüklenemedi',
-          life: 3000,
-        });
-      }
+
+      const res = await getPlayers();
+      setPlayers(res);
+
     };
     loadPlayers();
   }, []);
@@ -105,24 +101,10 @@ const Teams: React.FC = () => {
   const loadTeams = async (): Promise<void> => {
     if (!id) return;
 
-    try {
-      setLoading(true);
-      console.log('Loading teams for league:', id);
-      const res: TeamResponse[] = await getTeams(id);
-      setTeams(res);
-      setError(null);
-    } catch (err: any) {
-      console.error('Takımlar yüklenirken hata oluştu:', err);
-      setError(err.message || 'Takımlar yüklenemedi');
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Hata',
-        detail: err.message || 'Takımlar yüklenemedi',
-        life: 3000,
-      });
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    const res: TeamResponse[] = await getTeams(id);
+    setTeams(res);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -147,15 +129,19 @@ const Teams: React.FC = () => {
       </div>
     );
   };
+
+  if (isLoading) return <ProgressSpinner />;
+
   return (
     <>
       <Toast ref={toast} />
 
+      <LeagueCard id={id!}></LeagueCard>
+
       <Card
         title="Takımlar & Oyuncular"
-        subTitle="Lige katılacak takımları görüntüleyebilir veya yeni takım tanımlayabilirsiniz."
       >
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+
         <DataTable
           value={teams}
           loading={loading}

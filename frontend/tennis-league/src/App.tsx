@@ -12,6 +12,8 @@ import RegisterDialog, { RegisterForm } from './components/auth/RegisterDialog';
 import { SidebarLinks, AppRoutes } from './router/AppRouter';
 import { AuthProvider, useAuth, AuthUser } from './context/AuthContext';
 import { login as loginApi, register as registerApi } from './api/authService';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -180,12 +182,29 @@ function Layout() {
   );
 }
 
+
+// 1. Client instance'ını App dışında oluşturuyoruz (re-render'larda kaybolmaması için)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Veri çekildikten sonra 5 dakika boyunca "taze" (fresh) kabul edilsin
+      staleTime: 1000 * 60 * 5,
+      // Hata durumunda otomatik tekrar deneme sayısı
+      retry: 1,
+    },
+  },
+});
+
 export default function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <Layout />
-      </AuthProvider>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <Layout />
+        </AuthProvider>
+      </Router>
+      {/* Geliştirme aşamasında hayat kurtarır, canlı ortamda gözükmez */}
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }

@@ -1,9 +1,8 @@
 package leaguehandler
 
 import (
-	"database/sql"
-	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -105,18 +104,39 @@ func (h *Handler) getById(c *gin.Context) {
 	// path param
 	leagueId := c.Param("id")
 
-	league, err := h.uc.GetById(ctx, leagueId)
+	leagueData, err := h.uc.GetById(ctx, leagueId)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			c.JSON(http.StatusInternalServerError, delivery.NewErrorResponse("league not found"))
-			return
-		}
-		c.JSON(http.StatusInternalServerError, delivery.NewErrorResponse("internal error"))
-
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
 		return
 	}
-	response := toLeagueResponse(league)
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
+
+	var res struct {
+		Id                 string                     `json:"id"`
+		Name               string                     `json:"name"`
+		Format             league.LEAGUE_FORMAT       `json:"format"`
+		Category           league.LEAGUE_CATEGORY     `json:"category"`
+		ProcessType        league.LEAGUE_PROCESS_TYPE `json:"processType"`
+		Status             league.LEAGUE_STATUS       `json:"status"`
+		TotalAttentance    int32                      `json:"totalAttentance"`
+		FixtureCreatedDate *time.Time                 `json:"fixtureCreatedDate"`
+		StartedDate        *time.Time                 `json:"startedDate"`
+		EndDate            *time.Time                 `json:"endDate"`
+	}
+
+	// Alanları doldur
+	res.Id = leagueData.ID
+	res.Name = leagueData.Name
+	res.Format = leagueData.Format
+	res.Category = leagueData.Category
+	res.ProcessType = leagueData.ProcessType
+	res.Status = leagueData.Status
+	res.TotalAttentance = leagueData.TotalAttendance
+	res.FixtureCreatedDate = leagueData.FixtureCreatedDate
+	res.StartedDate = leagueData.StartDate
+	res.EndDate = leagueData.EndDate
+
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(res))
 }
 
 func (h *Handler) save(c *gin.Context) {
@@ -360,20 +380,6 @@ func (h *Handler) newCoordinator(c *gin.Context) {
 	res := delivery.NewSuccessResponse(added)
 	c.JSON(http.StatusOK, res)
 
-}
-
-func toLeagueResponse(l *league.League) *LeagueResponse {
-	if l == nil {
-		return nil
-	}
-
-	return &LeagueResponse{
-		ID:                 l.ID,
-		Name:               l.Name,
-		FixtureCreatedDate: l.FixtureCreatedDate,
-		Coordinators:       l.Cootrinators,
-		CoordinatorUserIds: l.CoordinatorUserId,
-	}
 }
 
 func toTeamResponse(l *team.Team) *dto.TeamResponse {
