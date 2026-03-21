@@ -46,10 +46,10 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM team_player tp
-        JOIN teams t ON t.id = tp.team_id
+        JOIN team t ON t.id = tp.team_id
         WHERE tp.player_id = NEW.player_id
           AND t.league_id = (
-              SELECT league_id FROM teams WHERE id = NEW.team_id
+              SELECT league_id FROM team WHERE id = NEW.team_id
           )
     ) THEN
         RAISE EXCEPTION 'Oyuncu aynı ligde birden fazla takımda olamaz';

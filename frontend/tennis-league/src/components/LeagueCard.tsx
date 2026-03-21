@@ -3,7 +3,8 @@ import { League_Category_Labels, League_Format_Labels, League_Process_Type_Label
 import { Skeleton } from 'primereact/skeleton';
 import { Card } from 'primereact/card';
 import { formatDate } from '../helper/date.helper';
-import { useLeague } from '../hooks/UseLeague';
+import { useLeague } from '../hooks/useLeague';
+
 
 interface LeagueCardProps {
     id: string;
