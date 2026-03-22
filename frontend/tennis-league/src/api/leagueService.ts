@@ -1,4 +1,3 @@
-import { AxiosResponse } from "axios";
 import { CreateTeamRequest, LeagueTeamResponse } from "../model/team.model";
 import { LeagueFixtureMatchResponse } from "../model/match.model";
 import axiosClient from "./axiosClient";

@@ -10,16 +10,13 @@ import * as yup from 'yup';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { getPlayers } from "../api/playersService";
 import { createTeam, getTeams } from "../api/leagueService";
-import { Dialog } from "primereact/dialog";
 import { Column } from "primereact/column";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { Sidebar } from "primereact/sidebar";
 import FormItem from "./FormItem";
 import { isFieldRequired } from "../helper/form.helper";
-import { LEAGUE_CATEGORY, LEAGUE_FORMAT } from "../model/league.model";
-import { useAsyncError } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { LEAGUE_CATEGORY } from "../model/league.model";
 
 interface LeagueTeamsProps {
     leagueId: string;
