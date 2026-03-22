@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { Card } from "primereact/card";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
@@ -78,44 +78,48 @@ export default function Leagues() {
     },
   });
 
-  const loadLeagues = async () => {
+  const loadLeagues = useCallback(async () => {
     setLoading(true);
-    // Hata olursa 'data' null gelecek ve alt satırlar patlamayacak
     const data = await getLeagues();
     if (data) {
       setLeagues(data);
     }
-    setLoading(false); // Hata ol
-  };
+    setLoading(false);
+  }, []);
 
-  const loadUsers = async () => {
-
+  const loadUsers = useCallback(async () => {
     if (!users) {
       const res = await getUsers();
       setUsers(res);
     }
-  };
+  }, [users]);
 
   useEffect(() => {
     loadLeagues();
-  }, []);
-
+  }, [loadLeagues]);
+  const handleCreateFixture = useCallback(async () => {
+    if (!selectedLeague) return;
+    const data = await createFixture(selectedLeague.id);
+    if (data) {
+      toast.current?.show({
+        severity: "success",
+        summary: "Başarılı",
+        detail: "Fikstür başarıyla oluşturuldu",
+        life: 3000,
+      });
+      loadLeagues();
+    }
+  }, [selectedLeague, loadLeagues]);
   const items: MenuItem[] = useMemo(() => {
-    // 1. Lig seçili mi?
     const isSelected = !!selectedLeague;
-
-    // 2. Kullanıcı bu ligin koordinatörü mü? 
-    // (Rol kontrolü üstte yapıldığına göre burada sadece ID check yeterli)
     const isCoordinator = user && selectedLeague?.coordinatorUserIds?.includes(user.userID);
-
     const isAdmin = user && user.role === Role.ADMIN;
-    const hasRole = (isCoordinator || isAdmin)
+    const hasRole = (isCoordinator || isAdmin);
+
     return [
       {
         label: "Fikstür Oluştur",
         icon: "pi pi-plus-circle",
-        // ŞART: Seçili değilse VEYA katılım yoksa VEYA listede YOKSA kapat.
-        // !isCoordinator -> "Koordinatör değilse" anlamına gelir.
         disabled: !isSelected || selectedLeague?.totalAttentance === 0 || !hasRole,
         command: () => handleCreateFixture()
       },
@@ -123,14 +127,14 @@ export default function Leagues() {
         label: "Koordinatör Ata",
         icon: "pi pi-user-plus",
         disabled: !isSelected || !hasRole,
-        command: (e: any) => {
-          setCoordinatorUser(undefined)
-          setCoordinatorDialogVisible(true)
+        command: () => {
+          setCoordinatorUser(undefined);
+          setCoordinatorDialogVisible(true);
           loadUsers();
         }
       }
     ];
-  }, [selectedLeague, user]);
+  }, [selectedLeague, user, handleCreateFixture, loadUsers]); // Bağımlılıklar eklendi
 
   const header = () => {
     return (
@@ -188,18 +192,7 @@ export default function Leagues() {
 
 
 
-  const handleCreateFixture = async () => {
-    const data = await createFixture(selectedLeague!.id);
-    if (data) {
-      toast.current?.show({
-        severity: "success",
-        summary: "Başarılı",
-        detail: "Fikstür başarıyla oluşturuldu",
-        life: 3000,
-      });
-      loadLeagues();
-    }
-  };
+
 
   const onSubmit = async (data: PersistLeagueRequest) => {
     let leagueId = await saveLeague(data);
