@@ -11,7 +11,7 @@ type Repository interface {
 
 	Save(ctx context.Context, persistLeague *PersistLeague) (*string, error)
 
-	SetFitxtureCreatedDate(ctx context.Context, leagueId string) error
+	StartLeague(ctx context.Context, leagueId string) error
 
 	IsFixtureCreated(ctx context.Context, leagueId string) (bool, error)
 

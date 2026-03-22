@@ -125,7 +125,7 @@ func (r *LeagueRepository) Save(ctx context.Context, persistLeague *league.Persi
 	return &id, nil
 }
 
-func (r *LeagueRepository) SetFitxtureCreatedDate(ctx context.Context, leagueId string) error {
+func (r *LeagueRepository) StartLeague(ctx context.Context, leagueId string) error {
 	exec := r.GetExecutor(ctx)
 	query := `UPDATE league SET start_date = NOW(), status=$1 WHERE id = $2`
 	_, err := exec.ExecContext(ctx, query, league.LeagueStatus_ACTIVE, leagueId)

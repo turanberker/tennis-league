@@ -310,7 +310,12 @@ func (h *Handler) newTeam(c *gin.Context) {
 func (h *Handler) createFixture(c *gin.Context) {
 
 	leagueId := c.Param("id") // query param
-	h.uc.SetFitxtureCreatedDate(c.Request.Context(), leagueId)
+	err := h.uc.CreateFixture(c.Request.Context(), leagueId)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
 
 	res := delivery.NewSuccessResponse("Fikstür oluşturuldu")
 	c.JSON(http.StatusOK, res)
@@ -322,8 +327,8 @@ func (h *Handler) getFixture(c *gin.Context) {
 	fixture, err := h.uc.GetFixture(c.Request.Context(), leagueId)
 
 	if err != nil {
-		res := delivery.NewErrorResponse(err.Error())
-		c.JSON(http.StatusOK, res)
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
 		return
 	}
 	fixtureResponse := make([]*LeagueFixtureMatchResponse, 0, len(fixture))

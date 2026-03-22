@@ -3,6 +3,7 @@ package league
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"net/http"
 
 	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
@@ -43,7 +44,6 @@ func (u *Usecase) AddNewCoordinator(ctx context.Context, leagueId string, userId
 
 		// 2. Eğer eklendiyse rolü güncelle
 		if *added {
-			// DİKKAT: userUsecase de txCtx almalı ki aynı transaction'da kalsın
 			err = u.userUsecase.SetUserAsCoordinator(txCtx, userId)
 			if err != nil {
 				return err
@@ -90,7 +90,7 @@ func NewUsecase(
 	}
 }
 
-func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) error {
+func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {
 
 	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
@@ -99,10 +99,11 @@ func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) e
 			return err
 		}
 		if created {
-			return errors.New("Fikstür zaten oluşturulmuş")
+			return customerror.NewBussinnessError(http.StatusConflict,
+				customerror.ErrLeagueAlreadyFixtureCreated,
+				"Fikstür zaten oluşturulmuş")
 		}
 
-		u.repo.SetFitxtureCreatedDate(txCtx, leagueId)
 		teams, err := u.teamRepo.GetByLeagueId(txCtx, leagueId)
 
 		var matches []*match.PersistLeagueMatch
@@ -112,20 +113,34 @@ func (u *Usecase) SetFitxtureCreatedDate(ctx context.Context, leagueId string) e
 
 			teamIds = append(teamIds, teams[i].ID)
 			for j := i + 1; j < len(teams); j++ { // j=i+1 → tekrar ve kendisiyle maç yok
+				team1Id := teams[i].ID
+				team2Id := teams[j].ID
+
+				// 50% ihtimalle takımların yerini değiştir
+				if rand.Intn(2) == 0 {
+					team1Id, team2Id = team2Id, team1Id
+				}
+
 				match := &match.PersistLeagueMatch{
 					LeagueId: leagueId,
-					Team1Id:  teams[i].ID,
-					Team2Id:  teams[j].ID,
+					Team1Id:  team1Id,
+					Team2Id:  team2Id,
 				}
 
 				matches = append(matches, match)
 			}
 		}
+		err = u.repo.StartLeague(txCtx, leagueId)
+		if err != nil {
+			return err
+		}
+		err = u.matchRepo.SaveLeagueDoubleMatches(txCtx, matches)
+		if err != nil {
+			return err
+		}
+		err = u.scoreBoardRepo.SaveFixture(txCtx, leagueId, teamIds)
 
-		u.matchRepo.SaveLeagueMatches(txCtx, matches)
-		u.scoreBoardRepo.SaveFixture(txCtx, leagueId, teamIds)
-
-		return nil
+		return err
 
 	})
 

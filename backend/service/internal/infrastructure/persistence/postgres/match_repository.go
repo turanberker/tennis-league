@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 )
 
@@ -19,30 +20,31 @@ func NewMatchRepository(db *sql.DB) *MatchRepository {
 	return &MatchRepository{BaseRepository: BaseRepository{db: db}}
 }
 
-func (r *MatchRepository) SaveLeagueMatches(ctx context.Context, matches []*match.PersistLeagueMatch) error {
+func (r *MatchRepository) SaveLeagueDoubleMatches(ctx context.Context, matches []*match.PersistLeagueMatch) error {
+
+	if len(matches) == 0 {
+		return nil
+	}
 
 	executor := r.GetExecutor(ctx)
-	if len(matches) == 0 {
-		return nil // insert edilecek maç yok
+
+	// Squirrel (sq) kullanarak bulk insert oluşturuyoruz
+	builder := squirrel.StatementBuilder.Insert("tennisleague.match").
+		Columns("league_id", "team_1_id", "team_2_id", "match_type").
+		PlaceholderFormat(squirrel.Dollar)
+
+	for _, m := range matches {
+		builder = builder.Values(m.LeagueId, m.Team1Id, m.Team2Id, match.MatchType_DOUBLE)
 	}
 
-	// INSERT INTO fixtures (league_id, home_team_id, away_team_id) VALUES ($1,$2,$3), ...
-	query := "INSERT INTO tennisleague.matches (league_id, team_1_id, team_2_id) VALUES "
-	args := []interface{}{}
-
-	for i, m := range matches {
-		// Her match için 3 parametre
-		query += fmt.Sprintf("($%d,$%d,$%d)", i*3+1, i*3+2, i*3+3)
-		if i != len(matches)-1 {
-			query += ", "
-		}
-		args = append(args, m.LeagueId, m.Team1Id, m.Team2Id)
-	}
-
-	// Bulk insert
-	_, err := executor.ExecContext(ctx, query, args...)
+	query, args, err := builder.ToSql()
 	if err != nil {
-		log.Println("League fixture'ları insert edilirken hata oluştu:", err)
+		return fmt.Errorf("sorgu olusturulamadi: %w", err)
+	}
+
+	_, err = executor.ExecContext(ctx, query, args...)
+	if err != nil {
+		log.Printf("League fixture'lari insert edilirken hata olustu: %v\n", err)
 		return err
 	}
 
@@ -54,9 +56,9 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 	query := `
 		SELECT m.id, m.team_1_id, t1.name,m.team_1_score, m.winner_id =m.team_1_id, 
 		m.team_2_id, t2.name,m.team_2_score ,m.winner_id =m.team_2_id, m.status, m.match_date
-		FROM tennisleague.matches m
-		JOIN tennisleague.teams t1 ON m.team_1_id = t1.id
-		JOIN tennisleague.teams t2 ON m.team_2_id = t2.id
+		FROM tennisleague.match m
+		JOIN tennisleague.team t1 ON m.team_1_id = t1.id
+		JOIN tennisleague.team t2 ON m.team_2_id = t2.id
 		WHERE m.league_id = $1 order by m.match_date asc
 	`
 	rows, err := executor.QueryContext(ctx, query, leagueId)

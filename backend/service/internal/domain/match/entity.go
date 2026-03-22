@@ -26,9 +26,9 @@ type UpdateMatchDate struct {
 
 type MatchTeamIds struct {
 	LeagueId string
-	Team1Id string
-	Team2Id string
-	Status  Status
+	Team1Id  string
+	Team2Id  string
+	Status   Status
 }
 
 type UpdateMatchScore struct {
@@ -57,3 +57,11 @@ type teamRef struct {
 type MatchApprovedEvent struct {
 	MatchID string `json:"matchId"`
 }
+
+type Match_TYPE string
+
+const (
+	MatchType_SINGLE Match_TYPE = "SINGLE"
+	MatchType_DOUBLE Match_TYPE = "DOUBLE"
+	MatchType_TEAM   Match_TYPE = "TEAM"
+)

@@ -109,20 +109,20 @@ export default function Leagues() {
     const isCoordinator = user && selectedLeague?.coordinatorUserIds?.includes(user.userID);
 
     const isAdmin = user && user.role === Role.ADMIN;
-
+    const hasRole = (isCoordinator || isAdmin)
     return [
       {
         label: "Fikstür Oluştur",
         icon: "pi pi-plus-circle",
         // ŞART: Seçili değilse VEYA katılım yoksa VEYA listede YOKSA kapat.
         // !isCoordinator -> "Koordinatör değilse" anlamına gelir.
-        disabled: !isSelected || selectedLeague?.totalAttentance === 0 || !isCoordinator,
+        disabled: !isSelected || selectedLeague?.totalAttentance === 0 || !hasRole,
         command: () => handleCreateFixture()
       },
       {
         label: "Koordinatör Ata",
         icon: "pi pi-user-plus",
-        disabled: !isSelected || !(isCoordinator || isAdmin),
+        disabled: !isSelected || !hasRole,
         command: (e: any) => {
           setCoordinatorUser(undefined)
           setCoordinatorDialogVisible(true)
@@ -150,7 +150,7 @@ export default function Leagues() {
           onClick={() => handleTeams()}
         />
         <Button
-          disabled={!selectedLeague || selectedLeague.status !== LEAGUE_STATUS.DRAFT}
+          disabled={!selectedLeague || selectedLeague.status === LEAGUE_STATUS.DRAFT}
           rounded
           text
           label="Fikstürü Gör"
@@ -161,7 +161,7 @@ export default function Leagues() {
         />
         <Button
           rounded
-          disabled={!selectedLeague || selectedLeague.status !== LEAGUE_STATUS.DRAFT}
+          disabled={!selectedLeague || selectedLeague.status === LEAGUE_STATUS.DRAFT}
           text
           label="Puan Durumu"
           icon="pi pi-chart-bar"
