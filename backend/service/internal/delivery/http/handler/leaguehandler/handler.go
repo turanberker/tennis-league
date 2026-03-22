@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
-	"github.com/turanberker/tennis-league-service/internal/delivery/dto"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
@@ -244,11 +243,22 @@ func (h *Handler) getTeams(c *gin.Context) {
 		c.Abort()
 		return
 	}
+	type TeamResponse struct {
+		ID    string `json:"id"`
+		Name  string `json:"name"`
+		Power int32  `json:"power"`
+	}
 
-	teamResponse := make([]*dto.TeamResponse, 0, len(teams))
+	teamResponse := make([]*TeamResponse, 0, len(teams))
 
 	for _, l := range teams {
-		teamResponse = append(teamResponse, toTeamResponse(l))
+
+		team := &TeamResponse{
+			ID:    l.ID,
+			Name:  l.Name,
+			Power: l.Power,
+		}
+		teamResponse = append(teamResponse, team)
 	}
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse(teamResponse))
 }
@@ -385,17 +395,6 @@ func (h *Handler) newCoordinator(c *gin.Context) {
 	res := delivery.NewSuccessResponse(added)
 	c.JSON(http.StatusOK, res)
 
-}
-
-func toTeamResponse(l *team.Team) *dto.TeamResponse {
-	if l == nil {
-		return nil
-	}
-
-	return &dto.TeamResponse{
-		ID:   l.ID,
-		Name: l.Name,
-	}
 }
 
 func toFixtureResponse(l *match.LeagueFixtureMatch) *LeagueFixtureMatchResponse {

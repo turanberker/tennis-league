@@ -3,7 +3,7 @@ import { useLeague } from "../hooks/useLeague";
 import { DataTable } from "primereact/datatable";
 import { Button } from "primereact/button";
 import { Player, Sex } from "../model/player.model";
-import { CreateTeamRequest, TeamResponse } from "../model/team.model";
+import { CreateTeamRequest, LeagueTeamResponse } from "../model/team.model";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 import * as yup from 'yup';
@@ -55,7 +55,7 @@ const schema = yup.object({
 export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
 
     const { data: league, updateLeagueCache } = useLeague(leagueId)
-    const [teams, setTeams] = useState<TeamResponse[]>([]);
+    const [teams, setTeams] = useState<LeagueTeamResponse[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
 
     const [createDialogVisible, setCreateDialogVisible] =
@@ -123,7 +123,7 @@ export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
         if (!leagueId) return;
 
         setLoading(true);
-        const res: TeamResponse[] = await getTeams(leagueId);
+        const res = await getTeams(leagueId);
         setTeams(res);
         setLoading(false);
     };
@@ -170,6 +170,7 @@ export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
                     key="id"
                 >
                     <Column field="name" header="Takım Adı" />
+                    <Column field="power" header="Gücü" />
                 </DataTable>
             </Card>
 

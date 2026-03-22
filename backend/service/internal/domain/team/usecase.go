@@ -27,7 +27,7 @@ func (u *UseCase) GetById(ctx context.Context, id string) (*Team, error) {
 	return u.repository.GetById(ctx, id)
 }
 
-func (u *UseCase) GetByLeagueId(ctx context.Context, leagueId string) ([]*Team, error) {
+func (u *UseCase) GetByLeagueId(ctx context.Context, leagueId string) ([]*LeagueTeam, error) {
 	return u.repository.GetByLeagueId(ctx, leagueId)
 }
 

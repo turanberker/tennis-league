@@ -1,6 +1,7 @@
-export interface TeamResponse {
+export interface LeagueTeamResponse {
   id: string;
   name: string;
+  power: number
 }
 
 export interface CreateTeamRequest {
@@ -8,7 +9,7 @@ export interface CreateTeamRequest {
   playerIds: string[];
 }
 
-export interface TeamRef{
+export interface TeamRef {
   id: string
-  name:string
+  name: string
 }

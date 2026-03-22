@@ -1,5 +1,5 @@
 import { AxiosResponse } from "axios";
-import { CreateTeamRequest, TeamResponse } from "../model/team.model";
+import { CreateTeamRequest, LeagueTeamResponse } from "../model/team.model";
 import { LeagueFixtureMatchResponse } from "../model/match.model";
 import axiosClient from "./axiosClient";
 import { ScoreBoardResponse } from "../model/standing.model";
@@ -19,8 +19,8 @@ export const saveLeague = async (
   return await axiosClient.post("leagues", data);
 };
 
-export const getTeams = async (leagueId: String): Promise<TeamResponse[]> => {
-  const res = await axiosClient.get<TeamResponse[]>(
+export const getTeams = async (leagueId: String): Promise<LeagueTeamResponse[]> => {
+  const res = await axiosClient.get<LeagueTeamResponse[]>(
     `leagues/${leagueId}/teams`,
   );
   return res;

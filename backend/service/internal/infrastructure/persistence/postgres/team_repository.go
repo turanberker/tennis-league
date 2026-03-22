@@ -3,8 +3,11 @@ package postgres
 import (
 	context "context"
 	"database/sql"
+	"fmt"
 	"log"
 
+	"github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 )
 
@@ -25,24 +28,39 @@ func (r *TeamRepository) GetById(ctx context.Context, id string) (*team.Team, er
 	return team, err
 }
 
-func (r *TeamRepository) GetByLeagueId(ctx context.Context, leagueId string) ([]*team.Team, error) {
+func (r *TeamRepository) GetByLeagueId(ctx context.Context, leagueId string) ([]*team.LeagueTeam, error) {
 	exec := r.GetExecutor(ctx)
-	query := `SELECT id, league_id, name FROM team WHERE league_id=$1`
-	rows, err := exec.QueryContext(ctx, query, leagueId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var teams []*team.Team
-	for rows.Next() {
-		team := &team.Team{}
-		err := rows.Scan(&team.ID, &team.LeagueID, &team.Name)
 
-		if err != nil {
-			log.Println("Takımlar maplerken hata oluştu:", err)
-			return nil, err
-		}
-		teams = append(teams, team)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	sqlBuilder := psql.Select("t.id", "t.name", "sum(p.double_point) power").
+		From("team t").InnerJoin("team_player tp on tp.team_id = t.id").
+		InnerJoin("player p on p.id =tp.player_id ").
+		Where(squirrel.Eq{"t.league_id": leagueId}).
+		GroupBy("t.id", "t.name")
+
+	query, args, err := sqlBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %v", err)
+	}
+
+	type row struct {
+		ID    string `db:"id"`
+		Name  string `db:"name"`
+		POWER int32  `db:"power"`
+	}
+	var rowsData []row
+	err = sqlscan.Select(ctx, exec, &rowsData, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("veritabanı hatası: %v", err)
+	}
+
+	var teams []*team.LeagueTeam
+	for _, d := range rowsData {
+		teams = append(teams, &team.LeagueTeam{
+			ID:    d.ID,
+			Name:  d.Name,
+			Power: d.POWER,
+		})
 	}
 
 	return teams, nil
