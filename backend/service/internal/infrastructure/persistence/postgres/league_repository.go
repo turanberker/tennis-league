@@ -31,7 +31,6 @@ func (r *LeagueRepository) GetById(ctx context.Context, id string) (*league.Leag
 		"l.process_type",
 		"l.status",
 		"l.total_attendance",
-		"l.fixture_created_date",
 		"l.start_date",
 		"l.end_date").
 		From("league l").
@@ -128,8 +127,8 @@ func (r *LeagueRepository) Save(ctx context.Context, persistLeague *league.Persi
 
 func (r *LeagueRepository) SetFitxtureCreatedDate(ctx context.Context, leagueId string) error {
 	exec := r.GetExecutor(ctx)
-	query := `UPDATE league SET fixture_created_date = NOW() WHERE id = $1`
-	_, err := exec.ExecContext(ctx, query, leagueId)
+	query := `UPDATE league SET start_date = NOW(), status=$1 WHERE id = $2`
+	_, err := exec.ExecContext(ctx, query, league.LeagueStatus_ACTIVE, leagueId)
 	return err
 }
 
@@ -139,12 +138,25 @@ func (r *LeagueRepository) IsFixtureCreated(ctx context.Context, leagueId string
 		SELECT 1 
 		FROM league 
 		WHERE id = $1 
-		  AND fixture_created_date IS NOT NULL
+		  AND status != $2
 	)`
 	var exists bool
-	err := exec.QueryRowContext(ctx, query, leagueId).Scan(&exists)
+	err := exec.QueryRowContext(ctx, query, leagueId, league.LeagueStatus_DRAFT).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
 	return exists, nil
+}
+
+func (r *LeagueRepository) IncreaseAttandanceCount(ctx context.Context, leagueId string) (*int32, error) {
+	exec := r.GetExecutor(ctx)
+	query := `UPDATE league SET total_attendance =total_attendance+1  WHERE id = $1 RETURNING total_attendance`
+	var updatedAttendance int32
+	err := exec.QueryRowContext(ctx, query, leagueId).Scan(&updatedAttendance)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedAttendance, nil
 }

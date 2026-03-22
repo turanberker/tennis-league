@@ -15,7 +15,7 @@ import { getUnassignedPlayers } from '../../api/playersService';
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+
   const [selectedUser, setSelectedUser] = useState<User>();
   const [unassignedPlayers, setUnassignedPlayes] = useState<Player[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>();
@@ -32,21 +32,12 @@ export default function Users() {
   }, []);
   // Oyuncuları yükle
   const loadUsers = async () => {
-    try {
-      console.log('1');
-      setLoading(true);
-      const res = await getUsers();
+
+    setLoading(true);
+    const res = await getUsers();
+    if (res) {
       setUsers(res);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Kullanıcılar yüklenemedi.');
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Hata',
-        detail: err.message || 'Kullanıcılar yüklenemedi.',
-        life: 3000,
-      });
-    } finally {
+
       setLoading(false);
     }
   };
@@ -64,7 +55,7 @@ export default function Users() {
       option ? option.name + ' ' + option.surname : 'Oyuncu seçin'
     ) as string;
   };
-  
+
 
   const header = () => {
     return (
@@ -132,12 +123,11 @@ export default function Users() {
       {' '}
       <Toast ref={toast} />
       <Card title="Kullanıcılar">
-        {error && <p style={{ color: 'red' }}>{error}</p>}
 
         <DataTable
           value={users}
           selection={selectedUser!}
-          onSelectionChange={(e) => setSelectedUser(e.value as User)} 
+          onSelectionChange={(e) => setSelectedUser(e.value as User)}
           header={header}
           dataKey="id"
           selectionMode="single"

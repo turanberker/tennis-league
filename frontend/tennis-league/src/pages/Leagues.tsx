@@ -3,7 +3,7 @@ import { Card } from "primereact/card";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
-import { createFixture, getLeagues, saveLeague } from "../api/leagueService";
+import { assignCoordinator, createFixture, getLeagues, saveLeague } from "../api/leagueService";
 import * as yup from "yup";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -31,11 +31,14 @@ import FormItem from "../components/FormItem";
 import { Dropdown } from "primereact/dropdown";
 import { SplitButton } from "primereact/splitbutton";
 import ProtectedRoute from "../router/ProtectedRoute";
-import { Role } from "../model/user.model";
+import { Role, User } from "../model/user.model";
 import Guard from "../helper/Guard";
 import { MenuItem } from "primereact/menuitem";
 import { useAuth } from "../context/AuthContext";
 import { isFieldRequired } from "../helper/form.helper";
+import { OverlayPanel } from "primereact/overlaypanel";
+import { getUsers } from "../api/userService";
+import { Dialog } from "primereact/dialog";
 
 
 // ================= VALIDATION SCHEMA =================
@@ -55,11 +58,16 @@ const schema = yup.object({
 export default function Leagues() {
   const navigate = useNavigate();
   const { user } = useAuth()
+
+  const [coordinatorDialogVisible, setCoordinatorDialogVisible] = useState<boolean>(false)
+  const [users, setUsers] = useState<User[]>();
+  const [coordinatorUser, setCoordinatorUser] = useState<User>();
   const [leagues, setLeagues] = useState<LeagueListResponse[]>([]);
   const [selectedLeague, setSelectedLeague] = useState<LeagueListResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [createVisible, setCreateVisible] = useState<boolean>(false);
   const toast = useRef<Toast>(null);
+
 
   // ================= REACT HOOK FORM =================
   const methods = useForm<PersistLeagueRequest>({
@@ -82,6 +90,14 @@ export default function Leagues() {
     setLoading(false); // Hata ol
   };
 
+  const loadUsers = async () => {
+
+    if (!users) {
+      const res = await getUsers();
+      setUsers(res);
+    }
+  };
+
   useEffect(() => {
     loadLeagues();
   }, []);
@@ -94,6 +110,8 @@ export default function Leagues() {
     // (Rol kontrolü üstte yapıldığına göre burada sadece ID check yeterli)
     const isCoordinator = user && selectedLeague?.coordinatorUserIds?.includes(user.userID);
 
+    const isAdmin = user && user.role === Role.ADMIN;
+
     return [
       {
         label: "Fikstür Oluştur",
@@ -104,10 +122,14 @@ export default function Leagues() {
         command: () => handleCreateFixture()
       },
       {
-        label: "Takımlar & Oyuncular",
-        icon: "pi pi-users",
-        disabled: !isSelected || !isCoordinator,
-        command: () => handleTeams()
+        label: "Koordinatör Ata",
+        icon: "pi pi-user-plus",
+        disabled: !isSelected || !(isCoordinator || isAdmin),
+        command: (e: any) => {
+          setCoordinatorUser(undefined)
+          setCoordinatorDialogVisible(true)
+          loadUsers();
+        }
       }
     ];
   }, [selectedLeague, user]);
@@ -196,6 +218,29 @@ export default function Leagues() {
       loadLeagues(); // listeyi yenile
     }
   };
+
+  const onAssignCoordinatorCLickHandler = async () => {
+    if (selectedLeague && coordinatorUser) {
+      const res = await assignCoordinator(selectedLeague?.id, { userId: coordinatorUser?.id })
+      if (res === true) {
+        toast.current?.show({
+          severity: "success",
+          summary: "Başarılı",
+          detail: "Koordinatör atandı",
+          life: 3000,
+        });
+      } else {
+        toast.current?.show({
+          severity: "warn",
+          summary: "Uyarı",
+          detail: "Bu kullanıcı daha önce koordinatör olarak atanmış",
+          life: 3000,
+        });
+      }
+      setCoordinatorDialogVisible(false)
+      setCoordinatorUser(undefined)
+    }
+  }
 
   return (
     <>
@@ -354,6 +399,43 @@ export default function Leagues() {
           </form>
         </FormProvider>
       </Sidebar>
+
+      <Dialog header="Koordinatör Ata" visible={coordinatorDialogVisible}
+        footer={<Button
+          label="Ata"
+          icon="pi pi-check"
+          size="small"
+          disabled={!coordinatorUser}
+          onClick={() => {
+            onAssignCoordinatorCLickHandler()
+
+          }}
+        />}
+        onHide={() => {
+          setCoordinatorDialogVisible(false)
+          setCoordinatorUser(undefined)
+        }}>
+
+        <Dropdown
+          value={coordinatorUser}
+          onChange={(e) => setCoordinatorUser(e.value)}
+          options={users}
+          // 1. KRİTİK: Objenin benzersiz kimliği (id, userId, uuid vb.)
+          dataKey="id"
+          // 2. KRİTİK: Arama ve eşleşme için kullanılacak ana alan
+          optionLabel="name"
+          filter
+          filterBy="name,surname"
+          placeholder="Kullanıcı listesi"
+          className="w-full"
+          itemTemplate={(option: User) => {
+            return option ? `${option.name} ${option.surname}` : 'Kullanıcı seçin';
+          }}
+          valueTemplate={(option: User) => {
+            return option ? `${option.name} ${option.surname}` : 'Kullanıcı seçin';
+          }}
+        />
+      </Dialog >
     </>
   );
 }

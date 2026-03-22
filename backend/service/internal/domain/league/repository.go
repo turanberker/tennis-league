@@ -14,4 +14,6 @@ type Repository interface {
 	SetFitxtureCreatedDate(ctx context.Context, leagueId string) error
 
 	IsFixtureCreated(ctx context.Context, leagueId string) (bool, error)
+
+	IncreaseAttandanceCount(ctx context.Context, leagueId string) (*int32, error)
 }

@@ -6,7 +6,6 @@ export interface League {
   processType: LEAGUE_PROCESS_TYPE,
   status: LEAGUE_STATUS,
   totalAttentance: number;
-  fixtureCreatedDate?: Date;
   startedDate?: Date;
   endDate?: Date;
 }
@@ -18,7 +17,7 @@ export interface LeagueListResponse {
   category: LEAGUE_CATEGORY;
   processType: LEAGUE_PROCESS_TYPE,
   status: LEAGUE_STATUS,
-  totalAttentance: number;
+  totalAttentance: Number;
   coordinatorUserIds: String[];
 }
 

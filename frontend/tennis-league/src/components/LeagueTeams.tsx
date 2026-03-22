@@ -19,6 +19,7 @@ import FormItem from "./FormItem";
 import { isFieldRequired } from "../helper/form.helper";
 import { LEAGUE_CATEGORY, LEAGUE_FORMAT } from "../model/league.model";
 import { useAsyncError } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface LeagueTeamsProps {
     leagueId: string;
@@ -53,7 +54,7 @@ const schema = yup.object({
 
 export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
 
-    const { data: league, isLoading } = useLeague(leagueId)
+    const { data: league, updateLeagueCache } = useLeague(leagueId)
     const [teams, setTeams] = useState<TeamResponse[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -104,8 +105,12 @@ export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
             name: data.name,
             playerIds: [data.player1!.id, data.player2!.id],
         };
-        const teamId = await createTeam(leagueId, payload);
-        if (teamId) {
+        const res: { teamId: String, totalAttendanceCount: number } = await createTeam(leagueId, payload);
+        if (res) {
+            updateLeagueCache({
+                totalAttentance: res.totalAttendanceCount
+            });
+
             setCreateDialogVisible(false);
             methods.reset();
             loadTeams();

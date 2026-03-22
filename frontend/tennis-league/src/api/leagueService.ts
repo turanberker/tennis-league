@@ -5,11 +5,11 @@ import axiosClient from "./axiosClient";
 import { ScoreBoardResponse } from "../model/standing.model";
 import { League, LeagueListResponse, PersistLeagueRequest } from "../model/league.model";
 
-export const getLeagues = async (params?: { name?: string }): Promise<LeagueListResponse[]> => {
+export const getLeagues = async (params?: { name?: String }): Promise<LeagueListResponse[]> => {
   return await axiosClient.get("leagues/list", { params });
 };
 
-export const getLeagueById = async (id: string): Promise<League> => {
+export const getLeagueById = async (id: String): Promise<League> => {
   return await axiosClient.get(`leagues/${id}`);
 };
 
@@ -19,7 +19,7 @@ export const saveLeague = async (
   return await axiosClient.post("leagues", data);
 };
 
-export const getTeams = async (leagueId: string): Promise<TeamResponse[]> => {
+export const getTeams = async (leagueId: String): Promise<TeamResponse[]> => {
   const res = await axiosClient.get<TeamResponse[]>(
     `leagues/${leagueId}/teams`,
   );
@@ -27,10 +27,10 @@ export const getTeams = async (leagueId: string): Promise<TeamResponse[]> => {
 };
 
 export const createTeam = async (
-  leagueId: string,
+  leagueId: String,
   team: CreateTeamRequest,
-): Promise<string> => {
-  return await axiosClient.post<string>(`leagues/${leagueId}/teams`, team);
+): Promise<{ teamId: String, totalAttendanceCount: number }> => {
+  return await axiosClient.post<{ teamId: String, totalAttendanceCount: number }>(`leagues/${leagueId}/teams`, team);
 };
 
 export const createFixture = async (leagueId: String) => {
@@ -38,7 +38,7 @@ export const createFixture = async (leagueId: String) => {
 };
 
 export const getFixture = async (
-  leagueId: string,
+  leagueId: String,
 ): Promise<LeagueFixtureMatchResponse[]> => {
   return await axiosClient.get<LeagueFixtureMatchResponse[]>(
     `leagues/${leagueId}/fixture`,
@@ -46,9 +46,15 @@ export const getFixture = async (
 };
 
 export const getStandings = async (
-  leagueId: string,
+  leagueId: String,
 ): Promise<ScoreBoardResponse[]> => {
   return await axiosClient.get<ScoreBoardResponse[]>(
     `leagues/${leagueId}/standings`,
   );
 };
+
+export const assignCoordinator = async (leagueId: String, data: { userId: String }): Promise<Boolean> => {
+
+  return await axiosClient.post<Boolean>(`leagues/${leagueId}/coordinator`, null, { params: data })
+
+}

@@ -112,16 +112,15 @@ func (h *Handler) getById(c *gin.Context) {
 	}
 
 	var res struct {
-		Id                 string                     `json:"id"`
-		Name               string                     `json:"name"`
-		Format             league.LEAGUE_FORMAT       `json:"format"`
-		Category           league.LEAGUE_CATEGORY     `json:"category"`
-		ProcessType        league.LEAGUE_PROCESS_TYPE `json:"processType"`
-		Status             league.LEAGUE_STATUS       `json:"status"`
-		TotalAttentance    int32                      `json:"totalAttentance"`
-		FixtureCreatedDate *time.Time                 `json:"fixtureCreatedDate"`
-		StartedDate        *time.Time                 `json:"startedDate"`
-		EndDate            *time.Time                 `json:"endDate"`
+		Id              string                     `json:"id"`
+		Name            string                     `json:"name"`
+		Format          league.LEAGUE_FORMAT       `json:"format"`
+		Category        league.LEAGUE_CATEGORY     `json:"category"`
+		ProcessType     league.LEAGUE_PROCESS_TYPE `json:"processType"`
+		Status          league.LEAGUE_STATUS       `json:"status"`
+		TotalAttentance int32                      `json:"totalAttentance"`
+		StartedDate     *time.Time                 `json:"startedDate"`
+		EndDate         *time.Time                 `json:"endDate"`
 	}
 
 	// Alanları doldur
@@ -132,7 +131,6 @@ func (h *Handler) getById(c *gin.Context) {
 	res.ProcessType = leagueData.ProcessType
 	res.Status = leagueData.Status
 	res.TotalAttentance = leagueData.TotalAttendance
-	res.FixtureCreatedDate = leagueData.FixtureCreatedDate
 	res.StartedDate = leagueData.StartDate
 	res.EndDate = leagueData.EndDate
 
@@ -276,18 +274,25 @@ func (h *Handler) newTeam(c *gin.Context) {
 		}
 	}
 
-	id, err := h.teamUc.Save(c.Request.Context(), &team.CreateTeamRequest{
-		LeagueID:  leagueId,
+	response, err := h.uc.CreateTeam(c.Request.Context(), &league.CreateTeamRequestDto{
+		LeagueId:  leagueId,
 		Name:      req.Name,
 		PlayerIDs: req.PlayerIDs,
 	})
+
 	if err != nil {
 		c.Error(err)
 		c.Abort()
 		return
 	}
 
-	res := delivery.NewSuccessResponse(id)
+	var resModel struct {
+		TeamId               string `json:"teamId"`
+		TotalAttendanceCount int32  `json:"totalAttendanceCount"`
+	}
+	resModel.TeamId = response.TeamId
+	resModel.TotalAttendanceCount = response.TotalAttendance
+	res := delivery.NewSuccessResponse(resModel)
 	c.JSON(http.StatusOK, res)
 
 }

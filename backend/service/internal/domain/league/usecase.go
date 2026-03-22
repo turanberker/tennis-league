@@ -20,6 +20,7 @@ var ErrNameLenghtError = errors.New("Name size must between 5 and 75 characters"
 type Usecase struct {
 	tm                    *database.TransactionManager
 	userUsecase           *user.Usecase
+	teamUseCase           *team.UseCase
 	repo                  Repository
 	teamRepo              team.Repository
 	matchRepo             match.Repository
@@ -71,6 +72,7 @@ func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match
 
 func NewUsecase(
 	tm *database.TransactionManager,
+	teamUc *team.UseCase,
 	repo Repository,
 	teamRepo team.Repository,
 	matchRepo match.Repository,
@@ -78,6 +80,7 @@ func NewUsecase(
 	coordinatorRepository leaguecoordinator.Repository,
 	userUseCase *user.Usecase) *Usecase {
 	return &Usecase{repo: repo,
+		teamUseCase:           teamUc,
 		teamRepo:              teamRepo,
 		matchRepo:             matchRepo,
 		scoreBoardRepo:        scoreBoardRepo,
@@ -150,4 +153,36 @@ func (u *Usecase) Save(ctx context.Context, persistLeague *PersistLeague) (*stri
 
 	return id, nil
 
+}
+
+func (u *Usecase) CreateTeam(ctx context.Context, createTeamDto *CreateTeamRequestDto) (*CreateTeamResponseDto, error) {
+
+	var response CreateTeamResponseDto
+
+	err := u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
+
+		teamId, err := u.teamUseCase.Save(txCtx, &team.CreateTeamRequest{
+			LeagueID:  createTeamDto.LeagueId,
+			Name:      createTeamDto.Name,
+			PlayerIDs: createTeamDto.PlayerIDs,
+		})
+		if err != nil {
+			return err
+		}
+
+		response.TeamId = *teamId
+
+		totalAttendance, err := u.repo.IncreaseAttandanceCount(txCtx, createTeamDto.LeagueId)
+
+		if err != nil {
+			return err
+		}
+		response.TotalAttendance = *totalAttendance
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
 }

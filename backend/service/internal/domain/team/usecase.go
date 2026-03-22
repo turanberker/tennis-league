@@ -54,6 +54,7 @@ func (u *UseCase) Save(ctx context.Context, req *CreateTeamRequest) (*string, er
 			}
 		}
 		teamId = teamID
+
 		return nil
 	})
 

@@ -12,7 +12,7 @@ CREATE TABLE tennisleague.league (
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
 
     total_attendance INT8 NOT NULL DEFAULT 0,
-    fixture_created_date TIMESTAMP,
+
     start_date TIMESTAMP,
     end_date TIMESTAMP
 );
