@@ -56,13 +56,14 @@ func main() {
 	leagueCoordinatorRepository := postgres.NewLeagueCoordinatorRepository(db)
 
 	teamUseCase := team.NewUseCase(transactionManager, teamRepository, teamPlayerRepository)
-	leagueUseCase := league.NewUsecase(transactionManager, teamUseCase, leagueRepository, teamRepository,
-		matchRepository, scoreBoardRepository, leagueCoordinatorRepository, userUC)
 	matchUseCase := match.NewUseCase(transactionManager, matchRepository, matchSetRepository, outboxRepository)
+	leagueUseCase := league.NewUsecase(transactionManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
+		matchRepository, outboxRepository, scoreBoardRepository, leagueCoordinatorRepository)
+
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
 	playerUc := player.NewUsecase(transactionManager, playerRepository)
 
-	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc)
+	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc, matchUseCase)
 	authHandler := authhandler.NewAuthHandler(authUC, tokenService)
 	userHandler := userhandler.NewUserHandler(transactionManager, userUC)
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)

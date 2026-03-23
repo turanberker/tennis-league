@@ -20,31 +20,63 @@ func NewMatchRepository(db *sql.DB) *MatchRepository {
 	return &MatchRepository{BaseRepository: BaseRepository{db: db}}
 }
 
-func (r *MatchRepository) SaveLeagueDoubleMatches(ctx context.Context, matches []*match.PersistLeagueMatch) error {
+func (r *MatchRepository) SaveBulkMatches(ctx context.Context, req *match.BulkInsertMatches) error {
 
-	if len(matches) == 0 {
+	if len(req.Sides) == 0 {
 		return nil
 	}
 
 	executor := r.GetExecutor(ctx)
 
-	// Squirrel (sq) kullanarak bulk insert oluşturuyoruz
-	builder := squirrel.StatementBuilder.Insert("tennisleague.match").
-		Columns("league_id", "team_1_id", "team_2_id", "match_type").
-		PlaceholderFormat(squirrel.Dollar)
+	// 1. Kolon isimlerini MatchType'a göre belirle
+	var side1Col, side2Col string
+	if req.Type.Type == match.MatchType_SINGLE {
+		side1Col = "player_1_id"
+		side2Col = "player_2_id"
+	} else {
+		// Double veya Mix ise team kolonu kullan
+		side1Col = "team_1_id"
+		side2Col = "team_2_id"
+	}
+	// Ana sütun listesini oluştur
+	columns := []string{side1Col, side2Col, "source", "match_type"}
+	// Opsiyonel Lig/Turnuva ID kolonu
+	if req.Type.Source == match.MatchSource_TOURNAMENT {
+		columns = append(columns, "league_id")
+	} else {
+		panic("Not İmplemented Yet")
+	}
 
-	for _, m := range matches {
-		builder = builder.Values(m.LeagueId, m.Team1Id, m.Team2Id, match.MatchType_DOUBLE)
+	// Squirrel (sq) kullanarak bulk insert oluşturuyoruz
+	builder := squirrel.Insert("tennisleague.match")
+	builder = builder.PlaceholderFormat(squirrel.Dollar)
+	builder = builder.Columns(columns...)
+
+	// 2. Satırları (Values) ekle
+	for _, side := range req.Sides {
+		vals := []interface{}{
+			side.Side1,
+			side.Side2,
+			req.Type.Source,
+			req.Type.Type,
+		}
+
+		if req.Type.Source != match.MatchSource_FRIENDLY {
+			vals = append(vals, req.Type.Id)
+		}
+
+		builder = builder.Values(vals...)
 	}
 
 	query, args, err := builder.ToSql()
 	if err != nil {
+		fmt.Println(query)
 		return fmt.Errorf("sorgu olusturulamadi: %w", err)
 	}
 
 	_, err = executor.ExecContext(ctx, query, args...)
 	if err != nil {
-		log.Printf("League fixture'lari insert edilirken hata olustu: %v\n", err)
+		log.Printf("Maçlar oluşturulurken hata oluştu: %v\n", err)
 		return err
 	}
 
@@ -88,13 +120,25 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 
 func (r *MatchRepository) UpdateMatchDate(ctx context.Context, data match.UpdateMatchDate) error {
 	executor := r.GetExecutor(ctx)
-	query := "Update matches set match_date=$1 where id=$2"
+	query := "Update match set match_date=$1 where id=$2 and source=$3"
 
-	_, err := executor.ExecContext(ctx, query, data.MatchDate, data.Id)
+	result, err := executor.ExecContext(ctx, query, data.MatchDate, data.Id, data.Source)
 	if err != nil {
 		log.Println("Maç tarihi güncellenirken hata oluştu:", err)
 		return err
 	}
+
+	// Etkilenen satır sayısını kontrol et
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err // Nadir bir hata durumudur (sürücü kaynaklı)
+	}
+
+	if rowsAffected == 0 {
+		// Kayıt bulunamadığında dönecek özel bir hata
+		return fmt.Errorf("güncellenecek maç bulunamadı (ID: %s, Source: %v)", data.Id, data.Source)
+	}
+
 	return nil
 }
 
@@ -128,9 +172,9 @@ func (r *MatchRepository) UpdateMatchScore(ctx context.Context, macScore *match.
 	return nil
 }
 
-func (r *MatchRepository) ApproveScore(ctx context.Context, matchId string) error {
+func (r *MatchRepository) ApproveScore(ctx context.Context, source match.Match_SOURCE, matchId string) error {
 	executor := r.GetExecutor(ctx)
-	query := "Update matches set status=$1, approve_date=current_date where id=$2 and status=$3"
+	query := "Update matches set status=$1, approve_date=current_date where id=$2 and status=$3 and source=$4"
 
 	result, err := executor.ExecContext(
 		ctx,
@@ -138,6 +182,7 @@ func (r *MatchRepository) ApproveScore(ctx context.Context, matchId string) erro
 		match.StatusApproved, // yeni status
 		matchId,
 		match.StatusCompleted, // eski status
+		source,
 	)
 	if err != nil {
 		log.Printf("Maç Skoru Onaylanırken hata oluştu:%+v", err)

@@ -41,9 +41,9 @@ type LEAGUE_PROCESS_TYPE string
 type LEAGUE_STATUS string
 
 const (
-	LeagueFormat_SSINGLE LEAGUE_FORMAT = "SINGLE"
-	LeagueFormat_DOUBLE  LEAGUE_FORMAT = "DOUBLE"
-	LeagueFormat_TEAM    LEAGUE_FORMAT = "TEAM"
+	LeagueFormat_SINGLE LEAGUE_FORMAT = "SINGLE"
+	LeagueFormat_DOUBLE LEAGUE_FORMAT = "DOUBLE"
+	LeagueFormat_TEAM   LEAGUE_FORMAT = "TEAM"
 
 	LeagueCategory_MIX   LEAGUE_CATEGORY = "MIX"
 	LeagueCategory_ERKEK LEAGUE_CATEGORY = "ERKEK"
@@ -58,3 +58,8 @@ const (
 )
 
 var LEAGE_WITH_NAME_EXISTS = errors.New("league name already exists")
+
+type LeagueMatchApprovedEvent struct {
+	LeagueId string `json:"leagueId"`
+	MatchId  string `json:"matchId"`
+}

@@ -22,12 +22,14 @@ type Handler struct {
 	uc           *league.Usecase
 	teamUc       *team.UseCase
 	scoreBaordUc *scoreboard.UseCase
+	matchUc      *match.UseCase
 }
 
-func NewHandler(uc *league.Usecase, teamUc *team.UseCase, scoreBaordUc *scoreboard.UseCase) *Handler {
+func NewHandler(uc *league.Usecase, teamUc *team.UseCase, scoreBaordUc *scoreboard.UseCase, matchUc *match.UseCase) *Handler {
 	return &Handler{uc: uc,
 		teamUc:       teamUc,
-		scoreBaordUc: scoreBaordUc}
+		scoreBaordUc: scoreBaordUc,
+		matchUc:      matchUc}
 }
 
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
@@ -51,6 +53,15 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.POST("/:id/coordinator",
 			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
 			h.checkIfCoordinator, h.newCoordinator)
+		leagues.PUT("/:id/score/:matchId/update-score")
+		leagues.PUT("/:id/score/:matchId/update-date",
+			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
+			h.checkIfCoordinator,
+			h.updateMatchDate)
+		leagues.PUT("/:id/score/:matchId/approve",
+			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
+			h.checkIfCoordinator,
+			h.approveScore)
 	}
 
 }
@@ -402,6 +413,30 @@ func (h *Handler) newCoordinator(c *gin.Context) {
 
 }
 
+func (h *Handler) updateMatchDate(c *gin.Context) {
+	matchId := c.Param("matchId")
+
+	var req struct {
+		MatchDate time.Time `form:"match-date" binding:"required" time_format:"2006-01-02T15:04:05Z07:00"`
+	}
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
+	}
+
+	h.matchUc.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_TOURNAMENT, &req.MatchDate)
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(req.MatchDate))
+
+}
+
 func toFixtureResponse(l *match.LeagueFixtureMatch) *LeagueFixtureMatchResponse {
 	if l == nil {
 		return nil
@@ -413,4 +448,16 @@ func toFixtureResponse(l *match.LeagueFixtureMatch) *LeagueFixtureMatchResponse 
 		Status:    l.Status,
 		MatchDate: l.MatchDate,
 	}
+}
+
+func (h *Handler) approveScore(c *gin.Context) {
+	matchId := c.Param("matchId")
+	leagueId := c.Param("id")
+	err := h.uc.ApproveMatchScore(c.Request.Context(), leagueId, matchId)
+	if err != nil {
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
+		return
+	}
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
 }

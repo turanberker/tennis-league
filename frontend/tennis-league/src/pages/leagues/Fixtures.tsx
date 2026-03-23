@@ -26,6 +26,8 @@ import { Sidebar } from 'primereact/sidebar';
 import * as yup from 'yup';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useLeague } from '../../hooks/useLeague';
+import { LeagueCard } from '../../components/LeagueCard';
 
 /**
  * Ortak score alanı (gte=0,lte=99)
@@ -116,9 +118,7 @@ export default function Fixtures() {
   const [matches, setMatches] = useState<LeagueFixtureMatchResponse[]>([]);
   const [updateScoreVisible, setUpdateScoreVisible] = useState<boolean>(false);
   const [showSuperTie, setShowSuperTie] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<
-    LeagueFixtureMatchResponse | undefined
-  >();
+  const [selectedMatch, setSelectedMatch] = useState<LeagueFixtureMatchResponse>();
   const dateOP = useRef<OverlayPanel>(null);
   const toast = useRef<Toast>(null);
 
@@ -134,6 +134,8 @@ export default function Fixtures() {
     defaultValues: initialValues,
   });
 
+  const { data: league, isLoading } = useLeague(id);
+
   useEffect(() => {
     loadFixture(id!);
   }, [id]);
@@ -146,27 +148,27 @@ export default function Fixtures() {
   };
 
   const handleMatchDate = async (date: Date) => {
-    // Maç tarihini ayarlama işlemi burada yapılacak
-    console.log('Tarih ayarla:', selectedMatch);
+
     if (selectedMatch) {
-      await updateDate(selectedMatch?.id, { 'match-date': date });
-      setMatches((prev) =>
-        prev.map((m) =>
-          m.id === selectedMatch.id ? { ...m, matchDate: date } : m,
-        ),
-      );
-      toast.current?.show({
-        severity: 'success',
-        summary: 'İşlem Başarılı',
-        detail: `Maç Tarihi Güncellendi`,
-        life: 3000,
-      });
+      const res = await updateDate(selectedMatch?.id, { 'match-date': date });
+      if (res) {
+        setMatches((prev) =>
+          prev.map((m) =>
+            m.id === selectedMatch.id ? { ...m, matchDate: date } : m,
+          ),
+        );
+        toast.current?.show({
+          severity: 'success',
+          summary: 'İşlem Başarılı',
+          detail: `Maç Tarihi Güncellendi`,
+          life: 3000,
+        });
+      }
     }
-    setSelectedMatch(undefined);
   };
 
-  const handleMatchScore = async (match: LeagueFixtureMatchResponse) => {
-    const setScores = await getSetScores(match.id);
+  const handleMatchScore = async () => {
+    const setScores = await getSetScores(selectedMatch!.id);
     if (setScores) {
       setValue('set1.team1Score', setScores.set1?.team1Score ?? null);
       setValue('set1.team2Score', setScores.set1?.team2Score ?? null);
@@ -182,11 +184,10 @@ export default function Fixtures() {
       }
     }
     setUpdateScoreVisible(true);
-    setSelectedMatch(match);
   };
 
-  const approveHandler = async (matchId: string) => {
-    const response = await approve(matchId);
+  const approveHandler = async () => {
+    const response = await approve(selectedMatch!.id);
 
     toast.current?.show({
       severity: 'success',
@@ -195,71 +196,6 @@ export default function Fixtures() {
       life: 3000,
     });
     loadFixture(id!);
-  };
-
-  const getButtons = (match: LeagueFixtureMatchResponse) => {
-    const completed = match.status === Status.COMPLETED;
-
-    switch (match.status) {
-      case Status.PERDING:
-        return (
-          <>
-            {tarihAyarlaButton(match)}
-            {match.matchDate ? skorButton(match) : null}
-          </>
-        );
-      case Status.COMPLETED:
-        return (
-          <>
-            {skorButton(match)}
-            {approveButton(match)}
-          </>
-        );
-      case Status.CANCELLED:
-        return tarihAyarlaButton(match);
-    }
-  };
-
-  const tarihAyarlaButton = (match: LeagueFixtureMatchResponse) => {
-    return (
-      <Button
-        rounded
-        text
-        tooltip="Tarih Ayarla"
-        icon="pi pi-calendar"
-        outlined
-        onClick={(e) => {
-          setSelectedMatch(match);
-          dateOP.current?.toggle(e);
-        }}
-      />
-    );
-  };
-
-  const skorButton = (match: LeagueFixtureMatchResponse) => {
-    return (
-      <Button
-        rounded
-        text
-        tooltip="Maç Skoru Gir"
-        icon="pi pi-pencil"
-        outlined
-        onClick={() => handleMatchScore(match)}
-      />
-    );
-  };
-
-  const approveButton = (match: LeagueFixtureMatchResponse) => {
-    return (
-      <Button
-        rounded
-        text
-        tooltip="Onayla"
-        icon="pi pi-check"
-        outlined
-        onClick={() => approveHandler(match.id)}
-      />
-    );
   };
 
   const onSubmit = async (data: MatchScore) => {
@@ -309,21 +245,70 @@ export default function Fixtures() {
     );
   };
 
+
+
+  const header = () => {
+
+
+
+    return (
+      <div className="flex justify-content-end">
+        <Button
+          rounded
+          text
+          label="Tarih Ayarla"
+          icon="pi pi-calendar"
+          outlined
+          disabled={!selectedMatch || selectedMatch.status === Status.COMPLETED}
+          size='small'
+          onClick={(e) => {
+            dateOP.current?.toggle(e);
+          }}
+        />
+        <Button
+          rounded
+          text
+          size='small'
+          label="Maç Skoru Gir"
+          disabled={!selectedMatch}
+          icon="pi pi-pencil"
+          outlined
+          onClick={() => handleMatchScore()}
+        />
+        <Button
+          rounded
+          text
+          size='small'
+          label='Onayla'
+          icon="pi pi-check"
+          disabled={!selectedMatch || selectedMatch.status !== Status.COMPLETED}
+          outlined
+          onClick={() => approveHandler()}
+        />
+      </div>)
+  }
+
   return (
     <>
       <Toast ref={toast} />
-      <Card
-        title="Fikstür"
-        subTitle="Ligdeki maçların fikstürü burada görüntülenecek."
-      >
+      <LeagueCard id={id!}></LeagueCard>
+      <Card title="Fikstür">
         <DataTable
           value={matches}
           dataKey="id"
           loading={loading}
           emptyMessage="Fikstür bulunamadı"
           tableStyle={{ minWidth: '50rem' }}
+          selectionMode="single"
+          selection={selectedMatch!}
+          onSelectionChange={(e) => setSelectedMatch(e.value)}
           key="id"
+          header={header}
         >
+          <Column
+            selectionMode="single"
+            headerStyle={{ width: "3rem" }}
+          ></Column>
           <Column
             header="1. Takım"
             body={(rowData: LeagueFixtureMatchResponse) =>
@@ -340,7 +325,7 @@ export default function Fixtures() {
             header="Skor"
             body={(rowData: LeagueFixtureMatchResponse) =>
               rowData.status === Status.SCORE_APPROVED ||
-              rowData.status === Status.COMPLETED
+                rowData.status === Status.COMPLETED
                 ? rowData.team1.score + '-' + rowData.team2.score
                 : '-'
             }
@@ -360,10 +345,7 @@ export default function Fixtures() {
             }
           ></Column>
 
-          <Column
-            header="İşlem"
-            body={(rowData) => getButtons(rowData)}
-          ></Column>
+
         </DataTable>
       </Card>
       <OverlayPanel ref={dateOP}>

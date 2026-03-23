@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 )
 
@@ -30,9 +32,10 @@ func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
 }
 func (h *MatchHandler) approveScore(c *gin.Context) {
 	matchId := c.Param("id")
-	err := h.u.ApproveScore(c.Request.Context(),matchId)
+	err := h.u.ApproveScore(c.Request.Context(), match.MatchSource_FRIENDLY, matchId)
 	if err != nil {
-		c.JSON(http.StatusOK, delivery.NewErrorResponse(err.Error()))
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
 		return
 	}
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
@@ -90,9 +93,15 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 	macScore := MatchScore{}
 
 	if err := c.ShouldBindJSON(&macScore); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
-		return
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
 	}
 
 	log.Printf("match id: %s", matchId)
@@ -113,7 +122,8 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 
 	response, err := h.u.SaveMatchScore(c.Request.Context(), saveMatchScore)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, delivery.NewErrorResponse(err.Error()))
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
 		return
 	}
 
@@ -123,19 +133,30 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 
 func (h *MatchHandler) updateDate(c *gin.Context) {
 	matchId := c.Param("id")
-	matchDateString := c.Query("match-date")
-	var matchDate *time.Time
-	if matchDateString != "" {
-		t, err := time.Parse(time.RFC3339, matchDateString)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, delivery.NewErrorResponse("Tarih Formatı Hatalı"))
-			return
-		}
-		matchDate = &t
+
+	var req struct {
+		MatchDate time.Time `form:"match-date" binding:"required" time_format:"2006-01-02T15:04:05Z07:00"`
 	}
 
-	h.u.UpdateMatchDate(c.Request.Context(), matchId, matchDate)
-	log.Printf("match id: %s, match Date: %s", matchId, matchDate)
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
+	if err := c.ShouldBindQuery(&req); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
+	}
+
+	err := h.u.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_FRIENDLY, &req.MatchDate)
+	if err != nil {
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(req.MatchDate))
 
 }

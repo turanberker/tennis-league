@@ -17,6 +17,8 @@ import { Sidebar } from "primereact/sidebar";
 import FormItem from "./FormItem";
 import { isFieldRequired } from "../helper/form.helper";
 import { LEAGUE_CATEGORY } from "../model/league.model";
+import Guard from "../helper/Guard";
+import { Role } from "../model/user.model";
 
 interface LeagueTeamsProps {
     leagueId: string;
@@ -138,17 +140,19 @@ export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
 
     const header = () => {
         return (
-            <div className="flex justify-content-end">
-                <Button
-                    label="Yeni Takım"
-                    icon="pi pi-plus"
-                    size="small"
-                    onClick={() => {
-                        loadPlayers();
-                        setCreateDialogVisible(true)
-                    }}
-                />
-            </div>
+            <Guard allowedRoles={[Role.ADMIN, Role.COORDINATOR]}>
+                <div className="flex justify-content-end">
+                    <Button
+                        label="Yeni Takım"
+                        icon="pi pi-plus"
+                        size="small"
+                        onClick={() => {
+                            loadPlayers();
+                            setCreateDialogVisible(true)
+                        }}
+                    />
+                </div>
+            </Guard>
         );
     };
 

@@ -6,6 +6,8 @@ CREATE TABLE tennisleague.match (
     tournament_id VARCHAR(100) NULL,
     is_friendly BOOLEAN DEFAULT false,
 
+    -- Kaynak "FRIENDLY","TOURNAMENT","LEAGUE"
+    source varchar(20) NOT NULL,
     -- Maç Tipi: 'SINGLE' veya 'DOUBLE'
     match_type VARCHAR(20) NOT NULL,
 

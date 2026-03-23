@@ -38,11 +38,11 @@ func NewUseCase(tm *database.TransactionManager,
 		repository:      r,
 		scoreRepository: scoreRepository, outboxRepository: outboxRepository}
 }
-func (u *UseCase) ApproveScore(ctx context.Context, matchId string) error {
+func (u *UseCase) ApproveScore(ctx context.Context, source Match_SOURCE, matchId string) error {
 
 	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-		err := u.repository.ApproveScore(txCtx, matchId)
+		err := u.repository.ApproveScore(txCtx, source, matchId)
 
 		if err != nil {
 			return err
@@ -68,11 +68,11 @@ func (u *UseCase) ApproveScore(ctx context.Context, matchId string) error {
 
 }
 
-func (u *UseCase) UpdateMatchDate(ctx context.Context, matchId string, matchDate *time.Time) error {
+func (u *UseCase) UpdateMatchDate(ctx context.Context, matchId string, source Match_SOURCE, matchDate *time.Time) error {
 
 	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-		err := u.repository.UpdateMatchDate(txCtx, UpdateMatchDate{Id: matchId, MatchDate: matchDate})
+		err := u.repository.UpdateMatchDate(txCtx, UpdateMatchDate{Id: matchId, Source: source, MatchDate: matchDate})
 		if err != nil {
 			return err
 		}

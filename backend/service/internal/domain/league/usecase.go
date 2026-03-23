@@ -2,6 +2,7 @@ package league
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"math/rand"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/leaguecoordinator"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
+	"github.com/turanberker/tennis-league-service/internal/domain/outbox"
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
@@ -22,11 +24,68 @@ type Usecase struct {
 	tm                    *database.TransactionManager
 	userUsecase           *user.Usecase
 	teamUseCase           *team.UseCase
+	matchUc               *match.UseCase
+	outboxRepository      outbox.Repository
 	repo                  Repository
 	teamRepo              team.Repository
 	matchRepo             match.Repository
 	scoreBoardRepo        scoreboard.Repository
 	coordinatorRepository leaguecoordinator.Repository
+}
+
+func NewUsecase(
+	tm *database.TransactionManager,
+	teamUc *team.UseCase,
+	matchUc *match.UseCase,
+	userUseCase *user.Usecase,
+	repo Repository,
+	teamRepo team.Repository,
+	matchRepo match.Repository,
+	outboxRepository outbox.Repository,
+	scoreBoardRepo scoreboard.Repository,
+	coordinatorRepository leaguecoordinator.Repository,
+) *Usecase {
+	return &Usecase{repo: repo,
+		teamUseCase:           teamUc,
+		matchUc:               matchUc,
+		teamRepo:              teamRepo,
+		matchRepo:             matchRepo,
+		scoreBoardRepo:        scoreBoardRepo,
+		coordinatorRepository: coordinatorRepository,
+		userUsecase:           userUseCase,
+		tm:                    tm,
+		outboxRepository:      outboxRepository,
+	}
+}
+
+func (u *Usecase) ApproveMatchScore(ctx context.Context, leagueId string, matchId string) error {
+
+	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
+		err := u.matchUc.ApproveScore(txCtx, match.MatchSource_TOURNAMENT, matchId)
+
+		if err != nil {
+			return err
+		}
+
+		event := LeagueMatchApprovedEvent{
+			LeagueId: leagueId,
+			MatchId:  matchId,
+		}
+		payload, _ := json.Marshal(event)
+		outboxEntity := &outbox.PersistEntity{
+			AggregateType: "match",
+			AggregateID:   matchId,
+			EventType:     "LeagueMatchApproved",
+			Payload:       payload,
+		}
+		err = u.outboxRepository.Save(txCtx, outboxEntity)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 }
 
 func (u *Usecase) AddNewCoordinator(ctx context.Context, leagueId string, userId string) (*bool, error) {
@@ -70,26 +129,6 @@ func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match
 	return u.matchRepo.GetFixtureByLeagueId(context, leagueId)
 }
 
-func NewUsecase(
-	tm *database.TransactionManager,
-	teamUc *team.UseCase,
-	repo Repository,
-	teamRepo team.Repository,
-	matchRepo match.Repository,
-	scoreBoardRepo scoreboard.Repository,
-	coordinatorRepository leaguecoordinator.Repository,
-	userUseCase *user.Usecase) *Usecase {
-	return &Usecase{repo: repo,
-		teamUseCase:           teamUc,
-		teamRepo:              teamRepo,
-		matchRepo:             matchRepo,
-		scoreBoardRepo:        scoreBoardRepo,
-		coordinatorRepository: coordinatorRepository,
-		userUsecase:           userUseCase,
-		tm:                    tm,
-	}
-}
-
 func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {
 
 	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
@@ -103,10 +142,10 @@ func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {
 				customerror.ErrLeagueAlreadyFixtureCreated,
 				"Fikstür zaten oluşturulmuş")
 		}
-
+		//TODO Burada ligin Single- double olmasına göre işlem yapılacak
 		teams, err := u.teamRepo.GetByLeagueId(txCtx, leagueId)
-
-		var matches []*match.PersistLeagueMatch
+		var bulkInsert match.BulkInsertMatches
+		var matches []match.SideIds
 		var teamIds []string
 
 		for i := 0; i < len(teams); i++ {
@@ -121,27 +160,34 @@ func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {
 					team1Id, team2Id = team2Id, team1Id
 				}
 
-				match := &match.PersistLeagueMatch{
-					LeagueId: leagueId,
-					Team1Id:  team1Id,
-					Team2Id:  team2Id,
+				match := match.SideIds{
+					Side1: team1Id,
+					Side2: team2Id,
 				}
 
 				matches = append(matches, match)
 			}
 		}
+		//Maçların sırasını karıştır (Opsiyonel ama daha profesyonel bir fikstür sağlar)
+		rand.Shuffle(len(matches), func(i, j int) {
+			matches[i], matches[j] = matches[j], matches[i]
+		})
+
+		bulkInsert.Sides = matches
+		bulkInsert.Type = match.MatchType{Id: &leagueId,
+			Source: match.MatchSource_TOURNAMENT,
+			Type:   match.MatchType_DOUBLE,
+		}
+
 		err = u.repo.StartLeague(txCtx, leagueId)
 		if err != nil {
 			return err
 		}
-		err = u.matchRepo.SaveLeagueDoubleMatches(txCtx, matches)
+		err = u.matchRepo.SaveBulkMatches(txCtx, &bulkInsert)
 		if err != nil {
 			return err
 		}
-		err = u.scoreBoardRepo.SaveFixture(txCtx, leagueId, teamIds)
-
-		return err
-
+		return u.scoreBoardRepo.SaveFixture(txCtx, leagueId, teamIds)
 	})
 
 }
