@@ -1,4 +1,4 @@
-package message
+package consumer
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 type Consumer struct {
-	Queue   string
+	Queue       string
 	RoutingName string
 
 	Handler func(amqp091.Delivery) error

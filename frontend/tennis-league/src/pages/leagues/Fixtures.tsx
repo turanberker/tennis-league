@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from 'primereact/card';
-import { getFixture } from '../../api/leagueService';
+import { approveMatchResult, getFixture, updateMatchDate } from '../../api/leagueService';
 import {
   LeagueFixtureMatchResponse,
   MatchScore,
@@ -149,8 +149,8 @@ export default function Fixtures() {
 
   const handleMatchDate = async (date: Date) => {
 
-    if (selectedMatch) {
-      const res = await updateDate(selectedMatch?.id, { 'match-date': date });
+    if (selectedMatch && league) {
+      const res = await updateMatchDate(league?.id, selectedMatch?.id, { 'match-date': date });
       if (res) {
         setMatches((prev) =>
           prev.map((m) =>
@@ -187,21 +187,24 @@ export default function Fixtures() {
   };
 
   const approveHandler = async () => {
-    const response = await approve(selectedMatch!.id);
+    const response = await approveMatchResult(league!.id, selectedMatch!.id);
+    if (response) {
+      toast.current?.show({
+        severity: 'success',
+        summary: 'İşlem Başarılı',
+        detail: `Maç sonucu onaylandı, skorbord en kısa sürede güncellenecektir.`,
+        life: 3000,
+      });
+      loadFixture(id!);
+    }
 
-    toast.current?.show({
-      severity: 'success',
-      summary: 'İşlem Başarılı',
-      detail: `Maç sonucu onaylandı, skorbord en kısa sürede güncellenecektir.`,
-      life: 3000,
-    });
-    loadFixture(id!);
   };
 
   const onSubmit = async (data: MatchScore) => {
     if (selectedMatch) {
-      try {
-        const score = await updateMatchScore(selectedMatch?.id, data);
+
+      const score = await updateMatchScore(selectedMatch?.id, data);
+      if (score) {
         console.log(score);
         toast.current?.show({
           severity: 'success',
@@ -213,13 +216,6 @@ export default function Fixtures() {
         reset();
         setUpdateScoreVisible(false);
         loadFixture(id!);
-      } catch (err: any) {
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Hata',
-          detail: err.message || 'Skore Kaydedilemedi',
-          life: 4000,
-        });
       }
     }
   };

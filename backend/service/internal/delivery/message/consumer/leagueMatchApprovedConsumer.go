@@ -1,4 +1,4 @@
-package matchapproved
+package consumer
 
 import (
 	"context"
@@ -7,37 +7,37 @@ import (
 	"log"
 
 	"github.com/rabbitmq/amqp091-go"
-	"github.com/turanberker/tennis-league-service/internal/delivery/message"
+	"github.com/turanberker/tennis-league-service/internal/domain/league"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	matchSet "github.com/turanberker/tennis-league-service/internal/domain/matchset"
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
-type MatchApprovedEventConsumer struct {
-	*message.Consumer
+type LeagueMatchApprovedEventConsumer struct {
+	*Consumer
 	tm             *database.TransactionManager
 	matchRepo      match.Repository
 	setRepo        matchSet.Repository
 	scoreboradRepo scoreboard.Repository
 }
 
-func NewMatchApprovedEventConsumer(tm *database.TransactionManager,
+func NewLeagueMatchApprovedEventConsumer(tm *database.TransactionManager,
 	matchRepo match.Repository,
 	setRepo matchSet.Repository,
 	scoreboradRepo scoreboard.Repository,
-) *MatchApprovedEventConsumer {
+) *LeagueMatchApprovedEventConsumer {
 
-	c := &MatchApprovedEventConsumer{
+	c := &LeagueMatchApprovedEventConsumer{
 		tm:             tm,
 		matchRepo:      matchRepo,
 		setRepo:        setRepo,
 		scoreboradRepo: scoreboradRepo,
 	}
 
-	c.Consumer = &message.Consumer{
-		Queue:       "match_events_queue",
-		RoutingName: "MatchApproved",
+	c.Consumer = &Consumer{
+		Queue:       "league_match_score_update_queue",
+		RoutingName: "LeagueMatchApproved",
 		Handler:     c.handle, // 👈 struct method
 	}
 
@@ -45,10 +45,10 @@ func NewMatchApprovedEventConsumer(tm *database.TransactionManager,
 
 }
 
-func (c *MatchApprovedEventConsumer) handle(msg amqp091.Delivery) error {
+func (c *LeagueMatchApprovedEventConsumer) handle(msg amqp091.Delivery) error {
 	ctx := context.Background()
 
-	var event = &match.MatchApprovedEvent{}
+	var event = &league.LeagueMatchApprovedEvent{}
 
 	err := json.Unmarshal(msg.Body, &event)
 	if err != nil {
@@ -57,16 +57,16 @@ func (c *MatchApprovedEventConsumer) handle(msg amqp091.Delivery) error {
 
 	return c.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-		matchTeams := c.matchRepo.GetMatchTeamIds(txCtx, event.MatchID)
+		matchTeams := c.matchRepo.GetMatchTeamIds(txCtx, event.MatchId)
 
 		if matchTeams == nil {
-			return fmt.Errorf("%s, Maç Bulunamadı", event.MatchID)
+			return fmt.Errorf("%s, Maç Bulunamadı", event.MatchId)
 		}
 
-		setScores := c.setRepo.GetSetScoreList(txCtx, event.MatchID)
+		setScores := c.setRepo.GetSetScoreList(txCtx, event.MatchId)
 
 		var team1Update = &scoreboard.IncreaseTeamScore{
-			LeagueId:      matchTeams.LeagueId,
+			LeagueId:      event.LeagueId,
 			TeamId:        matchTeams.Team1Id,
 			Won:           false,
 			WonSets:       0,
@@ -77,7 +77,7 @@ func (c *MatchApprovedEventConsumer) handle(msg amqp091.Delivery) error {
 		}
 
 		var team2Update = &scoreboard.IncreaseTeamScore{
-			LeagueId:      matchTeams.LeagueId,
+			LeagueId:      event.LeagueId,
 			TeamId:        matchTeams.Team2Id,
 			Won:           false,
 			WonSets:       0,
@@ -125,7 +125,7 @@ func (c *MatchApprovedEventConsumer) handle(msg amqp091.Delivery) error {
 
 		c.scoreboradRepo.UpdateScore(txCtx, *team1Update)
 		c.scoreboradRepo.UpdateScore(txCtx, *team2Update)
-		log.Println("Match Approved:", event.MatchID)
+		log.Println("Match Approved:", event.MatchId, ", LeagueId: ", event.LeagueId)
 
 		return nil
 	})

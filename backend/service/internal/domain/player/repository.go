@@ -12,4 +12,8 @@ type Repository interface {
 	List(ctx context.Context, queryParams ListQueryParameters) ([]*Player, error)
 
 	AssignToUser(ctx context.Context, playerId string, userId string) error
+
+	DecreaseDoublePoint(ctx context.Context, playerId string, change int) (int, error)
+
+	IncreaseDoublePoint(ctx context.Context, playerId string, change int) (int, error)
 }

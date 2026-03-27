@@ -118,3 +118,56 @@ func (r *PlayerRepository) AssignToUser(ctx context.Context, playerId string, us
 	return nil
 
 }
+
+func (r PlayerRepository) DecreaseDoublePoint(ctx context.Context, playerId string, change int) (int, error) {
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := psql.Update("player").
+		Set("double_point", squirrel.Expr("GREATEST(0, double_point - ?)", change)).
+		Where(squirrel.Eq{"id": playerId}).
+		Suffix("RETURNING double_point").
+		ToSql()
+
+	if err != nil {
+		return 0, fmt.Errorf("sorgu inşa hatası: %w", err)
+	}
+
+	exec := r.GetExecutor(ctx)
+
+	var newPoint int
+	err = exec.QueryRowContext(ctx, query, args...).Scan(&newPoint)
+	if err != nil {
+		// Oyuncu bulunamadıysa veya başka bir DB hatası varsa
+		return 0, fmt.Errorf("oyuncu puanı düşürülemedi (ID: %s): %w", playerId, err)
+	}
+
+	return newPoint, nil
+}
+
+func (r PlayerRepository) IncreaseDoublePoint(ctx context.Context, playerId string, change int) (int, error) {
+	// Squirrel builder'ı başlatalım (PostgreSQL placeholder'ları için Dollar formatı)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	// Sorguyu inşa edelim
+	query, args, err := psql.Update("player").
+		Set("double_point", squirrel.Expr("double_point + ?", change)).
+		Where(squirrel.Eq{"id": playerId}).
+		Suffix("RETURNING double_point").
+		ToSql()
+
+	if err != nil {
+		return 0, fmt.Errorf("sorgu oluşturulamadı: %w", err)
+	}
+
+	exec := r.GetExecutor(ctx)
+
+	var newDoublePoint int
+	// QueryRowContext kullanarak RETURNING ile gelen değeri okuyoruz
+	err = exec.QueryRowContext(ctx, query, args...).Scan(&newDoublePoint)
+	if err != nil {
+		// Eğer hiçbir satır güncellenmediyse (id yanlışsa) sql.ErrNoRows döner
+		return 0, fmt.Errorf("oyuncu puanı güncellenemedi veya oyuncu bulunamadı: %w", err)
+	}
+
+	return newDoublePoint, nil
+}

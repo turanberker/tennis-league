@@ -21,7 +21,7 @@ func NewMatchSetRepository(db *sql.DB) *MatchSetRepository {
 func (r *MatchSetRepository) SaveSetScore(ctx context.Context, setScore *matchSet.UpdateSetScore) error {
 
 	exec := r.GetExecutor(ctx)
-	query := `INSERT INTO match_sets ( match_id, set_number,team_1_games, team_2_games) VALUES ($1, $2,$3,$4)`
+	query := `INSERT INTO match_set ( match_id, set_number,side_1_games, side_2_games) VALUES ($1, $2,$3,$4)`
 
 	_, err := exec.ExecContext(ctx, query, setScore.MatchId, setScore.Set, setScore.Team1Score, setScore.Team2Score)
 
@@ -44,7 +44,7 @@ func (r *MatchSetRepository) SaveSetScore(ctx context.Context, setScore *matchSe
 
 func (r *MatchSetRepository) SaveSuperTieScore(ctx context.Context, setScore *matchSet.UpdateSuperTieScore) error {
 	exec := r.GetExecutor(ctx)
-	query := `INSERT INTO match_sets ( match_id, set_number,team_1_tie_break_score, team_2_tie_break_score) VALUES ($1, 3,$2,$3)`
+	query := `INSERT INTO match_set ( match_id, set_number,side_1_tie_break_score, side_2_tie_break_score) VALUES ($1, 3,$2,$3)`
 	_, err := exec.ExecContext(ctx, query, setScore.MatchId, setScore.Team1Score, setScore.Team2Score)
 
 	if err != nil {
@@ -66,7 +66,7 @@ func (r *MatchSetRepository) SaveSuperTieScore(ctx context.Context, setScore *ma
 
 func (r *MatchSetRepository) DeleteSetScores(ctx context.Context, matchId string) error {
 	exec := r.GetExecutor(ctx)
-	query := "delete from match_sets where match_id =$1"
+	query := "delete from match_set where match_id =$1"
 
 	_, err := exec.ExecContext(ctx, query, matchId)
 	if err != nil {
@@ -78,7 +78,7 @@ func (r *MatchSetRepository) DeleteSetScores(ctx context.Context, matchId string
 
 func (r *MatchSetRepository) GetSetScoreList(ctx context.Context, matchId string) []*matchSet.MatchSetScores {
 	exec := r.GetExecutor(ctx)
-	query := "select set_number, team_1_games ,team_2_games ,team_1_tie_break_score ,team_2_tie_break_score  from match_sets ms  where match_id =$1"
+	query := "select set_number, side_1_games ,side_2_games ,side_1_tie_break_score ,side_2_tie_break_score  from match_set ms  where match_id =$1"
 
 	rows, err := exec.QueryContext(ctx, query, matchId)
 

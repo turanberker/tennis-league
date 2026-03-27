@@ -18,7 +18,7 @@ func NewOutboxRepository(db *sql.DB) *Repository {
 func (r *Repository) Save(ctx context.Context, entity *outbox.PersistEntity) error {
 	exec := r.GetExecutor(ctx)
 	query := `
-		INSERT INTO outbox_events
+		INSERT INTO outbox_event
 		( aggregate_type, aggregate_id, event_type, payload, status, retry_count, created_at)
 		VALUES ($1,$2,$3,$4,$5,0,NOW())
 	`
@@ -41,7 +41,7 @@ func (r *Repository) GetPendingIDs(ctx context.Context, limit int) ([]string, er
 
 	query := `
         SELECT id 
-        FROM outbox_events 
+        FROM outbox_event 
         WHERE status = $1 
         ORDER BY created_at ASC 
         LIMIT $2`
@@ -67,7 +67,7 @@ func (r *Repository) GetPendingIDs(ctx context.Context, limit int) ([]string, er
 func (r *Repository) IncreaseRetryCount(ctx context.Context, id string) error {
 	exec := r.GetExecutor(ctx)
 	query := `
-        UPDATE outbox_events 
+        UPDATE outbox_event 
         SET retry_count = retry_count + 1,
             status = CASE WHEN retry_count + 1 >= 5 THEN 'FAILED' ELSE status END
         WHERE id = $1`
@@ -79,7 +79,7 @@ func (r *Repository) IncreaseRetryCount(ctx context.Context, id string) error {
 func (r *Repository) UpdateToPublished(ctx context.Context, id string) error {
 	exec := r.GetExecutor(ctx)
 	_, err := exec.ExecContext(ctx,
-		`UPDATE outbox_events
+		`UPDATE outbox_event
 			 SET status = $1,
 			     processed_at = current_date
 			 WHERE id = $2`, outbox.StatusPublished, id)
@@ -91,7 +91,7 @@ func (r *Repository) GetEventForUpdate(ctx context.Context, id string) (*outbox.
 	// Sadece bu ID'yi kilitliyoruz
 	row := exec.QueryRowContext(ctx, `
         SELECT id, event_type, payload 
-        FROM outbox_events 
+        FROM outbox_event 
         WHERE id = $1 FOR UPDATE SKIP LOCKED`, id)
 
 	var e outbox.EventToPublish

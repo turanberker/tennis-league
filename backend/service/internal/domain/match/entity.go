@@ -16,7 +16,6 @@ const (
 
 	MatchType_SINGLE Match_TYPE = "SINGLE"
 	MatchType_DOUBLE Match_TYPE = "DOUBLE"
-	MatchType_TEAM   Match_TYPE = "TEAM"
 
 	MatchSource_FRIENDLY   Match_SOURCE = "FRIENDLY"
 	MatchSource_TOURNAMENT Match_SOURCE = "TOURNAMENT"
@@ -77,4 +76,10 @@ type teamRef struct {
 
 type MatchApprovedEvent struct {
 	MatchID string `json:"matchId"`
+}
+
+type MatchParticipant struct {
+	PlayerID    string
+	DoublePoint int
+	IsWinner    bool
 }

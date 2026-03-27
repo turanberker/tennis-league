@@ -1,5 +1,5 @@
 import { CreateTeamRequest, LeagueTeamResponse } from "../model/team.model";
-import { LeagueFixtureMatchResponse } from "../model/match.model";
+import { LeagueFixtureMatchResponse, MatchScore } from "../model/match.model";
 import axiosClient from "./axiosClient";
 import { ScoreBoardResponse } from "../model/standing.model";
 import { League, LeagueListResponse, PersistLeagueRequest } from "../model/league.model";
@@ -53,7 +53,15 @@ export const getStandings = async (
 };
 
 export const assignCoordinator = async (leagueId: String, data: { userId: String }): Promise<Boolean> => {
-
   return await axiosClient.post<Boolean>(`leagues/${leagueId}/coordinator`, null, { params: data })
-
 }
+
+export const updateMatchDate = async (leagueId: String, matchId: String, data: { 'match-date': Date }): Promise<Date> => {
+  return await axiosClient.put(`leagues/${leagueId}/match/${matchId}/update-date`, null, {
+    params: data,
+  });
+};
+
+export const approveMatchResult = async (leagueId: String, matchId: String): Promise<MatchScore> => {
+  return await axiosClient.put<MatchScore>(`leagues/${leagueId}/match/${matchId}/approve`);
+};

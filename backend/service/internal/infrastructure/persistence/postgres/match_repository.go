@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 )
 
@@ -145,7 +146,7 @@ func (r *MatchRepository) UpdateMatchDate(ctx context.Context, data match.Update
 func (r *MatchRepository) GetMatchTeamIds(ctx context.Context, matchId string) *match.MatchTeamIds {
 	executor := r.GetExecutor(ctx)
 	var response match.MatchTeamIds
-	query := "select league_id, team_1_id ,team_2_id ,status  from matches m where id=$1"
+	query := "select league_id, team_1_id ,team_2_id ,status  from match m where id=$1"
 
 	err := executor.QueryRowContext(ctx, query, matchId).
 		Scan(&response.LeagueId, &response.Team1Id, &response.Team2Id, &response.Status)
@@ -162,7 +163,7 @@ func (r *MatchRepository) GetMatchTeamIds(ctx context.Context, matchId string) *
 
 func (r *MatchRepository) UpdateMatchScore(ctx context.Context, macScore *match.UpdateMatchScore) error {
 	executor := r.GetExecutor(ctx)
-	query := "Update matches set team_1_score=$1, team_2_score=$2, winner_id=$3, status=$4 where id=$5"
+	query := "Update match set team_1_score=$1, team_2_score=$2, winner_id=$3, status=$4 where id=$5"
 
 	_, err := executor.ExecContext(ctx, query, macScore.Team1Score, macScore.Team2Score, macScore.WinnerTeamId, match.StatusCompleted, macScore.Id)
 	if err != nil {
@@ -174,7 +175,7 @@ func (r *MatchRepository) UpdateMatchScore(ctx context.Context, macScore *match.
 
 func (r *MatchRepository) ApproveScore(ctx context.Context, source match.Match_SOURCE, matchId string) error {
 	executor := r.GetExecutor(ctx)
-	query := "Update matches set status=$1, approve_date=current_date where id=$2 and status=$3 and source=$4"
+	query := "Update match set status=$1, approve_date=current_date where id=$2 and status=$3 and source=$4"
 
 	result, err := executor.ExecContext(
 		ctx,
@@ -198,4 +199,69 @@ func (r *MatchRepository) ApproveScore(ctx context.Context, source match.Match_S
 		return errors.New("Onaylanacak Maç bulunamadı")
 	}
 	return nil
+}
+
+func (r *MatchRepository) GetMatchType(ctx context.Context, matchId string) (*match.Match_TYPE, error) {
+	executor := r.GetExecutor(ctx)
+	var response match.Match_TYPE
+	query := "select match_type  from match m where id=$1"
+
+	err := executor.QueryRowContext(ctx, query, matchId).
+		Scan(&response)
+
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (r *MatchRepository) GetDoubleMatchParticipantsWithPoints(ctx context.Context, matchID string) ([]match.MatchParticipant, error) {
+
+	// 1. Squirrel ile sorguyu inşa et
+	// psql formatı ($1, $2) için PlaceholderFormat(sq.Dollar) kullanıyoruz
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := psql.
+		Select(
+			"p.id AS player_id",
+			"p.double_point",
+			"(t.id = m.winner_id) AS is_winner",
+		).
+		From("match m").
+		Join("team t on t.id IN (m.team_1_id, m.team_2_id)").
+		Join("team_player tp ON tp.team_id = t.id").
+		Join("player p ON p.id = tp.player_id").
+		Where(squirrel.Eq{"m.id": matchID}).
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	// 2. sqlscan (scany) ile sorguyu çalıştır ve sonuçları bind et
+	// r.db burada *sql.DB veya *sql.Tx olabilir, scany ikisini de destekler
+
+	type dbRow struct {
+		PlayerID    string `db:"player_id"`
+		DoublePoint int    `db:"double_point"`
+		IsWinner    bool   `db:"is_winner"`
+	}
+
+	var rows []dbRow
+	if err := sqlscan.Select(ctx, r.db, &rows, query, args...); err != nil {
+		return nil, fmt.Errorf("failed to select participants: %w", err)
+	}
+
+	// 3. Database row'larını domain modeline (match.MatchParticipant) dönüştür
+	result := make([]match.MatchParticipant, len(rows))
+	for i, row := range rows {
+		result[i] = match.MatchParticipant{
+			PlayerID:    row.PlayerID,
+			DoublePoint: row.DoublePoint,
+			IsWinner:    row.IsWinner,
+		}
+	}
+
+	return result, nil
+
 }

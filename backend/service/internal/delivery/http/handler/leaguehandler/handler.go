@@ -53,12 +53,12 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.POST("/:id/coordinator",
 			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
 			h.checkIfCoordinator, h.newCoordinator)
-		leagues.PUT("/:id/score/:matchId/update-score")
-		leagues.PUT("/:id/score/:matchId/update-date",
+		leagues.PUT("/:id/match/:matchId/update-score")
+		leagues.PUT("/:id/match/:matchId/update-date",
 			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
 			h.checkIfCoordinator,
 			h.updateMatchDate)
-		leagues.PUT("/:id/score/:matchId/approve",
+		leagues.PUT("/:id/match/:matchId/approve",
 			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
 			h.checkIfCoordinator,
 			h.approveScore)
