@@ -55,7 +55,7 @@ func (f *ScoreBoardRepository) GetScoreBoard(ctx context.Context, leagueId strin
 	query := `Select f.team_id,t.name ,f.played,f.won, f.lost,
 		f.won_sets, f.lost_sets,f.won_games,f.lost_games,score
 		from score_board f 
-		inner join teams  t on t.id =f.team_id 
+		inner join team  t on t.id =f.team_id 
 		where f.league_id=$1 order by score desc`
 
 	rows, err := exec.QueryContext(ctx, query, leagueId)
