@@ -49,7 +49,7 @@ services:
       - RABBIT_PASSWORD=admin123
       - RABBIT_HOST=rabbitmq
       - RABBIT_PORT=5672
-      - RABBIT_VHOST=%2F
+      - RABBIT_VHOST=/
     networks:
       - tennis-net
     depends_on:
@@ -78,7 +78,7 @@ services:
       - RABBIT_PASSWORD=admin123
       - RABBIT_HOST=rabbitmq
       - RABBIT_PORT=5672
-      - RABBIT_VHOST=%2F
+      - RABBIT_VHOST=/
     networks:
       - tennis-net
     depends_on:
