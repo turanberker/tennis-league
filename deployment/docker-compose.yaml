@@ -89,6 +89,17 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  frontend:
+    build:
+      context: ../frontend/tennis-league # React projenin yolu
+      dockerfile: Dockerfile
+    container_name: tennis-league-ui
+    ports:
+      - "3000:80" # Tarayıcıdan 3000 portuyla erişirsin
+    networks:
+      - tennis-net
+    depends_on:
+      - api # API ayağa kalkmadan gelmesini isteyebilirsin
 networks:
   tennis-net:
     driver: bridge
