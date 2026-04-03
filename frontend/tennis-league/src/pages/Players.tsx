@@ -10,7 +10,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
-import { Player, Sex, SexLabels, SexOptions } from '../model/player.model';
+import { Player, PlayerResponse, Sex, SexLabels, SexOptions } from '../model/player.model';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Sidebar } from 'primereact/sidebar';
@@ -53,8 +53,8 @@ export default function Players() {
       defaultValues: { name: '', surname: '', sex: undefined as any },
     });
   const [sexFilter, setSexFilter] = useState<Sex>()
-  const [selectedPlayer, setSelectedPlayer] = useState<Player>()
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerResponse>()
+  const [players, setPlayers] = useState<PlayerResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [createVisible, setCreateVisible] = useState<boolean>(false);
 
@@ -182,6 +182,8 @@ export default function Players() {
             header="Cinsiyet"
             body={(rowData) => SexLabels[rowData.sex as Sex]}
           />
+          <Column field="single_points" header="Tekler Puan" />
+          <Column field="double_points" header="Çiftler Puan" />
 
         </DataTable>
       </Card>

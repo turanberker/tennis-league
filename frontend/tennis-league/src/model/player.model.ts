@@ -21,6 +21,16 @@ export interface Player {
   sex: Sex;
 }
 
+export interface PlayerResponse {
+  id: string;
+  name: string;
+  surname: string;
+  userId?: number;
+  sex: Sex;
+  double_points: number;
+  single_points: number;
+}
+
 export interface CreatePlayerRequest {
   name: string;
   surname: string;

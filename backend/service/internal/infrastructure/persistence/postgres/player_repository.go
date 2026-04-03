@@ -36,7 +36,7 @@ func (r *PlayerRepository) GetById(ctx context.Context, id int64) (*player.Playe
 func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQueryParameters) ([]*player.Player, error) {
 
 	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	sqlBuilder := psql.Select("id", "name", "surname", "sex", "user_id").From("player")
+	sqlBuilder := psql.Select("id", "name", "surname", "sex", "user_id", "single_point", "double_point").From("player")
 
 	if queryParams.Name != nil {
 		sqlBuilder = sqlBuilder.Where("name ILIKE ?", "%"+*queryParams.Name+"%")
@@ -59,11 +59,13 @@ func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQuer
 	}
 
 	type row struct {
-		ID      string  `db:"id"`
-		Name    string  `db:"name"`
-		Surname string  `db:"surname"`
-		Sex     string  `db:"sex"`
-		UserID  *string `db:"user_id"` // Null gelebileceği için pointer kullanmak güvenlidir
+		ID           string  `db:"id"`
+		Name         string  `db:"name"`
+		Surname      string  `db:"surname"`
+		Sex          string  `db:"sex"`
+		UserID       *string `db:"user_id"` // Null gelebileceği için pointer kullanmak güvenlidir
+		SinglePoints int     `db:"single_point"`
+		DoublePoints int     `db:"double_point"`
 	}
 	var rowsData []row
 	err = sqlscan.Select(ctx, r.GetExecutor(ctx), &rowsData, query, args...)
@@ -75,11 +77,13 @@ func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQuer
 	var players []*player.Player
 	for _, d := range rowsData {
 		players = append(players, &player.Player{
-			ID:      d.ID,
-			Name:    d.Name,
-			Surname: d.Surname,
-			Sex:     player.Sex(d.Sex),
-			UserId:  d.UserID,
+			ID:           d.ID,
+			Name:         d.Name,
+			Surname:      d.Surname,
+			Sex:          player.Sex(d.Sex),
+			UserId:       d.UserID,
+			SinglePoints: d.SinglePoints,
+			DoublePoints: d.DoublePoints,
 		})
 	}
 

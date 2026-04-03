@@ -1,11 +1,13 @@
 package player
 
 type Player struct {
-	ID      string
-	Name    string
-	Surname string
-	Sex     Sex
-	UserId  *string
+	ID           string
+	Name         string
+	Surname      string
+	Sex          Sex
+	UserId       *string
+	DoublePoints int
+	SinglePoints int
 }
 
 type PersistPlayer struct {

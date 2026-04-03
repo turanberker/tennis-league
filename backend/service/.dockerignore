@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Go Specific
+bin/
+out/
+dist/
+vendor/
+# Yerel olarak derlediğin binary dosyalar
+*.exe
+*.test
+*.prof
+__debug_bin
+
+# VS Code / Delve debug binaries
+__debug_bin*
+
+# Docker & Compose
+docker-compose*
+Dockerfile*
+.dockerignore
+
+# Environment & Secrets (Hassas Veriler)
+.env
+.env.*
+! .env.example
+secrets.yaml
+
+# Documentation & Tests
+docs/
+tests/
+README.md
+LICENSE

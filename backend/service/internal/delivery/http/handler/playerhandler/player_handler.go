@@ -148,10 +148,12 @@ func toPlayerResponse(l *player.Player) *PlayerResponse {
 	}
 
 	return &PlayerResponse{
-		ID:      l.ID,
-		Name:    l.Name,
-		Surname: l.Surname,
-		Sex:     l.Sex,
-		UserId:  l.UserId,
+		ID:           l.ID,
+		Name:         l.Name,
+		Surname:      l.Surname,
+		Sex:          l.Sex,
+		UserId:       l.UserId,
+		DoublePoints: l.DoublePoints,
+		SinglePoints: l.SinglePoints,
 	}
 }
