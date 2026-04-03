@@ -1,0 +1,94 @@
+include:
+  - ../infra/development/docker-compose.yaml
+
+services:
+  api:
+    build:
+      context: ../backend/service
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: api
+    container_name: tennis-league-api
+    ports:
+      - "8500:8500"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=tennisleague
+      - POSTGRES_PASSWORD=tennisleague
+      - POSTGRES_DB=tennisleague
+      - POSTGRES_SSLMODE=disable
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    networks:
+      - tennis-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: ../backend/service
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: publisher
+    container_name: scheduler
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=tennisleague
+      - POSTGRES_PASSWORD=tennisleague
+      - POSTGRES_DB=tennisleague
+      - POSTGRES_SSLMODE=disable
+      - RABBIT_USER=admin
+      - RABBIT_PASSWORD=admin123
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - RABBIT_VHOST=%2F
+    networks:
+      - tennis-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+
+  consumer:
+    build:
+      context: ../backend/service
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: consumer
+    container_name: consumer
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=tennisleague
+      - POSTGRES_PASSWORD=tennisleague
+      - POSTGRES_DB=tennisleague
+      - POSTGRES_SSLMODE=disable
+      - RABBIT_USER=admin
+      - RABBIT_PASSWORD=admin123
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - RABBIT_VHOST=%2F
+    networks:
+      - tennis-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+
+networks:
+  tennis-net:
+    driver: bridge
