@@ -11,15 +11,17 @@ export default function Scoreboard() {
   const [loading, setLoading] = useState<boolean>(false);
   const [board, setBoard] = useState<ScoreBoardResponse[]>([]);
   useEffect(() => {
+
+    const loadStandings = async () => {
+      setLoading(true);
+      const response = await getStandings(id!);
+      setBoard(response);
+      setLoading(false);
+    };
     loadStandings();
   }, [id]);
 
-  const loadStandings = async () => {
-    setLoading(true);
-    const response = await getStandings(id!);
-    setBoard(response);
-    setLoading(false);
-  };
+
   return (
     <Card title="Puan Durumu">
       <DataTable

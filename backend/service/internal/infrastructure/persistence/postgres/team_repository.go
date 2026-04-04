@@ -36,7 +36,7 @@ func (r *TeamRepository) GetByLeagueId(ctx context.Context, leagueId string) ([]
 		From("team t").InnerJoin("team_player tp on tp.team_id = t.id").
 		InnerJoin("player p on p.id =tp.player_id ").
 		Where(squirrel.Eq{"t.league_id": leagueId}).
-		GroupBy("t.id", "t.name")
+		GroupBy("t.id", "t.name").OrderBy("power DESC")
 
 	query, args, err := sqlBuilder.ToSql()
 	if err != nil {

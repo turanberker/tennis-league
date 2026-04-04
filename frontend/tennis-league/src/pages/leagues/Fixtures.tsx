@@ -59,7 +59,6 @@ const tennisSetSchema = baseScoreSchema.test(
 
     const max = Math.max(team1Score, team2Score);
     const min = Math.min(team1Score, team2Score);
-    const diff = max - min;
 
     if (max === 6 && min <= 4) return true;
     if (max === 7 && min === 5) return true;

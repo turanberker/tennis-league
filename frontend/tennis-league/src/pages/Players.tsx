@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
@@ -61,16 +61,15 @@ export default function Players() {
   const toast = useRef<Toast>(null);
   const navigate = useNavigate();
 
-  useEffect(() => { loadPlayers() }, [sexFilter])
-
-  // Oyuncuları yükle
-  const loadPlayers = async () => {
+  const loadPlayers = useCallback(async () => {
 
     setLoading(true);
     const res = await getPlayers({ sex: sexFilter });
     setPlayers(res);
     setLoading(false);
-  };
+  }, [sexFilter]);
+
+  useEffect(() => { loadPlayers() }, [loadPlayers])
 
   // CREATE
   const onSubmit = async (data: FormData) => {
@@ -99,7 +98,7 @@ export default function Players() {
 
   useEffect(() => {
     loadPlayers();
-  }, []);
+  }, [loadPlayers]);
 
   const handlePlayerDetail = (uuid: string) => {
     navigate(`/players/${uuid}`);
