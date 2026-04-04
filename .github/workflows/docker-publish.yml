@@ -1,0 +1,71 @@
+name: Publish Docker Images
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  push_to_registry:
+    name: Build and Push All Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 1. Backend: API Image
+      - name: Build and push API
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/service
+          file: ./backend/service/Dockerfile
+          build-args: |
+            APP_NAME=api
+          push: true
+          tags: berkerturan/tennis-league-api:latest
+
+      # 2. Backend: Scheduler Image
+      - name: Build and push Scheduler
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/service
+          file: ./backend/service/Dockerfile
+          build-args: |
+            APP_NAME=publisher
+          push: true
+          tags: berkerturan/tennis-league-scheduler:latest
+
+      # 3. Backend: Consumer Image
+      - name: Build and push Consumer
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/service
+          file: ./backend/service/Dockerfile
+          build-args: |
+            APP_NAME=consumer
+          push: true
+          tags: berkerturan/tennis-league-consumer:latest
+
+      # 4. Frontend Image
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend/tennis-league
+          file: ./frontend/tennis-league/Dockerfile
+          push: true
+          tags: berkerturan/tennis-league-ui:latest
+
+      # 5. Migrate Image
+      - name: Build and push Migrate
+        uses: docker/build-push-action@v5
+        with:
+          context: ./infra/development/migrations
+          file: ./Dockerfile.migrate
+          push: true
+          tags: berkerturan/tennis-league-migrate:latest
