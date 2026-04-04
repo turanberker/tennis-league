@@ -25,7 +25,7 @@ func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
 	{
 		group.GET("/list", h.getAll)
 		group.POST("", middleware.RequireRole(user.RoleAdmin), h.save)
-		group.PUT("/:id", middleware.RequireRole(user.RoleAdmin), h.assignToUser)
+		group.PUT("/:id/assign-to-user", middleware.RequireRole(user.RoleAdmin), h.assignToUser)
 		group.GET("/unassigned-players", h.unassignedPlayers)
 	}
 
