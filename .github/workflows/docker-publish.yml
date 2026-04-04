@@ -80,7 +80,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./infra/development/migrations
-          file: ./Dockerfile.migrate
+          file: ./Dockerfile
           push: true
           tags: |
             berkerturan/tennis-league-migrate:latest
