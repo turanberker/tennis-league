@@ -1,5 +1,5 @@
 import React from 'react';
-import { Role, User } from '../model/user.model';
+import { Role } from '../model/user.model';
 import { AuthUser, useAuth } from '../context/AuthContext';
 
 

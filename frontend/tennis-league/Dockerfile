@@ -1,28 +1,28 @@
-# 1. AŞAMA: Derleme (Build)
+# 1. AŞAMA: Derleme
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# Bağımlılıkları kopyala ve kur (Cache dostu)
-COPY package.json package-lock.json ./
-RUN npm install
+# Sadece bağımlılık tanımlarını al
+COPY package*.json ./
+# Daha hızlı ve tutarlı bir kurulum için 'ci'
+RUN npm ci
 
-# Kaynak kodları kopyala
+# Kodun tamamını kopyala ve build al
 COPY . .
 
-# Üretim (Production) build'ini al
+# Bu satırı ekle: Dosya listesini build sırasında görelim
+RUN ls -l src/
+
 RUN npm run build
 
-# 2. AŞAMA: Servis Etme (Run)
+# 2. AŞAMA: Servis Etme
 FROM nginx:stable-alpine
 
+# Özel Nginx konfigürasyonunu kopyala (Routing desteği için)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Builder aşamasından sadece build klasörünü çek
 COPY --from=builder /app/build /usr/share/nginx/html
 
-# Eğer React Router (Client-side routing) kullanıyorsan Nginx konfigürasyonu gerekebilir
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]

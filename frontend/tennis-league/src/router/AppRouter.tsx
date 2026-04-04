@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import Dashboard from '../pages/Dashboard';
@@ -8,7 +7,6 @@ import Matches from '../pages/Matches';
 import ProtectedRoute from './ProtectedRoute';
 import Fixtures from '../pages/leagues/Fixtures';
 import Teams from '../pages/leagues/Teams';
-import NewPlayer from '../pages/player/NewPlayer';
 import PlayerDetail from '../pages/player/PlayerDetail';
 import Scoreboard from '../pages/leagues/Scoreboard';
 import { useAuth } from '../context/AuthContext';

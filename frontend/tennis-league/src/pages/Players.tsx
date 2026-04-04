@@ -10,7 +10,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { classNames } from 'primereact/utils';
-import { Player, PlayerResponse, Sex, SexLabels, SexOptions } from '../model/player.model';
+import { PlayerResponse, Sex, SexLabels, SexOptions } from '../model/player.model';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Sidebar } from 'primereact/sidebar';

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from 'primereact/card';
 import { Toast } from 'primereact/toast';
 import { DataTable } from 'primereact/datatable';
@@ -8,7 +8,6 @@ import { Column } from 'primereact/column';
 import { getUsers } from '../../api/userService';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { Dropdown } from 'primereact/dropdown';
-import Players from '../Players';
 import { Player, Sex, SexOptions } from '../../model/player.model';
 import { getUnassignedPlayers } from '../../api/playersService';
 

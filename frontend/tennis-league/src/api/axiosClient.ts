@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { showGlobalError } from './toastService';
-import { ApiError, ApiResponse } from '../model/apiResponse.model';
+import { ApiResponse } from '../model/apiResponse.model';
 
 export const instance = axios.create({
   baseURL: 'http://localhost:8500',

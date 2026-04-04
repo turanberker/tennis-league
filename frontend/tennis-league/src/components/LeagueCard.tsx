@@ -12,7 +12,7 @@ interface LeagueCardProps {
 
 export const LeagueCard: React.FC<LeagueCardProps> = ({ id }) => {
 
-    const { data: league, isLoading, isError, error } = useLeague(id);
+    const { data: league, isLoading } = useLeague(id);
 
 
     if (isLoading) {
@@ -79,6 +79,4 @@ export const LeagueCard: React.FC<LeagueCardProps> = ({ id }) => {
             </div>
         </Card>
     );
-
-    return (<></>)
 }

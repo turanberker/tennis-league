@@ -11,7 +11,7 @@ import LoginDialog from './components/auth/LoginDialog';
 import RegisterDialog, { RegisterForm } from './components/auth/RegisterDialog';
 import { SidebarLinks, AppRoutes } from './router/AppRouter';
 import { AuthProvider, useAuth, AuthUser } from './context/AuthContext';
-import { login as loginApi, register as registerApi } from './api/authService';
+import { register as registerApi } from './api/authService';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 

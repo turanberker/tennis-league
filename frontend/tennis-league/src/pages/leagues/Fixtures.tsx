@@ -16,9 +16,7 @@ import { OverlayPanel } from 'primereact/overlaypanel';
 import { FloatLabel } from 'primereact/floatlabel';
 import { Calendar } from 'primereact/calendar';
 import {
-  approve,
   getSetScores,
-  updateDate,
   updateMatchScore,
 } from '../../api/matchService';
 import { Toast } from 'primereact/toast';
@@ -127,14 +125,13 @@ export default function Fixtures() {
     handleSubmit,
     reset,
     setValue,
-    getValues,
     formState: { errors, isSubmitting },
   } = useForm<MatchScore>({
     resolver: yupResolver(matchScoreSchema),
     defaultValues: initialValues,
   });
 
-  const { data: league, isLoading } = useLeague(id);
+  const { data: league } = useLeague(id);
 
   useEffect(() => {
     loadFixture(id!);
