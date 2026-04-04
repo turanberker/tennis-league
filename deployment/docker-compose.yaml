@@ -8,6 +8,7 @@ services:
       dockerfile: Dockerfile
       args:
         APP_NAME: api
+    image: berkerturan/tennis-league-api
     container_name: tennis-league-api
     ports:
       - "8500:8500"
@@ -26,7 +27,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      migrate:
+      schema-initializer:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
@@ -38,6 +39,7 @@ services:
       args:
         APP_NAME: publisher
     container_name: scheduler
+    image: berkerturan/tennis-league-scheduler
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -57,7 +59,7 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_started
-      migrate:
+      schema-initializer:
         condition: service_completed_successfully
 
   consumer:
@@ -67,6 +69,7 @@ services:
       args:
         APP_NAME: consumer
     container_name: consumer
+    image: berkerturan/tennis-league-consumer
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -86,7 +89,7 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_started
-      migrate:
+      schema-initializer:
         condition: service_completed_successfully
 
   frontend:

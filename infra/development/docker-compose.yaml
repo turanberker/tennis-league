@@ -65,22 +65,24 @@ services:
     networks:
       - tennis-net
 
-  migrate:
-    image: migrate/migrate:4
-    container_name: migrate
+  schema-initializer:
+    build:
+      context: ./migrations
+      dockerfile: Dockerfile
+    image: berkerturan/tennis-league-schema-initializer
+    container_name: schema-initializer
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./migrations:/migrations
     networks:
       - tennis-net
-    command: [
-      "-path=/migrations",
-      "-database=postgres://tennisleague:tennisleague@postgres:5432/tennisleague?sslmode=disable",
-      "up"
-    ]
-
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=tennisleague
+      - POSTGRES_PASSWORD=tennisleague
+      - POSTGRES_DB=tennisleague
+      - POSTGRES_SSLMODE=disable
 
 volumes:
   tennis-league-postgres_data:
