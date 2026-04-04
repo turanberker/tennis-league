@@ -1,14 +1,10 @@
 include:
   - ../infra/development/docker-compose.yaml
 
-services:
-  api:
-    build:
-      context: ../backend/service
-      dockerfile: Dockerfile
-      args:
-        APP_NAME: api
-    image: berkerturan/tennis-league-api
+services: # Burası eksikti, tüm servisler bunun altında olmalı
+  api: # Servis adı kısa ve öz olabilir
+    image: berkerturan/tennis-league-api:latest
+    pull_policy: always
     container_name: tennis-league-api
     ports:
       - "8500:8500"
@@ -33,13 +29,9 @@ services:
         condition: service_healthy
 
   scheduler:
-    build:
-      context: ../backend/service
-      dockerfile: Dockerfile
-      args:
-        APP_NAME: publisher
-    container_name: scheduler
-    image: berkerturan/tennis-league-scheduler
+    image: berkerturan/tennis-league-scheduler:latest
+    pull_policy: always
+    container_name: tennis-league-scheduler
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -63,13 +55,9 @@ services:
         condition: service_completed_successfully
 
   consumer:
-    build:
-      context: ../backend/service
-      dockerfile: Dockerfile
-      args:
-        APP_NAME: consumer
-    container_name: consumer
-    image: berkerturan/tennis-league-consumer
+    image: berkerturan/tennis-league-consumer:latest
+    pull_policy: always
+    container_name: tennis-league-consumer
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -93,16 +81,16 @@ services:
         condition: service_completed_successfully
 
   frontend:
-    build:
-      context: ../frontend/tennis-league # React projenin yolu
-      dockerfile: Dockerfile
+    image: berkerturan/tennis-league-ui:latest
+    pull_policy: always
     container_name: tennis-league-ui
     ports:
-      - "3000:80" # Tarayıcıdan 3000 portuyla erişirsin
+      - "3000:80"
     networks:
       - tennis-net
     depends_on:
-      - api # API ayağa kalkmadan gelmesini isteyebilirsin
+      - api # Yukarıdaki servis adı 'api' olduğu için burayı güncelledim
+
 networks:
   tennis-net:
     driver: bridge
