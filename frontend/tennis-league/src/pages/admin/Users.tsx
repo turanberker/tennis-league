@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Card } from 'primereact/card';
 import { Toast } from 'primereact/toast';
 import { DataTable } from 'primereact/datatable';
@@ -9,7 +9,7 @@ import { getUsers } from '../../api/userService';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { Dropdown } from 'primereact/dropdown';
 import { Player, Sex, SexOptions } from '../../model/player.model';
-import { getUnassignedPlayers } from '../../api/playersService';
+import { assignPlayerToUser, getUnassignedPlayers } from '../../api/playersService';
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
@@ -22,15 +22,23 @@ export default function Users() {
   const toast = useRef<Toast>(null);
 
   const op = useRef<OverlayPanel>(null);
+
+
   useEffect(() => {
+
+    const loadUnassignedPlayers = async () => {
+      if (sexFilter === null) {
+        setUnassignedPlayes([]);
+        return;
+      }
+      const res = await getUnassignedPlayers(sexFilter);
+      setUnassignedPlayes(res);
+    };
+
     loadUnassignedPlayers();
   }, [sexFilter]);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-  // Oyuncuları yükle
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
 
     setLoading(true);
     const res = await getUsers();
@@ -39,21 +47,35 @@ export default function Users() {
 
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadUnassignedPlayers = async () => {
-    if (sexFilter === null) return;
-    else {
-      const res = await getUnassignedPlayers(sexFilter);
-      setUnassignedPlayes(res);
-    }
-  };
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const playerLabelItemTemplate = (option: Player) => {
     return (
       option ? option.name + ' ' + option.surname : 'Oyuncu seçin'
     ) as string;
   };
+
+  const assignHandler = async () => {
+    if (selectedPlayer && selectedUser) {
+      const response = await assignPlayerToUser(selectedPlayer.id, { userId: selectedUser.id })
+      if (response) {
+        toast.current?.show({
+          severity: 'success',
+          summary: 'İşlem Başarılı',
+          detail: `Oyuncu ile kullanıcı eşleşmesi gerçekleşti`,
+          life: 3000,
+        });
+        loadUsers(); // Eşleme sonrası kullanıcıları güncelle
+      }
+
+    }
+
+    op.current?.hide(); // İşlem bitince kapat
+  }
 
 
   const header = () => {
@@ -105,10 +127,7 @@ export default function Users() {
               disabled={!selectedPlayer}
               onClick={() => {
                 // Eşleme mantığınız buraya
-                console.log(
-                  `${selectedUser?.name} ile ${selectedPlayer?.name} eşleşti.`,
-                );
-                op.current?.hide(); // İşlem bitince kapat
+                assignHandler();
               }}
             />
           </div>

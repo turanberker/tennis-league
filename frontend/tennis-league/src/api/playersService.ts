@@ -20,3 +20,9 @@ export const getUnassignedPlayers = async (sex: Sex) => {
     params: { sex: sex },
   });
 };
+
+export const assignPlayerToUser = async (playerId: string, params: { userId: string }) => {
+  return axiosClient.put<Player[]>(`/player/${playerId}/assign-to-user`, null, {
+    params: params
+  });
+};
