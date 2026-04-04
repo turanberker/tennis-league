@@ -13,7 +13,6 @@ WORKDIR /app
 COPY go.mod go.sum ./
 
 # DOSYA KONTROLÜ İÇİN EKLE:
-RUN ls -la
 RUN go mod download
 
 # Tüm kaynak kodunu kopyala
