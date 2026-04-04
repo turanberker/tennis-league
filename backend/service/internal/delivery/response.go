@@ -15,6 +15,9 @@ type ErrorDetail struct {
 }
 
 func NewSuccessResponse(data interface{}) *Response {
+	if data == nil {
+		data = map[string]string{}
+	}
 	return &Response{
 		Success: true,
 		Data:    &data,
