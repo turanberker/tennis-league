@@ -10,9 +10,6 @@ RUN npm ci
 # Kodun tamamını kopyala ve build al
 COPY . .
 
-# Bu satırı ekle: Dosya listesini build sırasında görelim
-RUN ls -l src/
-
 RUN npm run build
 
 # 2. AŞAMA: Servis Etme
