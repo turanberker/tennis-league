@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/turanberker/tennis-league-service/internal/delivery/message/consumer"
+	"github.com/turanberker/tennis-league-service/internal/delivery/message/consumer/match_score/matchScoreApproved"
 
 	"github.com/turanberker/tennis-league-service/internal/infrastructure/persistence/postgres"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
@@ -32,6 +33,7 @@ func main() {
 	db, err := database.NewPostgres()
 	transactionManager := database.NewTransactionManager(db)
 	matchRepository := postgres.NewMatchRepository(db)
+	playerEarcnedPointRepository := postgres.NewPlayerEarnedPointRepository(db)
 	setRepository := postgres.NewMatchSetRepository(db)
 	scoreboardRepository := postgres.NewScoreBoardRepository(db)
 	playerRepository := postgres.NewPlayerRepository(db)
@@ -42,7 +44,7 @@ func main() {
 	leagueMatchApprovedConsumer := consumer.NewLeagueMatchApprovedEventConsumer(transactionManager, matchRepository, setRepository, scoreboardRepository)
 	consumer.RegisterConsumer(rabbit, ctx, leagueMatchApprovedConsumer.Consumer)
 
-	updatePlayerPointsConsumer := consumer.NewMatchScoreApprovedEventConsumer(transactionManager, matchRepository, playerRepository)
+	updatePlayerPointsConsumer := matchScoreApproved.NewEventConsumer(transactionManager, matchRepository, playerRepository, playerEarcnedPointRepository)
 	consumer.RegisterConsumer(rabbit, ctx, updatePlayerPointsConsumer.Consumer)
 
 	log.Println("📥 Consumer running...")

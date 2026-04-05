@@ -1,4 +1,4 @@
-package consumer
+package matchScoreApproved
 
 import (
 	"context"
@@ -8,29 +8,33 @@ import (
 	"math"
 
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/turanberker/tennis-league-service/internal/delivery/message/consumer"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
-type MatchScoreApprovedEventConsumer struct {
-	*Consumer
-	tm         *database.TransactionManager
-	matchRepo  match.Repository
-	playerRepo player.Repository
+type EventConsumer struct {
+	*consumer.Consumer
+	tm                    *database.TransactionManager
+	matchRepo             match.Repository
+	playerRepo            player.Repository
+	earnedPointRepository Repository
 }
 
-func NewMatchScoreApprovedEventConsumer(tm *database.TransactionManager,
+func NewEventConsumer(tm *database.TransactionManager,
 	matchRepo match.Repository,
-	playerRepo player.Repository) *MatchScoreApprovedEventConsumer {
+	playerRepo player.Repository,
+	earnedPointRepository Repository) *EventConsumer {
 
-	c := &MatchScoreApprovedEventConsumer{
-		tm:         tm,
-		matchRepo:  matchRepo,
-		playerRepo: playerRepo,
+	c := &EventConsumer{
+		tm:                    tm,
+		matchRepo:             matchRepo,
+		playerRepo:            playerRepo,
+		earnedPointRepository: earnedPointRepository,
 	}
 
-	c.Consumer = &Consumer{
+	c.Consumer = &consumer.Consumer{
 		Queue:       "update_player_points_queue",
 		RoutingName: "MatchApproved",
 		Handler:     c.handle, // 👈 struct method
@@ -40,7 +44,7 @@ func NewMatchScoreApprovedEventConsumer(tm *database.TransactionManager,
 
 }
 
-func (c *MatchScoreApprovedEventConsumer) handle(msg amqp091.Delivery) error {
+func (c *EventConsumer) handle(msg amqp091.Delivery) error {
 	ctx := context.Background()
 
 	var event = &match.MatchApprovedEvent{}
@@ -60,44 +64,65 @@ func (c *MatchScoreApprovedEventConsumer) handle(msg amqp091.Delivery) error {
 
 		switch *matchType {
 		case match.MatchType_DOUBLE:
-			participants, err := c.matchRepo.GetDoubleMatchParticipantsWithPoints(txCtx, event.MatchID)
-			if err != nil {
-				//Log yaz
-				return err
-			}
-
-			change, err := calculateDoubleMatchElo(participants)
-			if err != nil {
-				//Log yaz
-				return err
-			}
-			for _, p := range participants {
-				if p.IsWinner {
-					_, err = c.playerRepo.IncreaseDoublePoint(txCtx, p.PlayerID, *change)
-				} else {
-					_, err = c.playerRepo.DecreaseDoublePoint(txCtx, p.PlayerID, *change)
-				}
-
-				if err != nil {
-					log.Printf("Puan güncelleme hatası (Player: %s): %v", p.PlayerID, err)
-					return err
-				}
-
-			}
-
-			// 4. History tablosuna kayıt at
-			// history err := c.playerRepo.SavePointsHistory(txCtx, matchID, historyRecords)
+			c.updateUserDoublePoints(txCtx, event)
 		case match.MatchType_SINGLE:
 			log.Panic("Not Implemented")
 		}
 
-		log.Println("Match Approved:", err)
+		log.Println("Match Approved:", event.MatchID)
 		return nil
 	})
 
 }
 
-func calculateDoubleMatchElo(participants []match.MatchParticipant) (*int, error) {
+func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *match.MatchApprovedEvent) error {
+	participants, err := c.matchRepo.GetDoubleMatchParticipantsWithPoints(txCtx, event.MatchID)
+	if err != nil {
+		//Log yaz
+		return err
+	}
+
+	change, err := c.calculateDoubleMatchElo(participants)
+	if err != nil {
+		//Log yaz
+		return err
+	}
+	for _, p := range participants {
+		if p.IsWinner {
+			_, err = c.playerRepo.IncreaseDoublePoint(txCtx, p.PlayerID, *change)
+			if err != nil {
+				log.Printf("Kazanan Oyuncu Puanı Güncellenirken Hata Oluştu(Player: %s): %v", p.PlayerID, err)
+				return err
+			}
+		} else {
+			_, err = c.playerRepo.DecreaseDoublePoint(txCtx, p.PlayerID, *change)
+			if err != nil {
+				log.Printf("Kaybeden Oyuncu Puanı Güncellenirken Hata Oluştu(Player: %s): %v", p.PlayerID, err)
+				return err
+			}
+		}
+
+		pointChange := *change
+		recordPoint := int32(pointChange)
+		if !p.IsWinner {
+			recordPoint = -recordPoint
+		}
+
+		err = c.earnedPointRepository.AddPlayerPoint(txCtx, &AddPlayerPoint{
+			PlayerId:    p.PlayerID,
+			EarnedPoint: recordPoint,
+			MatchType:   match.MatchType_DOUBLE,
+		})
+
+		if err != nil {
+			log.Printf("Puan geçmişi oluşturulurken hata oluştu (Player: %s): %v", p.PlayerID, err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *EventConsumer) calculateDoubleMatchElo(participants []match.MatchParticipant) (*int, error) {
 	// K-Factor: Bir maçta kazanılabilecek maksimum puan.
 	// Rekabetin hızını artırmak istersen 40, daha stabil olsun dersen 24 yapabilirsin.
 	const kFactor = 32.0
