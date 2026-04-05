@@ -11,6 +11,12 @@ type Usecase struct {
 	repo Repository
 }
 
+func (u *Usecase) GetPlayerStatistics(context context.Context, request PlayerStatisticsRequest) (*PlayerStatistics, error) {
+
+	return u.repo.GetPlayerStatistics(context, request)
+
+}
+
 func (u *Usecase) AssignToUser(ctx context.Context, playerId string, userId string) error {
 	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 		return u.repo.AssignToUser(txCtx, playerId, userId)

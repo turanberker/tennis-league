@@ -175,3 +175,65 @@ func (r PlayerRepository) IncreaseDoublePoint(ctx context.Context, playerId stri
 
 	return newDoublePoint, nil
 }
+
+func (r *PlayerRepository) GetPlayerStatistics(ctx context.Context, request player.PlayerStatisticsRequest) (*player.PlayerStatistics, error) {
+
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	// Sorguyu oluşturuyoruz
+	// Not: Select içindeki "?" işaretleri için manuel argüman yönetimi gerekir
+	query, _, err := psql.Select(
+		"p.double_point",
+		"p.single_point",
+		// Double Points Subquery
+		"(SELECT COALESCE(SUM(t.earned_point), 0) FROM ("+
+			"SELECT ep.earned_point FROM earned_points ep "+
+			"WHERE ep.player_id = p.id AND ep.match_type = 'DOUBLE' "+
+			"ORDER BY ep.match_date DESC LIMIT ?) AS t) AS earned_double_points",
+		// Single Points Subquery
+		"(SELECT COALESCE(SUM(t.earned_point), 0) FROM ("+
+			"SELECT ep.earned_point FROM earned_points ep "+
+			"WHERE ep.player_id = p.id AND ep.match_type = 'SINGLE' "+
+			"ORDER BY ep.match_date DESC LIMIT ?) AS t) AS earned_single_points",
+	).
+		From("player p").
+		Where(squirrel.Eq{"p.id": request.PlayerId}).
+		// Parametrelerin sırası: 1. Limit(Double), 2. Limit(Single), 3. PlayerId(Where)
+		// Select içindekiler önce gelir
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %w", err)
+
+	}
+
+	//DefaultLimit 5
+	limit := 5
+	if request.Limit != nil {
+		limit = *request.Limit
+	}
+	// Argümanları SQL'deki ? sırasına göre manuel diziyoruz
+	finalArgs := []interface{}{limit, limit, request.PlayerId}
+
+	type row struct {
+		EarnedDoublePoint int `db:"earned_double_points"`
+		EarnedSinglePoint int `db:"earned_single_points"` // Null gelebileceği için pointer kullanmak güvenlidir
+		SinglePoint       int `db:"single_point"`
+		DoublePoint       int `db:"double_point"`
+	}
+	var rowData row
+
+	err = sqlscan.Get(ctx, r.GetExecutor(ctx), &rowData, query, finalArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("veritabanı hatası: %v", err)
+	}
+
+	// Domain modeline map'leme (İşte burası temizliğin sağlandığı yer)
+
+	return &player.PlayerStatistics{
+		CurrentDoublePoint:  rowData.DoublePoint,
+		CurrentSinglePoint:  rowData.SinglePoint,
+		LastDoublePointsSum: rowData.EarnedDoublePoint,
+		LastSinglePointsSum: rowData.EarnedSinglePoint,
+	}, nil
+}

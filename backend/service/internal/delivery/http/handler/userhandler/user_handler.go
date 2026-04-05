@@ -7,17 +7,14 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
-	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type UserHandler struct {
 	userUc *user.Usecase
-	tm     *database.TransactionManager
 }
 
-func NewUserHandler(tm *database.TransactionManager, userUc *user.Usecase) *UserHandler {
-	return &UserHandler{userUc: userUc,
-		tm: tm}
+func NewUserHandler(userUc *user.Usecase) *UserHandler {
+	return &UserHandler{userUc: userUc}
 }
 
 func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
@@ -25,6 +22,7 @@ func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 	userRoute := r.Group("/user")
 	{
 		userRoute.GET("/list", middleware.RequireRole(user.RoleAdmin), h.getAll)
+
 	}
 }
 

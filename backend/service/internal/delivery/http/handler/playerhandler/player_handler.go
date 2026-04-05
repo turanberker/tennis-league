@@ -27,6 +27,7 @@ func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
 		group.POST("", middleware.RequireRole(user.RoleAdmin), h.save)
 		group.PUT("/:id/assign-to-user", middleware.RequireRole(user.RoleAdmin), h.assignToUser)
 		group.GET("/unassigned-players", h.unassignedPlayers)
+		group.GET("/:id/statistics", h.getPlayerStatistics)
 	}
 
 }
@@ -156,4 +157,41 @@ func toPlayerResponse(l *player.Player) *PlayerResponse {
 		DoublePoints: l.DoublePoints,
 		SinglePoints: l.SinglePoints,
 	}
+}
+
+func (h *PlayerHandler) getPlayerStatistics(c *gin.Context) {
+	playerId := c.Param("id")
+	var req struct {
+		Limit *int `form:"limit" binding:"omitempty,numeric"`
+	}
+	if err := c.ShouldBindQuery(&req); err != nil {
+		errorMessage := delivery.ValidationError(err)
+		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+		return
+	}
+
+	statistics, err := h.uc.GetPlayerStatistics(c.Request.Context(), player.PlayerStatisticsRequest{
+		PlayerId: playerId,
+		Limit:    req.Limit,
+	})
+
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+
+	var response struct {
+		EarnedSinglePoints int `json:"earnedSinglePoints"`
+		EarnedDoublePoints int `json:"earnedDoublePoints"`
+		SinglePoints       int `json:"singlePoints"`
+		DoublePoints       int `json:"doublePoints"`
+	}
+	response.EarnedDoublePoints = statistics.LastDoublePointsSum
+	response.EarnedSinglePoints = statistics.LastSinglePointsSum
+	response.SinglePoints = statistics.CurrentSinglePoint
+	response.DoublePoints = statistics.CurrentDoublePoint
+
+	res := delivery.NewSuccessResponse(response)
+	c.JSON(http.StatusOK, res)
 }

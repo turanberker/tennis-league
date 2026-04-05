@@ -5,6 +5,7 @@ import (
 
 	"github.com/turanberker/tennis-league-service/internal/delivery/http"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/authhandler"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/dashboard"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/leaguehandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/matchhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/playerhandler"
@@ -63,13 +64,15 @@ func main() {
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
 	playerUc := player.NewUsecase(transactionManager, playerRepository)
 
+	dashboardHandler := dashboard.NewDashboardHandler(playerUc)
 	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc, matchUseCase)
 	authHandler := authhandler.NewAuthHandler(authUC, tokenService)
-	userHandler := userhandler.NewUserHandler(transactionManager, userUC)
+	userHandler := userhandler.NewUserHandler(userUC)
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 
 	r := http.NewRouter(middleware.NewAuthMiddleware("tennis", sessionRepository),
+		dashboardHandler,
 		authHandler,
 		leagueHandler,
 		playerhandler,

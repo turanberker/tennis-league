@@ -33,3 +33,15 @@ type ListQueryParameters struct {
 	Sex     *Sex
 	HasUser *bool
 }
+
+type PlayerStatisticsRequest struct {
+	PlayerId string
+	Limit    *int
+}
+
+type PlayerStatistics struct {
+	CurrentDoublePoint  int
+	CurrentSinglePoint  int
+	LastDoublePointsSum int
+	LastSinglePointsSum int
+}

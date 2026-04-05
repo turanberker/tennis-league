@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -55,8 +56,8 @@ func (a *AuthMiddleware) GetToken() gin.HandlerFunc {
 		// Context'e user bilgilerini koy
 		c.Set("session_id", sessionId)
 		session, err := a.sessionRepository.Get(c, sessionId)
-		if err != nil || session ==nil {
-				err := &customerror.BusinnesException{
+		if err != nil || session == nil {
+			err := &customerror.BusinnesException{
 				StatusCode: http.StatusUnauthorized,
 				ErrorCode:  customerror.ErrSessionExpired,
 				Message:    "Oturumunuz bitmiştir.",
@@ -67,12 +68,16 @@ func (a *AuthMiddleware) GetToken() gin.HandlerFunc {
 		}
 		c.Set("Role", user.Role(session.Role))
 		c.Set("UserId", session.UserId)
-		c.Set("PlayerId", session.PlayerId)
+		if session.PlayerId != nil {
+			c.Set("PlayerId", *session.PlayerId) // Başına * koyarak değeri (string) aldık
+		} else {
+			c.Set("PlayerId", "") // Veya nil bırakabilirsin
+		}
 		c.Next()
 	}
 }
 
-func (a *AuthMiddleware) RequireAuth() gin.HandlerFunc {
+func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessionId := c.GetString("session_id")
 		log.Printf("SessionId= %s ", sessionId)
@@ -169,3 +174,26 @@ func ErrorHandler() gin.HandlerFunc {
 		}
 	}
 }
+
+func GetUserIdFromContext(c *gin.Context) (string, bool) {
+	userIdValue, exists := c.Get("UserId")
+	return userIdValue.(string), exists
+}
+func AddCacheControlHeader(maxAge int, cacheType Type) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Dinamik olarak header değerini oluşturuyoruz
+		headerValue := fmt.Sprintf("%s, max-age=%d", cacheType, maxAge)
+
+		c.Header("Cache-Control", headerValue)
+
+		// Bir sonraki handler'a geçişi sağlar
+		c.Next()
+	}
+}
+
+type Type string
+
+const (
+	TYPE_PUBLIC  Type = "public"
+	TYPE_PRIVATE Type = "private"
+)

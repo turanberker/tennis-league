@@ -16,4 +16,6 @@ type Repository interface {
 	DecreaseDoublePoint(ctx context.Context, playerId string, change int) (int, error)
 
 	IncreaseDoublePoint(ctx context.Context, playerId string, change int) (int, error)
+
+	GetPlayerStatistics(context context.Context, request PlayerStatisticsRequest) (*PlayerStatistics, error)
 }
