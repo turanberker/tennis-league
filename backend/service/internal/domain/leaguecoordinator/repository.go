@@ -5,4 +5,5 @@ import "context"
 type Repository interface {
 	Exists(ctx context.Context, leagueId string, userId string) (bool, error)
 	Add(ctx context.Context, leagueId string, userId string) (*bool, error)
+	GetLeagueIdsByUserId(ctx context.Context, userId string) (*[]string, error)
 }

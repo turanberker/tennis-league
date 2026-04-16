@@ -32,7 +32,7 @@ func generateSessionID() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func (r *SessionRepository) Start(ctx context.Context, userID string, role string, playerId *string) (*session.Session, error) {
+func (r *SessionRepository) Start(ctx context.Context, startSessionInput *session.StartSessionInput) (*session.Session, error) {
 	id, err := generateSessionID()
 	if err != nil {
 		return nil, err
@@ -41,9 +41,9 @@ func (r *SessionRepository) Start(ctx context.Context, userID string, role strin
 	key := sessionKey(id)
 
 	err = r.rdb.HSet(ctx, key, map[string]any{
-		"user_id":   userID,
-		"role":      role,
-		"player_id": playerId,
+		"user_id":   startSessionInput.UserId,
+		"role":      startSessionInput.Role,
+		"player_id": startSessionInput.PlayerId,
 	}).Err()
 	if err != nil {
 		return nil, err
@@ -55,8 +55,9 @@ func (r *SessionRepository) Start(ctx context.Context, userID string, role strin
 
 	return &session.Session{
 		SessionId: id,
-		UserId:    userID,
-		Role:      role,
+		UserId:    startSessionInput.UserId,
+		Role:      startSessionInput.Role,
+		PlayerId:  startSessionInput.PlayerId,
 	}, nil
 }
 

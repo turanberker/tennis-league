@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math/rand"
 	"net/http"
+	"time"
 
 	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/leaguecoordinator"
@@ -14,6 +15,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
+	"github.com/turanberker/tennis-league-service/internal/platform/cache"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
@@ -22,6 +24,7 @@ var ErrNameLenghtError = errors.New("Name size must between 5 and 75 characters"
 
 type Usecase struct {
 	tm                    *database.TransactionManager
+	cacheManager          *cache.CacheManager
 	userUsecase           *user.Usecase
 	teamUseCase           *team.UseCase
 	matchUc               *match.UseCase
@@ -35,6 +38,7 @@ type Usecase struct {
 
 func NewUsecase(
 	tm *database.TransactionManager,
+	cacheManager *cache.CacheManager,
 	teamUc *team.UseCase,
 	matchUc *match.UseCase,
 	userUseCase *user.Usecase,
@@ -47,6 +51,7 @@ func NewUsecase(
 ) *Usecase {
 	return &Usecase{repo: repo,
 		teamUseCase:           teamUc,
+		cacheManager:          cacheManager,
 		matchUc:               matchUc,
 		teamRepo:              teamRepo,
 		matchRepo:             matchRepo,
@@ -121,8 +126,14 @@ func (u *Usecase) AddNewCoordinator(ctx context.Context, leagueId string, userId
 
 }
 
-func (u *Usecase) IsUserCoordinator(context context.Context, leagueId string, userId string) (bool, error) {
-	return u.coordinatorRepository.Exists(context, leagueId, userId)
+func (u *Usecase) IsUserCoordinator(ctx context.Context, leagueId string, userId string) (bool, error) {
+	key := u.cacheManager.PrepareCacheKey("league", leagueId, "isCoordinator", userId)
+
+	// Go burada T'nin 'bool' olduğunu fn'in dönüşünden anlıyor
+	return cache.Cacheable(u.cacheManager, ctx, key, 10*time.Minute, func() (bool, error) {
+		return u.coordinatorRepository.Exists(ctx, leagueId, userId)
+	})
+
 }
 
 func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
@@ -193,8 +204,12 @@ func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {
 }
 
 func (u *Usecase) GetById(ctx context.Context, id string) (*League, error) {
+	cacheKey := u.cacheManager.PrepareCacheKey("league", id)
 
-	return u.repo.GetById(ctx, id)
+	return cache.Cacheable(u.cacheManager, ctx, cacheKey, 1*time.Hour, func() (*League, error) {
+		return u.repo.GetById(ctx, id)
+	})
+
 }
 
 func (u *Usecase) GetAll(ctx context.Context, status *LEAGUE_STATUS) ([]*LeagueListSelect, error) {

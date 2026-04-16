@@ -42,8 +42,8 @@ func main() {
 	transactionManager := database.NewTransactionManager(db)
 	userRepo := postgres.NewUserRepository(db)
 	userUC := user.NewUsecase(transactionManager, userRepo)
+	cacheManager := cache.NewCacheManager(redisClient)
 
-	authUC := auth.NewUsecase(db, userRepo, sessionRepository)
 	tokenService := middleware.NewTokenService("tennis")
 
 	leagueRepository := postgres.NewLeagueRepository(db)
@@ -56,9 +56,10 @@ func main() {
 	playerRepository := postgres.NewPlayerRepository(db)
 	leagueCoordinatorRepository := postgres.NewLeagueCoordinatorRepository(db)
 
+	authUC := auth.NewUsecase(db, userRepo, sessionRepository)
 	teamUseCase := team.NewUseCase(transactionManager, teamRepository, teamPlayerRepository)
 	matchUseCase := match.NewUseCase(transactionManager, matchRepository, matchSetRepository, outboxRepository)
-	leagueUseCase := league.NewUsecase(transactionManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
+	leagueUseCase := league.NewUsecase(transactionManager, cacheManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
 		matchRepository, outboxRepository, scoreBoardRepository, leagueCoordinatorRepository)
 
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)

@@ -34,7 +34,13 @@ func (u *Usecase) Login(ctx context.Context, email, password string) (*user.Logg
 		return nil, ErrInvalidCredentials
 	}
 
-	session, err := u.sessionRepository.Start(ctx, usr.ID, string(usr.Role), usr.PlayerId)
+	startSessionInput := session.StartSessionInput{
+		UserId:   usr.ID,
+		Role:     string(usr.Role),
+		PlayerId: usr.PlayerId,
+	}
+
+	session, err := u.sessionRepository.Start(ctx, &startSessionInput)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +80,13 @@ func (u Usecase) RegisterUser(ctx context.Context, req *user.RegisterUserInput) 
 		return nil, err
 	}
 
-	session, err := u.sessionRepository.Start(ctx, userId, string(user.RolePlayer), nil)
+	startSessionInput := session.StartSessionInput{
+		UserId:   userId,
+		Role:     string(user.RolePlayer),
+		PlayerId: nil,
+	}
+
+	session, err := u.sessionRepository.Start(ctx, &startSessionInput)
 	if err != nil {
 		return nil, err
 	}

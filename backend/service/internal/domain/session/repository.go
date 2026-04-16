@@ -3,7 +3,7 @@ package session
 import "context"
 
 type Repository interface {
-	Start(ctx context.Context, userID string, role string, playerId *string) (*Session, error)
+	Start(ctx context.Context, startSessionInput *StartSessionInput) (*Session, error)
 
 	Get(ctx context.Context, sessionID string) (*Session, error)
 

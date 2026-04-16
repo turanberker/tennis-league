@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/Masterminds/squirrel"
 )
 
 type LeagueCoordinatorRepository struct {
@@ -62,4 +64,42 @@ func (r *LeagueCoordinatorRepository) Add(ctx context.Context, leagueId string, 
 
 	isAdded := rows > 0
 	return &isAdded, nil
+}
+
+func (r *LeagueCoordinatorRepository) GetLeagueIdsByUserId(ctx context.Context, userId string) (*[]string, error) {
+	executor := r.GetExecutor(ctx)
+
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	sqlBuilder := psql.Select("lc.league_id",
+		"lc.league_id").
+		From("league_coordinator lc").
+		Where(squirrel.Eq{"lc.user_id": userId})
+
+	query, args, err := sqlBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %v", err)
+	}
+
+	// Sorguyu çalıştırıyoruz
+	rows, err := executor.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("sorgu çalıştırılamadı: %v", err)
+	}
+	defer rows.Close()
+
+	var leagueIds []string
+	for rows.Next() {
+		var leagueId string
+		if err := rows.Scan(&leagueId); err != nil {
+			return nil, fmt.Errorf("satır okunamadı: %v", err)
+		}
+		leagueIds = append(leagueIds, leagueId)
+	}
+
+	// Iterasyon sırasında bir hata oluşup oluşmadığını kontrol ediyoruz
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("satırlar işlenirken hata oluştu: %v", err)
+	}
+
+	return &leagueIds, nil
 }
