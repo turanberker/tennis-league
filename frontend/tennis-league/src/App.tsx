@@ -96,9 +96,16 @@ function Layout() {
             rounded
             onClick={() => setSidebarVisible(true)}
           />
-          <span style={{ fontSize: 20, fontWeight: 600 }}>
-            🎾 Tennis League
-          </span>
+          <div className="flex align-items-center gap-2">
+            <img
+              src="/header.png"
+              alt="Tennis League Logo"
+              style={{ height: '40px', width: 'auto', borderRadius: '4px' }}
+            />
+            <span style={{ fontSize: 20, fontWeight: 600 }}>
+              Amateur Tennis League
+            </span>
+          </div>
         </div>
 
         <div className="flex align-items-center gap-2">
