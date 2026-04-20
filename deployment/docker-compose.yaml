@@ -81,7 +81,7 @@ services: # Burası eksikti, tüm servisler bunun altında olmalı
         condition: service_completed_successfully
 
   frontend:
-    image: berkerturan/tennis-league-ui:latest
+    image: berkerturan/tennis-league-ui-docker:latest
     pull_policy: always
     container_name: tennis-league-ui
     ports:
