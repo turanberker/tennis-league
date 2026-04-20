@@ -2,6 +2,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+ARG BUILD_MODE=build
+
 # Sadece bağımlılık tanımlarını al
 COPY package*.json ./
 # Daha hızlı ve tutarlı bir kurulum için 'ci'
@@ -10,7 +12,7 @@ RUN npm ci
 # Kodun tamamını kopyala ve build al
 COPY . .
 
-RUN npm run build
+RUN npm run ${BUILD_MODE}
 
 # 2. AŞAMA: Servis Etme
 FROM nginx:stable-alpine

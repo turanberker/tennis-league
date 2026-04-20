@@ -3,7 +3,7 @@ import { showGlobalError } from './toastService';
 import { ApiResponse } from '../model/apiResponse.model';
 
 export const instance = axios.create({
-  baseURL: 'http://localhost:8500',
+  baseURL: process.env.REACT_APP_API_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 

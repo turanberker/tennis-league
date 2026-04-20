@@ -70,11 +70,22 @@ jobs:
         with:
           context: ./frontend/tennis-league
           file: ./frontend/tennis-league/Dockerfile
+          build-args: |
+            BUILD_MODE=build:staging
           push: true
           tags: |
-            berkerturan/tennis-league-ui:latest
-            berkerturan/tennis-league-ui:${{ github.ref_name }}
+            berkerturan/tennis-league-ui-docker:latest
+            berkerturan/tennis-league-ui-docker:${{ github.ref_name }}
 
+      - name: Build and push Frontend
+          uses: docker/build-push-action@v5
+          with:
+            context: ./frontend/tennis-league
+            file: ./frontend/tennis-league/Dockerfile
+            push: true
+            tags: |
+              berkerturan/tennis-league-ui-prod:latest
+              berkerturan/tennis-league-ui-prod:${{ github.ref_name }}
       # 5. Migrate Image
       - name: Build and push Migrate
         uses: docker/build-push-action@v5

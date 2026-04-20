@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { IncomingMatchResponse } from "../../model/dashboard.model";
 import { getIncomingMathces } from "../../api/dashboardService";
 import { Card } from "primereact/card";
@@ -18,18 +18,18 @@ export default function IncomingMatchesCard({ className = "col-12 md:col-4" }: I
     const [incomingMatches, setIncomingMatches] = useState<IncomingMatchResponse[]>();
     const [loading, setLoading] = useState(true);
 
+
+
+    const fetchIncomigMatches = useCallback(async () => {
+        const res = await getIncomingMathces({ limit: 5 })
+        setIncomingMatches(res);
+        setLoading(false);
+
+    }, []);
+
     useEffect(() => {
-
-        const _getIncomingMathces = async () => {
-            const res = await getIncomingMathces({ limit: 5 })
-
-            setIncomingMatches(res);
-            setLoading(false);
-        }
-
-        _getIncomingMathces();
-
-    }, [])
+        fetchIncomigMatches();
+    }, [fetchIncomigMatches])
 
     const handleScoreUpdate = (matchId: string) => {
         // Skor güncelleme işlemi burada yapılacak
@@ -82,7 +82,7 @@ export default function IncomingMatchesCard({ className = "col-12 md:col-4" }: I
                 )}
             </Card>
         </div>
-            <MatchScoreSidebar visible={updateScoreVisible} matchId={selectedMatchId} onHide={() => setUpdateScoreVisible(false)} onSuccess={() => loadFixture(id!)} />
+            <MatchScoreSidebar visible={updateScoreVisible} matchId={selectedMatchId} onHide={() => setUpdateScoreVisible(false)} onSuccess={() => fetchIncomigMatches()} />
         </>
 
 
