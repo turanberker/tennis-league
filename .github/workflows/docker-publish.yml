@@ -79,14 +79,14 @@ jobs:
       
       # 5. Frontend: UI-Prod
       - name: Build and push Frontend
-          uses: docker/build-push-action@v5
-          with:
-            context: ./frontend/tennis-league
-            file: ./frontend/tennis-league/Dockerfile
-            push: true
-            tags: |
-              berkerturan/tennis-league-ui-prod:latest
-              berkerturan/tennis-league-ui-prod:${{ github.ref_name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend/tennis-league
+          file: ./frontend/tennis-league/Dockerfile
+          push: true
+          tags: |
+            berkerturan/tennis-league-ui-prod:latest
+            berkerturan/tennis-league-ui-prod:${{ github.ref_name }}
       # 5. Migrate Image
       - name: Build and push Migrate
         uses: docker/build-push-action@v5
