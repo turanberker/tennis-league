@@ -3,17 +3,17 @@ name: Publish Docker Images
 on:
   push:
     tags:
-      - 'v*' # Sadece v1, v1.0.2 gibi tag'lerde tetiklenir
+      - 'v*' # v1.0.2 gibi tag'lerde tetiklenir
     branches:
-      - main # Sadece main branch'i üzerindeki olaylara bakar
-
+      - main
+  workflow_dispatch: # MANUEL TETİKLEME İÇİN GEREKLİ
 
 jobs:
   push_to_registry:
     name: Build and Push All Images
     runs-on: ubuntu-latest
-    # KRİTİK KONTROL: Sadece tag push edildiyse çalış (Normal push'larda çalışma)
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Manuel tetiklendiyse VEYA tag v ile başlıyorsa çalış
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Check out the repo
@@ -64,7 +64,7 @@ jobs:
             berkerturan/tennis-league-consumer:latest
             berkerturan/tennis-league-consumer:${{ github.ref_name }}
 
-      # 4. Frontend Image
+      # 4. Frontend: UI-Docker
       - name: Build and push Frontend Docker
         uses: docker/build-push-action@v5
         with:
@@ -76,9 +76,9 @@ jobs:
           tags: |
             berkerturan/tennis-league-ui-docker:latest
             berkerturan/tennis-league-ui-docker:${{ github.ref_name }}
-      
+
       # 5. Frontend: UI-Prod
-      - name: Build and push Frontend
+      - name: Build and push Frontend Prod
         uses: docker/build-push-action@v5
         with:
           context: ./frontend/tennis-league
@@ -87,7 +87,8 @@ jobs:
           tags: |
             berkerturan/tennis-league-ui-prod:latest
             berkerturan/tennis-league-ui-prod:${{ github.ref_name }}
-      # 5. Migrate Image
+
+      # 6. Migrate Image
       - name: Build and push Migrate
         uses: docker/build-push-action@v5
         with:
