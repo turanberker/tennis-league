@@ -45,8 +45,17 @@ func (h *MatchHandler) getSetScore(c *gin.Context) {
 	// path param
 	matchId := c.Param("id")
 	setScores := h.u.GetSetScore(c.Request.Context(), matchId)
+	sides, err := h.u.GetMatchSides(c.Request.Context(), matchId)
 
-	response := MatchScore{}
+	if err != nil {
+		c.Error(customerror.NewInternalError(err))
+		c.Abort()
+		return
+	}
+
+	response := MatchSetScoreResponse{}
+	response.Side1 = sides.Side1.Name
+	response.Side2 = sides.Side2.Name
 	for _, s := range setScores {
 		switch s.SetNumber {
 		case 1:
@@ -90,7 +99,7 @@ func (h *MatchHandler) getById(c *gin.Context) {
 func (h *MatchHandler) updateScore(c *gin.Context) {
 	matchId := c.Param("id")
 
-	macScore := MatchScore{}
+	macScore := UpdateScoreRequest{}
 
 	if err := c.ShouldBindJSON(&macScore); err != nil {
 		if ve, ok := err.(validator.ValidationErrors); ok {

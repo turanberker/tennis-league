@@ -1,4 +1,4 @@
-import { MatchScore, MatchScoreResponse } from '../model/match.model';
+import { MatchScore, MatchScoreResponse, MatchSetScoreResponse } from '../model/match.model';
 import axiosClient from './axiosClient';
 
 export const updateDate = async (id: string, data: { 'match-date': Date }): Promise<Date> => {
@@ -14,8 +14,8 @@ export const updateMatchScore = async (
   return await axiosClient.put<MatchScoreResponse>(`match/${id}/score`, data);
 };
 
-export const getSetScores = async (id: string): Promise<MatchScore> => {
-  return await axiosClient.get<MatchScore>(`match/${id}/set-scores`);
+export const getSetScores = async (id: string): Promise<MatchSetScoreResponse> => {
+  return await axiosClient.get<MatchSetScoreResponse>(`match/${id}/set-scores`);
 };
 
 export const approve = async (id: string): Promise<MatchScore> => {

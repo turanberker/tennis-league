@@ -5,6 +5,16 @@ type SetScore struct {
 	Team2Score int8 `json:"team2Score" binding:"gte=0,lte=99"`
 }
 
+type UpdateScoreRequest struct {
+	MatchScore
+}
+
+type MatchSetScoreResponse struct {
+	MatchScore
+	Side1 string `json:"side1"`
+	Side2 string `json:"side2"`
+}
+
 type MatchScore struct {
 	Set1     SetScore  `json:"set1" binding:"required,tennis_set"`
 	Set2     SetScore  `json:"set2" binding:"required,tennis_set"`

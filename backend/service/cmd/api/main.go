@@ -16,6 +16,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 	"github.com/turanberker/tennis-league-service/internal/domain/player"
 	"github.com/turanberker/tennis-league-service/internal/domain/scoreboard"
+	"github.com/turanberker/tennis-league-service/internal/platform"
 
 	"github.com/turanberker/tennis-league-service/internal/domain/team"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
@@ -27,7 +28,7 @@ import (
 )
 
 func main() {
-
+	serverConfig := platform.LoadServerConfig()
 	matchhandler.RegisterSetValidations()
 
 	db, err := database.NewPostgres()
@@ -58,12 +59,12 @@ func main() {
 
 	authUC := auth.NewUsecase(db, userRepo, sessionRepository)
 	teamUseCase := team.NewUseCase(transactionManager, teamRepository, teamPlayerRepository)
-	matchUseCase := match.NewUseCase(transactionManager, matchRepository, matchSetRepository, outboxRepository)
+	matchUseCase := match.NewUseCase(transactionManager, cacheManager, matchRepository, matchSetRepository, outboxRepository)
 	leagueUseCase := league.NewUsecase(transactionManager, cacheManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
 		matchRepository, outboxRepository, scoreBoardRepository, leagueCoordinatorRepository)
 
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
-	playerUc := player.NewUsecase(transactionManager, playerRepository)
+	playerUc := player.NewUsecase(transactionManager, playerRepository, matchRepository)
 
 	dashboardHandler := dashboard.NewDashboardHandler(playerUc)
 	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc, matchUseCase)
@@ -72,7 +73,8 @@ func main() {
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 
-	r := http.NewRouter(middleware.NewAuthMiddleware("tennis", sessionRepository),
+	r := http.NewRouter(serverConfig,
+		middleware.NewAuthMiddleware("tennis", sessionRepository),
 		dashboardHandler,
 		authHandler,
 		leagueHandler,
@@ -80,6 +82,6 @@ func main() {
 		matchHandler,
 		userHandler)
 
-	log.Println("Server running on :8500")
-	r.Run(":8500")
+	log.Println("Server running on :" + serverConfig.Port)
+	r.Run(":" + serverConfig.Port)
 }

@@ -8,15 +8,31 @@ import (
 
 	matchSet "github.com/turanberker/tennis-league-service/internal/domain/matchset"
 	"github.com/turanberker/tennis-league-service/internal/domain/outbox"
+	"github.com/turanberker/tennis-league-service/internal/platform/cache"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
 type UseCase struct {
 	tm               *database.TransactionManager
+	cacheManager     *cache.CacheManager
 	repository       Repository
 	scoreRepository  matchSet.Repository
 	outboxRepository outbox.Repository
 }
+
+func (u *UseCase) GetMatchSides(ctx context.Context, matchId string) (*MatchSides, error) {
+
+	cacheKey := u.cacheManager.PrepareCacheKey("match-sides", matchId)
+	return cache.Cacheable(u.cacheManager, ctx, cacheKey, 1*time.Hour, func() (*MatchSides, error) {
+		sides, err := u.repository.GetMatchSides(ctx, matchId)
+		if err != nil {
+			return nil, err
+		}
+		return sides, nil
+	})
+
+}
+
 type SaveScore struct {
 	Team1Score int8
 	Team2Score int8
@@ -30,11 +46,13 @@ type SaveMatchScore struct {
 }
 
 func NewUseCase(tm *database.TransactionManager,
+	cacheManager *cache.CacheManager,
 	r Repository,
 	scoreRepository matchSet.Repository,
 	outboxRepository outbox.Repository,
 ) *UseCase {
 	return &UseCase{tm: tm,
+		cacheManager:    cacheManager,
 		repository:      r,
 		scoreRepository: scoreRepository, outboxRepository: outboxRepository}
 }

@@ -16,6 +16,7 @@ const (
 
 	MatchType_SINGLE Match_TYPE = "SINGLE"
 	MatchType_DOUBLE Match_TYPE = "DOUBLE"
+	MatchType_TEAM   Match_TYPE = "TEAM"
 
 	MatchSource_FRIENDLY   Match_SOURCE = "FRIENDLY"
 	MatchSource_TOURNAMENT Match_SOURCE = "TOURNAMENT"
@@ -67,9 +68,18 @@ type LeagueFixtureMatch struct {
 	MatchDate *time.Time
 }
 
+type MatchSides struct {
+	Side1 matchSide
+	Side2 matchSide
+}
+
+type matchSide struct {
+	Id   string
+	Name string
+}
+
 type teamRef struct {
-	Id     string
-	Name   string
+	matchSide
 	Score  *int8
 	Winner *bool
 }
@@ -82,4 +92,20 @@ type MatchParticipant struct {
 	PlayerID    string
 	DoublePoint int
 	IsWinner    bool
+}
+
+type PlayerIncomingMatchesQueryParam struct {
+	PlayerId string
+	Limit    int16
+}
+
+type PlayerIncomingMatchesResult struct {
+	MatchId      string
+	MatchDate    *time.Time
+	MatchType    Match_TYPE
+	Source       Match_SOURCE
+	LeagueId     *string
+	LeagueName   *string
+	OppenentId   string
+	OppenentName string
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"fmt"
 	"log"
@@ -238,7 +239,7 @@ func (r *MatchRepository) GetDoubleMatchParticipantsWithPoints(ctx context.Conte
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
 
-	// 2. sqlscan (scany) ile sorguyu çalıştır ve sonuçları bind et
+	// 2. sqlscan (scany) ile <sorguyu çalıştır ve sonuçları bind et
 	// r.db burada *sql.DB veya *sql.Tx olabilir, scany ikisini de destekler
 
 	type dbRow struct {
@@ -263,5 +264,176 @@ func (r *MatchRepository) GetDoubleMatchParticipantsWithPoints(ctx context.Conte
 	}
 
 	return result, nil
+
+}
+
+func (r *MatchRepository) GetPlayerIncomingMatches(ctx context.Context, queryParam match.PlayerIncomingMatchesQueryParam) ([]match.PlayerIncomingMatchesResult, error) {
+
+	psql := squirrel.StatementBuilder
+
+	// 1. SINGLE Maçlar Sorgusu
+	singleMatches := psql.Select(
+		"m.id AS match_id",
+		"m.match_date",
+		"m.match_type",
+		"m.status",
+		"m.source",
+		"m.league_id",
+		"opp.id AS opponent_id",
+		"CONCAT(opp.name, ' ', opp.surname) AS opponent_name",
+	).From("tennisleague.match m").
+		Join("tennisleague.player opp ON (opp.id = CASE WHEN m.player_1_id = ? THEN m.player_2_id ELSE m.player_1_id END)", queryParam.PlayerId).
+		Where(squirrel.Eq{"m.match_type": match.MatchType_SINGLE}).
+		Where(squirrel.Or{
+			squirrel.Eq{"m.player_1_id": queryParam.PlayerId},
+			squirrel.Eq{"m.player_2_id": queryParam.PlayerId},
+		})
+
+	// 2. DOUBLE/TEAM Maçlar Sorgusu
+	teamMatches := psql.Select(
+		"m.id AS match_id",
+		"m.match_date",
+		"m.match_type",
+		"m.status",
+		"m.source",
+		"m.league_id",
+		"t.id AS opponent_id",
+		"t.name AS opponent_name",
+	).From("tennisleague.match m").
+		Join("tennisleague.team_player tp ON (tp.team_id = m.team_1_id OR tp.team_id = m.team_2_id)").
+		Join("tennisleague.team t ON (t.id = CASE WHEN tp.team_id = m.team_1_id THEN m.team_2_id ELSE m.team_1_id END)").
+		Where(squirrel.Eq{"tp.player_id": queryParam.PlayerId}).
+		Where(squirrel.Eq{"m.match_type": []match.Match_TYPE{match.MatchType_DOUBLE, match.MatchType_TEAM}})
+
+	// UNION ALL oluşturma
+	// Squirrel doğrudan UNION ALL builder'a sahip değilse, ToSql ile birleştirilir:
+	singleSql, singleArgs, _ := singleMatches.ToSql()
+	teamSql, teamArgs, _ := teamMatches.ToSql()
+
+	unionSql := fmt.Sprintf("(%s UNION ALL %s)", singleSql, teamSql)
+	allArgs := append(singleArgs, teamArgs...)
+
+	// 3. Ana Sorgu (League Join ve Filtreler)
+	finalQueryBuilder := psql.Select(
+		"pm.match_id",
+		"pm.match_date",
+		"pm.match_type",
+		"pm.source",
+		"l.id as league_id",
+		"l.name as league_name",
+		"pm.opponent_id",
+		"pm.opponent_name",
+	).From("(" + unionSql + ") AS pm"). // Parantez içine dikkat
+						LeftJoin("tennisleague.league l ON l.id = pm.league_id").
+						Where("pm.match_date IS NOT NULL").
+						Where(squirrel.Eq{"pm.status": match.StatusPending}).
+						OrderBy("pm.match_date ASC").
+						Limit(uint64(queryParam.Limit)).
+						PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := finalQueryBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+	allArgs = append(allArgs, args...) // UNION sorgusunun argümanları + final sorgunun argümanları
+	type dbRow struct {
+		MatchId      string             `db:"match_id"`
+		MatchDate    *time.Time         `db:"match_date"`
+		MatchType    match.Match_TYPE   `db:"match_type"`
+		Source       match.Match_SOURCE `db:"source"`
+		LeagueId     *string            `db:"league_id"`
+		LeagueName   *string            `db:"league_name"`
+		OppenentId   string             `db:"opponent_id"`
+		OppenentName string             `db:"opponent_name"`
+	}
+
+	var rows []dbRow
+	if err := sqlscan.Select(ctx, r.db, &rows, query, allArgs...); err != nil {
+		return nil, fmt.Errorf("failed to select participants: %w", err)
+	}
+
+	// 3. Database row'larını domain modeline (match.MatchParticipant) dönüştür
+	result := make([]match.PlayerIncomingMatchesResult, len(rows))
+	for i, row := range rows {
+		result[i] = match.PlayerIncomingMatchesResult{
+			MatchId:      row.MatchId,
+			MatchDate:    row.MatchDate,
+			MatchType:    row.MatchType,
+			Source:       row.Source,
+			LeagueId:     row.LeagueId,
+			LeagueName:   row.LeagueName,
+			OppenentId:   row.OppenentId,
+			OppenentName: row.OppenentName,
+		}
+	}
+
+	return result, nil
+
+}
+func (r *MatchRepository) GetMatchSides(ctx context.Context, matchId string) (*match.MatchSides, error) {
+	executor := r.GetExecutor(ctx)
+
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := psql.
+		Select(
+			"team_1_id",
+			"team_2_id",
+			"player_1_id",
+			"player_2_id",
+			"t1.name as team1_name",
+			"t2.name as team2_name",
+			"p1.name as player1_name",
+			"p1.surname as player1_surname",
+			"p2.name as player2_name",
+			"p2.surname as player2_surname",
+		).
+		From("match m").
+		LeftJoin("team t1 on t1.id = m.team_1_id").
+		LeftJoin("team t2 on t2.id = m.team_2_id").
+		LeftJoin("player p1 ON player_1_id = p1.id").
+		LeftJoin("player p2 ON player_2_id = p2.id").
+		Where(squirrel.Eq{"m.id": matchId}).
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var dbRow struct {
+		Team1Id        *string `db:"team_1_id"`
+		Team2Id        *string `db:"team_2_id"`
+		Player1Id      *string `db:"player_1_id"`
+		Player2Id      *string `db:"player_2_id"`
+		Team1Name      *string `db:"team1_name"`
+		Team2Name      *string `db:"team2_name"`
+		Player1Name    *string `db:"player1_name"`
+		Player2Name    *string `db:"player2_name"`
+		Player1Surname *string `db:"player1_surname"`
+		Player2Surname *string `db:"player2_surname"`
+	}
+
+	sides := &match.MatchSides{}
+
+	if err := sqlscan.Get(ctx, executor, &dbRow, query, args...); err != nil {
+		return nil, fmt.Errorf("match tarafları getirilemedi (id: %s): %w", matchId, err)
+	}
+
+	if dbRow.Team1Id != nil && dbRow.Team2Id != nil {
+		sides.Side1.Id = *dbRow.Team1Id
+		sides.Side1.Name = *dbRow.Team1Name
+		sides.Side2.Id = *dbRow.Team2Id
+		sides.Side2.Name = *dbRow.Team2Name
+
+	} else if dbRow.Player1Id != nil && dbRow.Player2Id != nil {
+		sides.Side1.Id = *dbRow.Player1Id
+		sides.Side1.Name = fmt.Sprintf("%s %s", *dbRow.Player1Name, *dbRow.Player1Surname)
+		sides.Side2.Id = *dbRow.Player2Id
+		sides.Side2.Name = fmt.Sprintf("%s %s", *dbRow.Player2Name, *dbRow.Player2Surname)
+	} else {
+		return nil, fmt.Errorf("match sides not found for match id: %s", matchId)
+	}
+
+	return sides, nil
 
 }

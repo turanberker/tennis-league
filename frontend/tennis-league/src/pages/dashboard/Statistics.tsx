@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { getStatistics } from "../../api/dashboardService";
 import { PlayerStatisticsResponse } from "../../model/dashboard.model";
 
-export default function Statistics() {
+interface StatisticsProps extends DashboardProps {
+
+}
+
+export default function StatisticsCard({ className = "col-12 md:col-4" }: StatisticsProps) {
 
 
     const [statistics, setStatistics] = useState<PlayerStatisticsResponse>();
@@ -29,7 +33,7 @@ export default function Statistics() {
 
 
     return (
-        <div className="col-12 md:col-4">
+        <div className={className}>
             <Card title="İstatistikler" style={{ height: '100%' }}>
                 {statistics ? (<><div className="flex justify-content-between mb-2">
                     <span>Tekler Puanı</span>

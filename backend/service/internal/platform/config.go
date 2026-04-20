@@ -25,6 +25,18 @@ type RabbitConfig struct {
 	VHost    string
 }
 
+type ServerConfig struct {
+	Port           string
+	AllowedOrigins string
+}
+
+func LoadServerConfig() *ServerConfig {
+	return &ServerConfig{
+		Port:           getEnv("SERVER_PORT", "8080"),
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "*"),
+	}
+}
+
 func LoadRabbitConfig() *RabbitConfig {
 	return &RabbitConfig{
 		User:     getEnv("RABBIT_USER", "admin"),

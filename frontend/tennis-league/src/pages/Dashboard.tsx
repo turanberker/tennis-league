@@ -3,7 +3,9 @@ import { Card } from 'primereact/card';
 import { useAuth } from '../context/AuthContext';
 import { Button } from 'primereact/button';
 import ProfileCard from './dashboard/Profile';
-import Statistics from './dashboard/Statistics';
+
+import IncomingMatchesCard from './dashboard/IncomingMatches';
+import StatisticsCard from './dashboard/Statistics';
 
 
 export default function Dashboard() {
@@ -20,7 +22,7 @@ export default function Dashboard() {
                 <ProfileCard />
 
                 {/* 2. Widget: İstatistik/Durum */}
-                <Statistics />
+                <StatisticsCard />
 
                 {/* 3. Widget: Hızlı Aksiyonlar */}
                 <div className="col-12 md:col-4">
@@ -31,6 +33,11 @@ export default function Dashboard() {
                         </div>
                     </Card>
                 </div>
+
+                {/* 2. Widget: Yaklaşan Maçlar */}
+                <IncomingMatchesCard className="col-12 md:col-8" />
+
+
             </div>
         </div >)
     }

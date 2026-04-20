@@ -14,6 +14,30 @@ export const MatchStatusLabels: Record<Status, string> = {
   [Status.CANCELLED]: 'İptal Edildi',
 };
 
+
+export enum MatchType {
+  SINGLE = 'SINGLE',
+  DOUBLE = 'DOUBLE',
+}
+
+export const MatchTypeLabels: Record<MatchType, string> = {
+  [MatchType.SINGLE]: 'Tekler',
+  [MatchType.DOUBLE]: 'Çiftler',
+};
+
+
+export enum MatchSource {
+  FRIENDLY = "FRIENDLY",
+  TOURNAMENT = "TOURNAMENT",
+  LEAGUE = "LEAGUE"
+}
+
+export const MatchSourceLabels: Record<MatchSource, string> = {
+  [MatchSource.FRIENDLY]: 'Dostluk Maçı',
+  [MatchSource.TOURNAMENT]: 'Turnuva',
+  [MatchSource.LEAGUE]: 'Lig',
+};
+
 export interface LeagueFixtureMatchResponse {
   id: string;
   team1: TeamRefResponse;
@@ -27,7 +51,13 @@ export interface TeamRefResponse extends TeamRef {
   winner?: boolean;
 }
 
+export interface MatchSetScoreResponse extends MatchScore {
+  side1: string;
+  side2: string;
+}
+
 export interface MatchScore {
+
   set1: SetScore;
   set2: SetScore;
   superTie: SetScore | null;

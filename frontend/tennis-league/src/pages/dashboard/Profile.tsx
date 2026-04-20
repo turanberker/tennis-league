@@ -1,7 +1,11 @@
 import { Card } from "primereact/card";
 import { useAuth } from "../../context/AuthContext";
 
-export default function ProfileCard() {
+interface ProfileCardProps extends DashboardProps {
+
+}
+
+export default function ProfileCard({ className = "col-12 md:col-4" }: ProfileCardProps) {
 
     const { user } = useAuth()
 
@@ -12,7 +16,7 @@ export default function ProfileCard() {
         </div>
     );
 
-    return (<div className="col-12 md:col-4">
+    return (<div className={className}>
         <Card title={userHeader} style={{ height: '100%' }}>
             <p><strong>Tam İsim:</strong> {user?.name} {user?.surname}</p>
             <p><strong>Rol:</strong> {user?.role || 'Standart Kullanıcı'}</p>
