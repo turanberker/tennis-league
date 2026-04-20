@@ -1,6 +1,7 @@
 # 1. AŞAMA: Derleme
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN npm install env-cmd -g # Geçici olarak global yükleyip deneyebilirsin
 
 ARG BUILD_MODE=build
 
