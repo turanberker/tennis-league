@@ -7,6 +7,12 @@ on:
     branches:
       - main
   workflow_dispatch: # MANUEL TETİKLEME İÇİN GEREKLİ
+    inputs:
+      inputs:
+        version_tag:
+          description: 'Docker imajı için etiket (Örn: v1.0.2 veya manual-fix)'
+          required: true
+          default: 'latest'
 
 jobs:
   push_to_registry:
@@ -36,7 +42,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-api:latest
-            berkerturan/tennis-league-api:${{ github.ref_name }}
+            berkerturan/tennis-league-api:${{ github.event.inputs.manual_tag || github.ref_name }}
 
       # 2. Backend: Scheduler Image
       - name: Build and push Scheduler
@@ -49,7 +55,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-scheduler:latest
-            berkerturan/tennis-league-scheduler:${{ github.ref_name }}
+            berkerturan/tennis-league-scheduler:${{ github.event.inputs.manual_tag || github.ref_name }}
 
       # 3. Backend: Consumer Image
       - name: Build and push Consumer
@@ -62,7 +68,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-consumer:latest
-            berkerturan/tennis-league-consumer:${{ github.ref_name }}
+            berkerturan/tennis-league-consumer:${{ github.event.inputs.manual_tag || github.ref_name }}
 
       # 4. Frontend: UI-Docker
       - name: Build and push Frontend Docker
@@ -75,7 +81,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-ui-docker:latest
-            berkerturan/tennis-league-ui-docker:${{ github.ref_name }}
+            berkerturan/tennis-league-ui-docker:${{ github.event.inputs.manual_tag || github.ref_name }}
 
       # 5. Frontend: UI-Prod
       - name: Build and push Frontend Prod
@@ -86,7 +92,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-ui-prod:latest
-            berkerturan/tennis-league-ui-prod:${{ github.ref_name }}
+            berkerturan/tennis-league-ui-prod:${{ github.event.inputs.manual_tag || github.ref_name }}
 
       # 6. Migrate Image
       - name: Build and push Migrate
@@ -97,4 +103,4 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-migrate:latest
-            berkerturan/tennis-league-migrate:${{ github.ref_name }}
+            berkerturan/tennis-league-migrate:${{ github.event.inputs.manual_tag || github.ref_name }}
