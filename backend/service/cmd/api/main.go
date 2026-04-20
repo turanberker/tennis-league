@@ -73,8 +73,7 @@ func main() {
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 
-	r := http.NewRouter(serverConfig,
-		middleware.NewAuthMiddleware("tennis", sessionRepository),
+	r := http.NewRouter(serverConfig, middleware.NewAuthMiddleware("tennis", sessionRepository),
 		dashboardHandler,
 		authHandler,
 		leagueHandler,
