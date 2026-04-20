@@ -65,7 +65,7 @@ jobs:
             berkerturan/tennis-league-consumer:${{ github.ref_name }}
 
       # 4. Frontend Image
-      - name: Build and push Frontend
+      - name: Build and push Frontend Docker
         uses: docker/build-push-action@v5
         with:
           context: ./frontend/tennis-league
@@ -76,7 +76,8 @@ jobs:
           tags: |
             berkerturan/tennis-league-ui-docker:latest
             berkerturan/tennis-league-ui-docker:${{ github.ref_name }}
-
+      
+      # 5. Frontend: UI-Prod
       - name: Build and push Frontend
           uses: docker/build-push-action@v5
           with:
