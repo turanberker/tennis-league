@@ -30,7 +30,7 @@ INSERT INTO tennisleague.player
 VALUES('062a651a-089d-4661-83ff-af0c813d7ccc', 'Serkan', 'Davutoğlu', 'M', NULL, 0, 0);
 INSERT INTO tennisleague.player
 (id, "name", surname, sex, user_id, single_point, double_point)
-VALUES('0d21b6d7-10bd-4328-84c8-55c8d299a45b', 'Çağlar', 'Kılınç', 'M', NULL, 0, 0);
+VALUES('0d21b6d7-10bd-4328-84c8-55c8d299a45b', 'Erkin Barış', 'Bilgi', 'M', NULL, 0, 0);
 INSERT INTO tennisleague.player
 (id, "name", surname, sex, user_id, single_point, double_point)
 VALUES('bb4911cd-698e-411e-b1e1-f95ff5dc2d3f', 'Simge', 'Vardar', 'F', NULL, 0, 0);
@@ -39,7 +39,7 @@ INSERT INTO tennisleague.player
 VALUES('3b09d4bc-df01-4261-8155-4cf1a14e204e', 'Yeşim', 'Aydın', 'F', NULL, 0, 0);
 INSERT INTO tennisleague.player
 (id, "name", surname, sex, user_id, single_point, double_point)
-VALUES('465c7625-e9c7-45a9-b0c6-42714c5a815c', 'Banu', 'Odabaşı Kılınç', 'F', NULL, 0, 0);
+VALUES('465c7625-e9c7-45a9-b0c6-42714c5a815c', 'Özge Nur', 'Kayahan', 'F', NULL, 0, 0);
 INSERT INTO tennisleague.player
 (id, "name", surname, sex, user_id, single_point, double_point)
 VALUES('57f49d98-8036-4cac-8e61-30add246e2b5', 'Bahar', 'Kara', 'F', NULL, 0, 0);
