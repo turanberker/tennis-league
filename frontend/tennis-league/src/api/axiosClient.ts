@@ -59,6 +59,9 @@ const axiosClient = {
   put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
     instance.put<any, T>(url, data, config),
 
+  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    instance.patch<any, T>(url, data, config),
+
   delete: <T = any>(url: string, config?: AxiosRequestConfig) =>
     instance.delete<any, T>(url, config),
 };

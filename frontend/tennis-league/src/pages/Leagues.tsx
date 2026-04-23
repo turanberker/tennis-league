@@ -97,6 +97,7 @@ export default function Leagues() {
   useEffect(() => {
     loadLeagues();
   }, [loadLeagues]);
+
   const handleCreateFixture = useCallback(async () => {
     if (!selectedLeague) return;
     const data = await createFixture(selectedLeague.id);
@@ -110,6 +111,7 @@ export default function Leagues() {
       loadLeagues();
     }
   }, [selectedLeague, loadLeagues]);
+
   const items: MenuItem[] = useMemo(() => {
     const isSelected = !!selectedLeague;
     const isCoordinator = user && selectedLeague?.coordinatorUserIds?.includes(user.userID);
@@ -189,10 +191,6 @@ export default function Leagues() {
   const handleTeams = () => {
     navigate(`/leagues/${selectedLeague!.id}/teams`);
   };
-
-
-
-
 
   const onSubmit = async (data: PersistLeagueRequest) => {
     let leagueId = await saveLeague(data);

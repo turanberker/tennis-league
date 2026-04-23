@@ -20,7 +20,8 @@ export default function Dashboard() {
             <div className="grid">
                 {/* 1. Widget: Kullanıcı Özeti */}
                 <ProfileCard />
-
+                {/* 2. Widget: Yaklaşan Maçlar */}
+                <IncomingMatchesCard className="col-12 md:col-8" />
                 {/* 2. Widget: İstatistik/Durum */}
                 <StatisticsCard />
 
@@ -34,8 +35,7 @@ export default function Dashboard() {
                     </Card>
                 </div> */}
 
-                {/* 2. Widget: Yaklaşan Maçlar */}
-                <IncomingMatchesCard className="col-12 md:col-8" />
+
 
 
             </div>

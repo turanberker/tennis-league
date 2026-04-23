@@ -11,7 +11,6 @@ import PlayerDetail from '../pages/player/PlayerDetail';
 import Scoreboard from '../pages/leagues/Scoreboard';
 import { useAuth } from '../context/AuthContext';
 import Users from '../pages/admin/Users';
-import Profile from '../pages/protected/Profile';
 import { Role } from '../model/user.model';
 
 export function SidebarLinks() {
@@ -76,14 +75,14 @@ export function AppRoutes() {
       <Route path="*" element={<Navigate to="/" />} />
 
       {/* Sadece giriş yapanların erişebileceği sayfalar */}
-      <Route
+      {/* <Route
         path="/profile"
         element={
           <ProtectedRoute>
             <Profile />
           </ProtectedRoute>
         }
-      />
+      /> */}
 
       <Route
         path="/admin/users"

@@ -7,6 +7,11 @@ export interface User {
   role: Role;
   playerId?: string;
 }
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
 
 export enum Role {
   ADMIN = 'ADMIN',

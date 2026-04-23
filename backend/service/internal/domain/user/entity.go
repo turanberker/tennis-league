@@ -1,6 +1,9 @@
 package user
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type Role string
 
@@ -9,6 +12,18 @@ const (
 	RoleCoordinator Role = "COORDINATOR"
 	RolePlayer      Role = "PLAYER"
 )
+
+type UserEntity struct {
+	ID           string    `db:"id"`
+	Email        string    `db:"email"`
+	Phone        *string   `db:"phone"`
+	Name         string    `db:"name"`
+	Surname      string    `db:"surname"`
+	Role         Role      `db:"role"`
+	PasswordHash string    `db:"password_hash"`
+	CreatedAt    time.Time `db:"created_at"`
+	Approved     bool      `db:"approved"`
+}
 
 type LoginUserCheck struct {
 	ID           string

@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/user"
 )
 
@@ -22,6 +24,11 @@ func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 	userRoute := r.Group("/user")
 	{
 		userRoute.GET("/list", middleware.RequireRole(user.RoleAdmin), h.getAll)
+
+		profile := userRoute.Group("/profile", middleware.RequireAuth())
+		{
+			profile.PATCH("/change-password", h.changeMyPassword)
+		}
 
 	}
 }
@@ -41,6 +48,37 @@ func (h *UserHandler) getAll(c *gin.Context) {
 	}
 
 	res := delivery.NewSuccessResponse(usersResponse)
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *UserHandler) changeMyPassword(c *gin.Context) {
+	var req struct {
+		CurrentPassword string `json:"currentPassword" binding:"required"`
+		NewPassword     string `json:"newPassword" binding:"required,min=8"`
+		ConfirmPassword string `json:"confirmPassword" binding:"required,eqfield=NewPassword"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
+	}
+
+	userId, _ := middleware.GetUserIdFromContext(c)
+
+	err := h.userUc.ChangePassword(c.Request.Context(), userId, req.CurrentPassword, req.NewPassword)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+	res := delivery.NewSuccessResponse("password changed successfully")
 	c.JSON(http.StatusOK, res)
 }
 

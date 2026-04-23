@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/sqlscan"
 	"github.com/lib/pq"
 	user "github.com/turanberker/tennis-league-service/internal/domain/user"
 )
@@ -112,4 +114,42 @@ func (r *UserRepository) UpdateRoleAsCoordinator(ctx context.Context, userId str
 	}
 
 	return nil
+}
+
+func (r *UserRepository) UpdatePassword(ctx context.Context, userId string, newPasswordHash string) error {
+	exec := r.GetExecutor(ctx)
+	query := `UPDATE "user" SET password_hash = $1 WHERE id = $2`
+	var err error
+
+	_, err = exec.ExecContext(ctx, query, newPasswordHash, userId)
+
+	if err != nil {
+		return fmt.Errorf("Şifre güncellenirken hata oluştu: %w", err)
+	}
+
+	return nil
+}
+
+func (r *UserRepository) FindById(ctx context.Context, userId string) (*user.UserEntity, error) {
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	sqlBuilder := psql.
+		Select("id", "email", "phone", "name", "surname", "password_hash", "role", "created_at", "approved").
+		From("\"user\"").
+		Where(squirrel.Eq{"id": userId})
+
+	query, args, err := sqlBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %v", err)
+	}
+
+	var user user.UserEntity
+
+	err = sqlscan.Get(ctx, r.GetExecutor(ctx), &user, query, args...)
+	if err != nil {
+		log.Printf("DB Hatası! SQL: %s | Args: %v | Hata: %v", query, args, err)
+		return nil, fmt.Errorf("veritabanı hatası: %v", err)
+	}
+
+	return &user, err
 }

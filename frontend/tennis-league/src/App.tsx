@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { Sidebar } from 'primereact/sidebar';
 import { Avatar } from 'primereact/avatar';
@@ -14,11 +14,13 @@ import { AuthProvider, useAuth, AuthUser } from './context/AuthContext';
 import { register as registerApi } from './api/authService';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastProvider } from './hooks/useToast';
 
 function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [loginDialogVisible, setLoginDialogVisible] = useState(false);
   const [registerDialogVisible, setRegisterDialogVisible] = useState(false);
+  const navigete = useNavigate()
   const menuRef = useRef<Menu>(null);
   const toast = useRef<Toast>(null);
   const { user, login, logout, isAuthenticated } = useAuth();
@@ -61,7 +63,7 @@ function Layout() {
     {
       label: 'Profil',
       icon: 'pi pi-user',
-      command: () => alert('Profil sayfası'),
+      command: () => navigete("/")
     },
     { label: 'Çıkış Yap', icon: 'pi pi-sign-out', command: logout },
   ];
@@ -211,13 +213,15 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <Layout />
-        </AuthProvider>
-      </Router>
-      {/* Geliştirme aşamasında hayat kurtarır, canlı ortamda gözükmez */}
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ToastProvider>
+        <Router>
+          <AuthProvider>
+            <Layout />
+          </AuthProvider>
+        </Router>
+        {/* Geliştirme aşamasında hayat kurtarır, canlı ortamda gözükmez */}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

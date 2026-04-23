@@ -5,6 +5,8 @@ import (
 )
 
 type Repository interface {
+	FindById(ctx context.Context, id string) (*UserEntity, error)
+
 	GetByEmail(ctx context.Context, email string) (*LoginUserCheck, error)
 
 	ExistsByEmail(ctx context.Context, email string) bool
@@ -14,4 +16,6 @@ type Repository interface {
 	List(ctx context.Context) ([]*User, error)
 
 	UpdateRoleAsCoordinator(txCtx context.Context, userId string) error
+
+	UpdatePassword(ctx context.Context, userId string, newPasswordHash string) error
 }
