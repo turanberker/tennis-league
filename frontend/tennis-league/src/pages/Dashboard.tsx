@@ -25,14 +25,14 @@ export default function Dashboard() {
                 <StatisticsCard />
 
                 {/* 3. Widget: Hızlı Aksiyonlar */}
-                <div className="col-12 md:col-4">
+                {/* <div className="col-12 md:col-4">
                     <Card title="Hızlı İşlemler" style={{ height: '100%' }}>
                         <div className="flex flex-column gap-2">
                             <Button label="Yeni Rapor Oluştur" icon="pi pi-plus" className="p-button-sm" />
                             <Button label="Ayarlara Git" icon="pi pi-cog" className="p-button-sm p-button-outlined" />
                         </div>
                     </Card>
-                </div>
+                </div> */}
 
                 {/* 2. Widget: Yaklaşan Maçlar */}
                 <IncomingMatchesCard className="col-12 md:col-8" />
