@@ -3,16 +3,13 @@ name: Publish Docker Images
 on:
   push:
     tags:
-      - 'v*' # v1.0.2 gibi tag'lerde tetiklenir
-    branches:
-      - main
-  workflow_dispatch: # MANUEL TETİKLEME İÇİN GEREKLİ
+      - 'v*' # Sadece v ile başlayan tag'lerde tetiklenir (Örn: v1.0.2)
+  workflow_dispatch: # MANUEL TETİKLEME
     inputs:
-      inputs:
-        version_tag:
-          description: 'Docker imajı için etiket (Örn: v1.0.2 veya manual-fix)'
-          required: true
-          default: 'latest'
+      version_tag:
+        description: 'Docker imajı için etiket (latest dışında)'
+        required: true
+        default: 'manual'
 
 jobs:
   push_to_registry:
@@ -24,6 +21,17 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+
+      # Versiyon belirleme mantığı:
+      # Manuel tetiklendiyse input'u al, tag ile çalıştıysa tag ismini al.
+      - name: Set Version Tag
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.version_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -42,7 +50,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-api:latest
-            berkerturan/tennis-league-api:${{ github.event.inputs.manual_tag || github.ref_name }}
+            berkerturan/tennis-league-api::${{ steps.vars.outputs.tag }}
 
       # 2. Backend: Scheduler Image
       - name: Build and push Scheduler
@@ -55,7 +63,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-scheduler:latest
-            berkerturan/tennis-league-scheduler:${{ github.event.inputs.manual_tag || github.ref_name }}
+            berkerturan/tennis-league-scheduler::${{ steps.vars.outputs.tag }}
 
       # 3. Backend: Consumer Image
       - name: Build and push Consumer
@@ -68,7 +76,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-consumer:latest
-            berkerturan/tennis-league-consumer:${{ github.event.inputs.manual_tag || github.ref_name }}
+            berkerturan/tennis-league-consumer::${{ steps.vars.outputs.tag }}
 
       # 4. Frontend: UI-Docker
       - name: Build and push Frontend Docker
@@ -81,7 +89,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-ui-docker:latest
-            berkerturan/tennis-league-ui-docker:${{ github.event.inputs.manual_tag || github.ref_name }}
+            berkerturan/tennis-league-ui-docker::${{ steps.vars.outputs.tag }}
 
       # 5. Frontend: UI-Prod
       - name: Build and push Frontend Prod
@@ -92,7 +100,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-ui-prod:latest
-            berkerturan/tennis-league-ui-prod:${{ github.event.inputs.manual_tag || github.ref_name }}
+            berkerturan/tennis-league-ui-prod::${{ steps.vars.outputs.tag }}
 
       # 6. Migrate Image
       - name: Build and push Migrate
@@ -103,4 +111,16 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-migrate:latest
-            berkerturan/tennis-league-migrate:${{ github.event.inputs.manual_tag || github.ref_name }}
+            berkerturan/tennis-league-migrate::${{ steps.vars.outputs.tag }}
+
+      # --- SSH DEPLOY ADIMI (Sunucuyu güncellemek için) ---
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        if: success() # Sadece build'ler başarılıysa çalışır
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/amateur-tennis-league-deployment/docker
+            docker compose up -d
