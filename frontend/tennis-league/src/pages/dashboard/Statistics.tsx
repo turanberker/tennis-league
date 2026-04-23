@@ -17,12 +17,14 @@ export default function StatisticsCard({ className = "col-12 md:col-4" }: Statis
 
         const getStatisticsData = async () => {
             const res = await getStatistics({ limit: 5 })
-
-            if (res.singlePoints === undefined || res.doublePoints === undefined) {
-                setStatistics(undefined);
-                return;
+            if (res) {
+                if (res.singlePoints === undefined || res.doublePoints === undefined) {
+                    setStatistics(undefined);
+                    return;
+                }
+                setStatistics(res);
             }
-            setStatistics(res);
+
         }
 
         getStatisticsData();

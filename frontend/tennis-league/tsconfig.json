@@ -1,6 +1,9 @@
 {
     "compilerOptions": {
-        "target": "es5",
+        "target": "ES2020", // veya "ESNext", "ES2015"
+        "types": [
+            "node"
+        ],
         "lib": [
             "dom",
             "dom.iterable",
@@ -14,7 +17,7 @@
         "forceConsistentCasingInFileNames": true,
         "noFallthroughCasesInSwitch": true,
         "module": "esnext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": true,

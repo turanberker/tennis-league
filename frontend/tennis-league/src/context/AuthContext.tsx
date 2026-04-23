@@ -4,8 +4,10 @@ import React, {
   useEffect,
   useState,
   ReactNode,
+  useCallback,
 } from 'react';
 import { Role } from '../model/user.model';
+import { useNavigate } from 'react-router-dom';
 
 /* ============================= */
 /*            TYPES              */
@@ -43,7 +45,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Yüklenme durumu eklendi
-
+  const navigate = useNavigate(); // Yönlendirme için hook
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
@@ -57,11 +59,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(userData);
   };
 
-  const logout = () => {
+  // useCallback ile sarmaladık ki re-render döngüsüne girmesin
+  const logout = useCallback(() => {
+    // 1. Verileri temizle
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     setUser(null);
-  };
+
+    // 2. Kök dizine yönlendir
+    // replace: true sayesinde geçmiş (history) temizlenir, geri basınca eski sayfaya dönmez.
+    navigate('/', { replace: true });
+  }, [navigate]);
 
   const value: AuthContextType = {
     user,

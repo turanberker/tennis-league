@@ -34,6 +34,10 @@ function Layout() {
       });
     };
 
+    const toastAndLogoutHandler = (e: any) => {
+      logout();
+    }
+
     // 2. Konsol kirliliğini önleyen handler
     const rejectionHandler = (event: PromiseRejectionEvent) => {
       // Eğer hata bizim tanımladığımız ApiError ise veya axios hatasıysa sessize al
@@ -44,12 +48,14 @@ function Layout() {
 
     window.addEventListener('api-error', apiErrorHandler);
     window.addEventListener('unhandledrejection', rejectionHandler);
+    window.addEventListener('unauthorized-event', toastAndLogoutHandler);
 
     return () => {
       window.removeEventListener('api-error', apiErrorHandler);
       window.removeEventListener('unhandledrejection', rejectionHandler);
+      window.removeEventListener('unauthorized-event', toastAndLogoutHandler);
     };
-  }, []);
+  }, [logout]);
 
   const profileItems = [
     {

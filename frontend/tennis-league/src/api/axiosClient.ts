@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
-import { showGlobalError } from './toastService';
+import { sendLogoutEvent, showGlobalError } from './toastService';
 import { ApiResponse } from '../model/apiResponse.model';
 
 export const instance = axios.create({
@@ -34,8 +34,9 @@ instance.interceptors.response.use(
   (error: AxiosError<any>) => {
     const message = error.response?.data?.error?.message || 'Sistem hatası';
 
-    if (error.response?.data.code === "AUTH_102") {
-      //burada logout u tetiklemek istiyorum. 
+    if (error.response?.status === 401) {
+      console.log("Unauthorized error detected, sending logout event");
+      sendLogoutEvent(message)
     }
     showGlobalError(message);
 

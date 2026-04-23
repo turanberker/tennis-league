@@ -31,64 +31,66 @@ func (a *AuthMiddleware) GetToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		authHeader := c.GetHeader("Authorization")
-
 		if authHeader == "" {
 			c.Next()
-			return // 🔥 BURASI EKSİKTİ
+			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
+		// Token doğrulaması
 		token, err := jwtauth.VerifyToken(a.tokenAuth, tokenString)
 		if err != nil {
-			err := &customerror.BusinnesException{
-				StatusCode: http.StatusUnauthorized,
-				ErrorCode:  customerror.ErrSessionExpired,
-				Message:    "Oturumunuz bitmiştir.",
-			}
-			c.Error(err) // Hatayı Gin'in listesine ekle
-			c.Abort()    // İsteği durdur (Handler'a gitmesin)
+			// Hata olsa bile sessiz kalıyoruz, sadece devam ediyoruz
+			c.Next()
 			return
 		}
 
 		claims := token.PrivateClaims()
-		sessionId := claims["session_id"].(string)
-		// Context'e user bilgilerini koy
-		c.Set("session_id", sessionId)
-		session, err := a.sessionRepository.Get(c, sessionId)
-		if err != nil || session == nil {
-			err := &customerror.BusinnesException{
-				StatusCode: http.StatusUnauthorized,
-				ErrorCode:  customerror.ErrSessionExpired,
-				Message:    "Oturumunuz bitmiştir.",
-			}
-			c.Error(err) // Hatayı Gin'in listesine ekle
-			c.Abort()    // İsteği durdur (Handler'a gitmesin)
+		sessionId, ok := claims["session_id"].(string)
+		if !ok || sessionId == "" {
+			c.Next()
 			return
 		}
+
+		// Session kontrolü
+		session, err := a.sessionRepository.Get(c, sessionId)
+		if err != nil || session == nil {
+			c.Next()
+			return
+		}
+
+		// Buraya geldiyse her şey yolunda demektir, context'i doldurabiliriz
+		c.Set("session_id", sessionId)
 		c.Set("Role", user.Role(session.Role))
 		c.Set("UserId", session.UserId)
+
 		if session.PlayerId != nil {
-			c.Set("PlayerId", *session.PlayerId) // Başına * koyarak değeri (string) aldık
+			c.Set("PlayerId", *session.PlayerId)
 		} else {
-			c.Set("PlayerId", "") // Veya nil bırakabilirsin
+			c.Set("PlayerId", "")
 		}
+
 		c.Next()
 	}
 }
 
 func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sessionId := c.GetString("session_id")
-		log.Printf("SessionId= %s ", sessionId)
+		// GetToken bir session_id bulup set etti mi?
+		sessionId, _ := c.Get("session_id")
 
-		if sessionId == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+		if sessionId == "" || sessionId == nil {
+			err := &customerror.BusinnesException{
+				StatusCode: http.StatusUnauthorized,
+				ErrorCode:  customerror.ErrSessionExpired, // Burada AUTH_102 dönersen React atar
+				Message:    "Oturumunuzun süresi dolmuş veya geçersiz. Lütfen tekrar giriş yapın.",
+			}
+			c.Error(err)
+			c.Abort()
 			return
 		}
 
-		// Context'e user bilgilerini koy
-		//Redisden kullanıcı bilgileri çekilecek
 		c.Next()
 	}
 }
@@ -107,7 +109,7 @@ func RequireRole(roles ...user.Role) gin.HandlerFunc {
 
 			// Özel bir business hatası oluşturuyoruz
 			err := &customerror.BusinnesException{
-				StatusCode: http.StatusUnauthorized,
+				StatusCode: http.StatusForbidden,
 				ErrorCode:  customerror.INSUFFICIENT_PERMISSIONS,
 				Message:    "Kullanıcı şu rollerden birine sahip olmalı: " + strings.Join(roleStrings, ", "),
 			}
@@ -131,7 +133,7 @@ func RequireRole(roles ...user.Role) gin.HandlerFunc {
 			}
 		}
 		err := &customerror.BusinnesException{
-			StatusCode: http.StatusUnauthorized,
+			StatusCode: http.StatusForbidden,
 			ErrorCode:  customerror.INSUFFICIENT_PERMISSIONS,
 			Message:    "Kullanıcı şu rollerden birine sahip olmalı: " + strings.Join(roleStrings, ", "),
 		}
