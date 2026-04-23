@@ -9,7 +9,7 @@ on:
       version_tag:
         description: 'Docker imajı için etiket (latest dışında)'
         required: true
-        default: 'manual'
+        default: 'v'
 
 jobs:
   push_to_registry:
