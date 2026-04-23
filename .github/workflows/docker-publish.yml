@@ -50,7 +50,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-api:latest
-            berkerturan/tennis-league-api::${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-api:${{ steps.vars.outputs.tag }}
 
       # 2. Backend: Scheduler Image
       - name: Build and push Scheduler
@@ -63,7 +63,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-scheduler:latest
-            berkerturan/tennis-league-scheduler::${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-scheduler:${{ steps.vars.outputs.tag }}
 
       # 3. Backend: Consumer Image
       - name: Build and push Consumer
@@ -76,7 +76,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-consumer:latest
-            berkerturan/tennis-league-consumer::${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-consumer:${{ steps.vars.outputs.tag }}
 
       # 4. Frontend: UI-Docker
       - name: Build and push Frontend Docker
@@ -89,7 +89,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-ui-docker:latest
-            berkerturan/tennis-league-ui-docker::${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-ui-docker:${{ steps.vars.outputs.tag }}
 
       # 5. Frontend: UI-Prod
       - name: Build and push Frontend Prod
@@ -100,7 +100,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-ui-prod:latest
-            berkerturan/tennis-league-ui-prod::${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-ui-prod:${{ steps.vars.outputs.tag }}
 
       # 6. Migrate Image
       - name: Build and push Migrate
@@ -111,7 +111,7 @@ jobs:
           push: true
           tags: |
             berkerturan/tennis-league-migrate:latest
-            berkerturan/tennis-league-migrate::${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-migrate:${{ steps.vars.outputs.tag }}
 
       # --- SSH DEPLOY ADIMI (Sunucuyu güncellemek için) ---
       - name: Deploy to Server via SSH
