@@ -90,8 +90,7 @@ jobs:
           tags: |
             berkerturan/tennis-league-ui-docker:latest
             berkerturan/tennis-league-ui-docker:${{ steps.vars.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+
       # 5. Frontend: UI-Prod
       - name: Build and push Frontend Prod
         uses: docker/build-push-action@v5
@@ -102,8 +101,7 @@ jobs:
           tags: |
             berkerturan/tennis-league-ui-prod:latest
             berkerturan/tennis-league-ui-prod:${{ steps.vars.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+
 
       # 6. Migrate Image
       - name: Build and push Migrate
