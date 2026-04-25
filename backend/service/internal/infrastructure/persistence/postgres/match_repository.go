@@ -85,36 +85,85 @@ func (r *MatchRepository) SaveBulkMatches(ctx context.Context, req *match.BulkIn
 	return nil
 }
 
-func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
+func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId string, filterParam *match.FixtureFilter) ([]*match.LeagueFixtureMatch, error) {
 	executor := r.GetExecutor(ctx)
-	query := `
-		SELECT m.id, m.team_1_id, t1.name,m.team_1_score, m.winner_id =m.team_1_id, 
-		m.team_2_id, t2.name,m.team_2_score ,m.winner_id =m.team_2_id, m.status, m.match_date
-		FROM tennisleague.match m
-		JOIN tennisleague.team t1 ON m.team_1_id = t1.id
-		JOIN tennisleague.team t2 ON m.team_2_id = t2.id
-		WHERE m.league_id = $1 order by m.match_date asc
-	`
-	rows, err := executor.QueryContext(ctx, query, leagueId)
-	if err != nil {
-		log.Println("Maç listesi çekerken hata oluştu:", err)
-		return nil, err
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	// 1. SQL Builder Hazırlığı
+	sqlBuilder := psql.Select(
+		"m.id",
+		"m.team_1_id",
+		"t1.name as team_1_name",
+		"m.team_1_score",
+		"(m.winner_id = m.team_1_id) as team_1_is_winner",
+		"m.team_2_id",
+		"t2.name as team_2_name",
+		"m.team_2_score",
+		"(m.winner_id = m.team_2_id) as team_2_is_winner",
+		"m.status",
+		"m.match_date",
+	).
+		From("tennisleague.match m").
+		Join("tennisleague.team t1 ON m.team_1_id = t1.id").
+		Join("tennisleague.team t2 ON m.team_2_id = t2.id").
+		Where(squirrel.Eq{"m.league_id": leagueId})
+
+	// Dinamik filtre: TeamId null değilse sorguya ekle
+	if filterParam != nil && filterParam.TeamId != nil {
+		sqlBuilder = sqlBuilder.Where(squirrel.Or{
+			squirrel.Eq{"m.team_1_id": *filterParam.TeamId},
+			squirrel.Eq{"m.team_2_id": *filterParam.TeamId},
+		})
 	}
 
-	defer rows.Close()
-	var matches []*match.LeagueFixtureMatch
-	for rows.Next() {
-		match := &match.LeagueFixtureMatch{}
-		err := rows.Scan(&match.Id,
-			&match.Team1.Id, &match.Team1.Name, &match.Team1.Score, &match.Team1.Winner,
-			&match.Team2.Id, &match.Team2.Name, &match.Team2.Score, &match.Team2.Winner,
-			&match.Status, &match.MatchDate)
+	query, args, err := sqlBuilder.OrderBy("m.match_date ASC").ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %w", err)
+	}
+	// 2. Metod İçi Yerel Struct (sqlscan için)
+	type row struct {
+		ID         string       `db:"id"`
+		T1Id       string       `db:"team_1_id"`
+		T1Name     string       `db:"team_1_name"`
+		T1Score    *int8        `db:"team_1_score"`
+		T1IsWinner *bool        `db:"team_1_is_winner"`
+		T2Id       string       `db:"team_2_id"`
+		T2Name     string       `db:"team_2_name"`
+		T2Score    *int8        `db:"team_2_score"`
+		T2IsWinner *bool        `db:"team_2_is_winner"`
+		Status     match.Status `db:"status"`
+		MatchDate  *time.Time   `db:"match_date"` // Nullable tarih güvenliği
+	}
 
-		if err != nil {
-			log.Println("Maçlar maplerken hata oluştu:", err)
-			return nil, err
-		}
-		matches = append(matches, match)
+	var rowsData []row
+	err = sqlscan.Select(ctx, executor, &rowsData, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("veritabanı hatası (fikstür): %w", err)
+	}
+
+	// 3. Domain Modeline Mapping
+	var matches []*match.LeagueFixtureMatch
+	for _, d := range rowsData {
+		matches = append(matches, &match.LeagueFixtureMatch{
+			Id: d.ID,
+			Team1: match.TeamRef{
+				MatchSide: match.MatchSide{
+					Id:   d.T1Id,
+					Name: d.T1Name,
+				},
+				Score:  d.T1Score,
+				Winner: d.T1IsWinner,
+			},
+			Team2: match.TeamRef{
+				MatchSide: match.MatchSide{
+					Id:   d.T2Id,
+					Name: d.T2Name,
+				},
+				Score:  d.T2Score,
+				Winner: d.T2IsWinner,
+			},
+			Status:    d.Status,
+			MatchDate: d.MatchDate,
+		})
 	}
 
 	return matches, nil

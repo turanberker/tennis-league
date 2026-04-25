@@ -10,3 +10,7 @@ type CreateTeamResponseDto struct {
 	TeamId          string
 	TotalAttendance int32
 }
+
+type FixtureFilterParam struct {
+	TeamId *string
+}

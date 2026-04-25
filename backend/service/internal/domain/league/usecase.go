@@ -136,8 +136,13 @@ func (u *Usecase) IsUserCoordinator(ctx context.Context, leagueId string, userId
 
 }
 
-func (u *Usecase) GetFixture(context context.Context, leagueId string) ([]*match.LeagueFixtureMatch, error) {
-	return u.matchRepo.GetFixtureByLeagueId(context, leagueId)
+func (u *Usecase) GetFixture(context context.Context, leagueId string, filterParam *FixtureFilterParam) ([]*match.LeagueFixtureMatch, error) {
+
+	var filter match.FixtureFilter
+	if filterParam != nil && filterParam.TeamId != nil {
+		filter.TeamId = filterParam.TeamId
+	}
+	return u.matchRepo.GetFixtureByLeagueId(context, leagueId, &filter)
 }
 
 func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {

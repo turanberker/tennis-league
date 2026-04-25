@@ -62,24 +62,24 @@ type UpdateMatchScore struct {
 type LeagueFixtureMatch struct {
 	Id        string
 	LeagueId  string
-	Team1     teamRef
-	Team2     teamRef
+	Team1     TeamRef
+	Team2     TeamRef
 	Status    Status
 	MatchDate *time.Time
 }
 
 type MatchSides struct {
-	Side1 matchSide
-	Side2 matchSide
+	Side1 MatchSide
+	Side2 MatchSide
 }
 
-type matchSide struct {
+type MatchSide struct {
 	Id   string
 	Name string
 }
 
-type teamRef struct {
-	matchSide
+type TeamRef struct {
+	MatchSide
 	Score  *int8
 	Winner *bool
 }
@@ -108,4 +108,8 @@ type PlayerIncomingMatchesResult struct {
 	LeagueName   *string
 	OppenentId   string
 	OppenentName string
+}
+
+type FixtureFilter struct {
+	TeamId *string
 }

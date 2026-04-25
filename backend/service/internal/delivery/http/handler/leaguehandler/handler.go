@@ -335,7 +335,21 @@ func (h *Handler) createFixture(c *gin.Context) {
 func (h *Handler) getFixture(c *gin.Context) {
 	leagueId := c.Param("id") // query param
 
-	fixture, err := h.uc.GetFixture(c.Request.Context(), leagueId)
+	var req struct {
+		TeamId *string `form:"teamId" binding:"omitempty"`
+	}
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		errorMessage := delivery.ValidationError(err)
+		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+		return
+	}
+
+	var filterParam league.FixtureFilterParam
+	if req.TeamId != nil {
+		filterParam.TeamId = req.TeamId
+	}
+	fixture, err := h.uc.GetFixture(c.Request.Context(), leagueId, &filterParam)
 
 	if err != nil {
 		c.Error(customerror.NewInternalError(err))

@@ -38,9 +38,10 @@ export const createFixture = async (leagueId: String) => {
 
 export const getFixture = async (
   leagueId: String,
+  param?: { teamId: string }
 ): Promise<LeagueFixtureMatchResponse[]> => {
   return await axiosClient.get<LeagueFixtureMatchResponse[]>(
-    `leagues/${leagueId}/fixture`,
+    `leagues/${leagueId}/fixture`, { params: param }
   );
 };
 
