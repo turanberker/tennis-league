@@ -20,6 +20,8 @@ import { LeagueCard } from '../../components/LeagueCard';
 import { MatchScoreSidebar } from '../../components/match/MatchScoreSidebar';
 import { LeagueTeamResponse } from '../../model/team.model';
 import { Dropdown } from 'primereact/dropdown';
+import Guard from '../../helper/Guard';
+import { Role } from '../../model/user.model';
 
 export default function Fixtures() {
   const { id } = useParams();
@@ -133,18 +135,20 @@ export default function Fixtures() {
         </div>
         {/* Sağ Tarafta Aksiyon Butonları */}
         <div className="flex gap-2">
-          <Button
-            rounded
-            text
-            label="Tarih Ayarla"
-            icon="pi pi-calendar"
-            outlined
-            disabled={!selectedMatch || selectedMatch.status === Status.COMPLETED}
-            size='small'
-            onClick={(e) => {
-              dateOP.current?.toggle(e);
-            }}
-          />
+          <Guard allowedRoles={[Role.ADMIN, Role.COORDINATOR]}>
+            <Button
+              rounded
+              text
+              label="Tarih Ayarla"
+              icon="pi pi-calendar"
+              outlined
+              disabled={!selectedMatch || selectedMatch.status === Status.COMPLETED}
+              size='small'
+              onClick={(e) => {
+                dateOP.current?.toggle(e);
+              }}
+            />
+          </Guard>
           <Button
             rounded
             text
@@ -155,16 +159,18 @@ export default function Fixtures() {
             outlined
             onClick={() => handleMatchScore()}
           />
-          <Button
-            rounded
-            text
-            size='small'
-            label='Onayla'
-            icon="pi pi-check"
-            disabled={!selectedMatch || selectedMatch.status !== Status.COMPLETED}
-            outlined
-            onClick={() => approveHandler()}
-          />
+          <Guard allowedRoles={[Role.ADMIN, Role.COORDINATOR]}>
+            <Button
+              rounded
+              text
+              size='small'
+              label='Onayla'
+              icon="pi pi-check"
+              disabled={!selectedMatch || selectedMatch.status !== Status.COMPLETED}
+              outlined
+              onClick={() => approveHandler()}
+            />
+          </Guard>
         </div>
       </div>
 

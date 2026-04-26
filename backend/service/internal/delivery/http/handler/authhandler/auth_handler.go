@@ -24,8 +24,28 @@ func NewAuthHandler(uc *auth.Usecase, tokenService *middleware.TokenService) *Au
 }
 
 func (h *AuthHandler) RegisterRoutes(r *gin.Engine) {
-	r.POST("auth/login", h.login)
-	r.POST("auth/register", h.register)
+	authGroup := r.Group("/auth")
+	{
+		authGroup.POST("/login", h.login)
+		authGroup.POST("/refresh", h.refresh)
+		authGroup.POST("/register", h.register)
+		authGroup.POST("/logout", h.logout)
+	}
+}
+
+func (h *AuthHandler) logout(c *gin.Context) {
+	sId, _ := c.Get("session_id")
+
+	// 1. Redis'ten sil
+	if sessionId, ok := sId.(string); ok {
+		h.uc.DeleteSessionFromRedis(c.Request.Context(), sessionId)
+	}
+
+	// 2. Tarayıcıdaki cookie'leri temizle (Sürelerini -1 yaparak)
+	c.SetCookie("access_token", "", -1, "/", "", false, true)
+	c.SetCookie("refresh_token", "", -1, "/auth/refresh", "", false, true)
+
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse("Çıkış Yaptınız"))
 }
 
 func (h *AuthHandler) login(c *gin.Context) {
@@ -54,11 +74,22 @@ func (h *AuthHandler) login(c *gin.Context) {
 		return
 	}
 
-	tokenString, _ := h.tokenService.Generate(usr.SessionId)
-	// JWT oluştur
+	_, err = h.tokenService.GenerateAccessTokenAndSetCookie(c, usr.SessionId)
 
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+
+	_, err = h.tokenService.GenerateRefreshTokenAndSetCookie(c, usr.SessionId)
+
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
 	response := delivery.NewSuccessResponse(LoginResponse{
-		Token: tokenString,
 		CurrentUser: CurrentUserDTO{
 			UserID:   usr.ID,
 			Name:     usr.Name,
@@ -69,6 +100,24 @@ func (h *AuthHandler) login(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *AuthHandler) refresh(c *gin.Context) {
+	// Cookie'den refresh token'ı oku
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	// Token'ı valide et ve yeni bir Access Token üret
+	newAccessToken, err := h.tokenService.ValidateAndRefreshAndSetAccessCookie(c, refreshToken)
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": newAccessToken})
 }
 
 func (h *AuthHandler) register(c *gin.Context) {
@@ -109,10 +158,22 @@ func (h *AuthHandler) register(c *gin.Context) {
 		}
 	}
 
-	tokenString, _ := h.tokenService.Generate(usr.SessionId)
+	_, err = h.tokenService.GenerateAccessTokenAndSetCookie(c, usr.SessionId)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+
+	_, err = h.tokenService.GenerateRefreshTokenAndSetCookie(c, usr.SessionId)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+
 	// JWT oluştur
 	response := delivery.NewSuccessResponse(LoginResponse{
-		Token: tokenString,
 		CurrentUser: CurrentUserDTO{
 			UserID:  usr.ID,
 			Name:    usr.Name,

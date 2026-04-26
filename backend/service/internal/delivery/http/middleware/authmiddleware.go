@@ -29,14 +29,13 @@ func NewAuthMiddleware(secret string, sessionRepository *redis.SessionRepository
 
 func (a *AuthMiddleware) GetToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 1. Önce Cookie'den access_token'ı oku
+		tokenString, err := c.Cookie("access_token")
 
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.Next()
+		if err != nil {
+			c.Next() // Sessiz devam, RequireAuth yakalayacak
 			return
 		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		// Token doğrulaması
 		token, err := jwtauth.VerifyToken(a.tokenAuth, tokenString)

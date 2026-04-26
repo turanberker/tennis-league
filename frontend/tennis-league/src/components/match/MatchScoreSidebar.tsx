@@ -10,6 +10,7 @@ import { Calendar } from 'primereact/calendar';
 import { Button } from 'primereact/button';
 import { InputNumber } from 'primereact/inputnumber';
 import { Checkbox } from 'primereact/checkbox';
+import Guard from '../../helper/Guard';
 
 export interface MatchScoreSidebarProps {
     visible: boolean;
@@ -199,10 +200,11 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
                             </div>
                         </div>
                     )}
-
-                    {!isReadOnly && (
-                        <Button type="submit" label="Değişiklikleri Kaydet" icon="pi pi-check" loading={isSubmitting} />
-                    )}
+                    <Guard onFail={() => setIsReadOnly(true)}>
+                        {!isReadOnly && (
+                            <Button type="submit" label="Değişiklikleri Kaydet" icon="pi pi-check" loading={isSubmitting} />
+                        )}
+                    </Guard>
                 </form>
             </Sidebar>
         </>

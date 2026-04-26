@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { Role } from '../model/user.model';
 import { useNavigate } from 'react-router-dom';
-
+import { logout as logoutApi } from '../api/authService'
 /* ============================= */
 /*            TYPES              */
 /* ============================= */
@@ -60,10 +60,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // useCallback ile sarmaladık ki re-render döngüsüne girmesin
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     // 1. Verileri temizle
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    await logoutApi();
     setUser(null);
 
     // 2. Kök dizine yönlendir

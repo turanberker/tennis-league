@@ -16,6 +16,5 @@ type CurrentUserDTO struct {
 }
 
 type LoginResponse struct {
-	Token       string         `json:"token"`
 	CurrentUser CurrentUserDTO `json:"currentUser"`
 }

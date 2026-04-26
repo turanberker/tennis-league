@@ -33,7 +33,7 @@ type ServerConfig struct {
 func LoadServerConfig() *ServerConfig {
 	return &ServerConfig{
 		Port:           getEnv("SERVER_PORT", "8500"),
-		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "*"),
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
 	}
 }
 

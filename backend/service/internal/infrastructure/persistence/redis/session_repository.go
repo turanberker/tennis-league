@@ -18,7 +18,7 @@ func NewSessionRepository(rdb *goredis.Client) *SessionRepository {
 	return &SessionRepository{rdb: rdb}
 }
 
-const sessionTTL = 1 * time.Hour
+const sessionTTL = 7 * 24 * time.Hour
 
 func sessionKey(id string) string {
 	return "session:" + id

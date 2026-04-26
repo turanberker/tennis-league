@@ -98,3 +98,9 @@ func (u Usecase) RegisterUser(ctx context.Context, req *user.RegisterUserInput) 
 		Role:      user.RolePlayer,
 		PlayerId:  nil}, nil
 }
+
+func (u Usecase) DeleteSessionFromRedis(ctx context.Context, sessionId string) {
+
+	u.sessionRepository.Delete(ctx, sessionId)
+
+}

@@ -71,8 +71,7 @@ function Layout() {
   /* -----------------------------
       LOGIN HANDLER
   ----------------------------- */
-  const handleLogin = (data: { token: string; currentUser: AuthUser }) => {
-    localStorage.setItem('token', data.token);
+  const handleLogin = (data: { currentUser: AuthUser }) => {
     login(data.currentUser);
     setLoginDialogVisible(false);
 
@@ -157,7 +156,6 @@ function Layout() {
 
             const data = await registerApi(payload);
 
-            localStorage.setItem('token', data.token);
             login(data.currentUser);
             setRegisterDialogVisible(false);
 

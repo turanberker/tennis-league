@@ -18,7 +18,6 @@ export interface CurrentUser {
 }
 
 export interface AuthResponse {
-  token: string;
   currentUser: CurrentUser;
 }
 
@@ -36,6 +35,11 @@ export interface RegisterRequest {
 export const login = async (payload: LoginRequest): Promise<AuthResponse> => {
   return axiosClient.post<AuthResponse>('/auth/login', payload);
 };
+
+export const logout = async (): Promise<void> => {
+  return axiosClient.post<void>('/auth/logout');
+};
+
 
 export const register = async (
   payload: RegisterRequest,
