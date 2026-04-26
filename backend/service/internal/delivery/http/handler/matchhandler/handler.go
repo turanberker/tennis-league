@@ -34,7 +34,7 @@ func (h *MatchHandler) approveScore(c *gin.Context) {
 	matchId := c.Param("id")
 	err := h.u.ApproveScore(c.Request.Context(), match.MatchSource_FRIENDLY, matchId)
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
+		c.Error(err)
 		c.Abort()
 		return
 	}
@@ -48,7 +48,7 @@ func (h *MatchHandler) getSetScore(c *gin.Context) {
 	sides, err := h.u.GetMatchInfo(c.Request.Context(), matchId)
 
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
+		c.Error(err)
 		c.Abort()
 		return
 	}
@@ -132,7 +132,7 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 
 	response, err := h.u.SaveMatchScore(c.Request.Context(), saveMatchScore)
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
+		c.Error(err)
 		c.Abort()
 		return
 	}
@@ -162,7 +162,7 @@ func (h *MatchHandler) updateDate(c *gin.Context) {
 
 	err := h.u.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_FRIENDLY, &req.MatchDate)
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
+		c.Error(err)
 		c.Abort()
 		return
 	}

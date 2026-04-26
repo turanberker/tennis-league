@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"time"
 
+	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	matchSet "github.com/turanberker/tennis-league-service/internal/domain/matchset"
 	"github.com/turanberker/tennis-league-service/internal/domain/outbox"
 	"github.com/turanberker/tennis-league-service/internal/platform/cache"
@@ -122,7 +124,7 @@ func (u *UseCase) SaveMatchScore(ctx context.Context, score *SaveMatchScore) (*U
 		}
 
 		if teamIds.Status == StatusApproved {
-			return errors.New("Maç skoru onaylandığı için güncelleyemezsiniz")
+			return customerror.NewBussinnessError(http.StatusConflict, customerror.ErrMatchApprovedCanNotUpdateScore, "Maç skoru onaylandığı için güncelleyemezsiniz")
 		}
 
 		if macScore.Team1Score > macScore.Team2Score {
