@@ -14,5 +14,5 @@ type Repository interface {
 	GetMatchType(txCtx context.Context, matchId string) (*Match_TYPE, error)
 	GetDoubleMatchParticipantsWithPoints(txCtx context.Context, matchID string) ([]MatchParticipant, error)
 	GetPlayerIncomingMatches(ctx context.Context, queryParam PlayerIncomingMatchesQueryParam) ([]PlayerIncomingMatchesResult, error)
-	GetMatchSides(ctx context.Context, matchId string) (*MatchSides, error)
+	GetMatchInfo(ctx context.Context, matchId string) (*MatchInfo, error)
 }

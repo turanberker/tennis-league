@@ -45,7 +45,7 @@ func (h *MatchHandler) getSetScore(c *gin.Context) {
 	// path param
 	matchId := c.Param("id")
 	setScores := h.u.GetSetScore(c.Request.Context(), matchId)
-	sides, err := h.u.GetMatchSides(c.Request.Context(), matchId)
+	sides, err := h.u.GetMatchInfo(c.Request.Context(), matchId)
 
 	if err != nil {
 		c.Error(customerror.NewInternalError(err))
@@ -54,6 +54,7 @@ func (h *MatchHandler) getSetScore(c *gin.Context) {
 	}
 
 	response := MatchSetScoreResponse{}
+	response.MatchDate = sides.MatchDate
 	response.Side1 = sides.Side1.Name
 	response.Side2 = sides.Side2.Name
 	for _, s := range setScores {
@@ -119,7 +120,7 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 	set1 := match.SaveScore{Team1Score: macScore.Set1.Team1Score, Team2Score: macScore.Set1.Team2Score}
 	set2 := match.SaveScore{Team1Score: macScore.Set2.Team1Score, Team2Score: macScore.Set2.Team2Score}
 
-	saveMatchScore := &match.SaveMatchScore{MatchId: matchId, Set1: set1, Set2: set2}
+	saveMatchScore := &match.SaveMatchScore{MatchId: matchId, MatchDate: macScore.MatchDate, Set1: set1, Set2: set2}
 
 	if macScore.SuperTie != nil {
 

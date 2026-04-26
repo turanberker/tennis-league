@@ -57,7 +57,7 @@ export interface MatchSetScoreResponse extends MatchScore {
 }
 
 export interface MatchScore {
-
+  matchDate: Date
   set1: SetScore;
   set2: SetScore;
   superTie: SetScore | null;

@@ -41,7 +41,6 @@ type MatchType struct {
 
 type UpdateMatchDate struct {
 	Id        string
-	Source    Match_SOURCE
 	MatchDate *time.Time
 }
 
@@ -68,9 +67,10 @@ type LeagueFixtureMatch struct {
 	MatchDate *time.Time
 }
 
-type MatchSides struct {
-	Side1 MatchSide
-	Side2 MatchSide
+type MatchInfo struct {
+	MatchDate *time.Time
+	Side1     MatchSide
+	Side2     MatchSide
 }
 
 type MatchSide struct {

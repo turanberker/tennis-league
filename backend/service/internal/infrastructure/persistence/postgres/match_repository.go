@@ -171,9 +171,9 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 
 func (r *MatchRepository) UpdateMatchDate(ctx context.Context, data match.UpdateMatchDate) error {
 	executor := r.GetExecutor(ctx)
-	query := "Update match set match_date=$1 where id=$2 and source=$3"
+	query := "Update match set match_date=$1 where id=$2"
 
-	result, err := executor.ExecContext(ctx, query, data.MatchDate, data.Id, data.Source)
+	result, err := executor.ExecContext(ctx, query, data.MatchDate, data.Id)
 	if err != nil {
 		log.Println("Maç tarihi güncellenirken hata oluştu:", err)
 		return err
@@ -187,7 +187,7 @@ func (r *MatchRepository) UpdateMatchDate(ctx context.Context, data match.Update
 
 	if rowsAffected == 0 {
 		// Kayıt bulunamadığında dönecek özel bir hata
-		return fmt.Errorf("güncellenecek maç bulunamadı (ID: %s, Source: %v)", data.Id, data.Source)
+		return fmt.Errorf("güncellenecek maç bulunamadı (ID: %s)", data.Id)
 	}
 
 	return nil
@@ -419,13 +419,14 @@ func (r *MatchRepository) GetPlayerIncomingMatches(ctx context.Context, queryPar
 	return result, nil
 
 }
-func (r *MatchRepository) GetMatchSides(ctx context.Context, matchId string) (*match.MatchSides, error) {
+func (r *MatchRepository) GetMatchInfo(ctx context.Context, matchId string) (*match.MatchInfo, error) {
 	executor := r.GetExecutor(ctx)
 
 	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
 	query, args, err := psql.
 		Select(
+			"match_date",
 			"team_1_id",
 			"team_2_id",
 			"player_1_id",
@@ -450,24 +451,25 @@ func (r *MatchRepository) GetMatchSides(ctx context.Context, matchId string) (*m
 	}
 
 	var dbRow struct {
-		Team1Id        *string `db:"team_1_id"`
-		Team2Id        *string `db:"team_2_id"`
-		Player1Id      *string `db:"player_1_id"`
-		Player2Id      *string `db:"player_2_id"`
-		Team1Name      *string `db:"team1_name"`
-		Team2Name      *string `db:"team2_name"`
-		Player1Name    *string `db:"player1_name"`
-		Player2Name    *string `db:"player2_name"`
-		Player1Surname *string `db:"player1_surname"`
-		Player2Surname *string `db:"player2_surname"`
+		MatchDate      *time.Time `db:"match_date"`
+		Team1Id        *string    `db:"team_1_id"`
+		Team2Id        *string    `db:"team_2_id"`
+		Player1Id      *string    `db:"player_1_id"`
+		Player2Id      *string    `db:"player_2_id"`
+		Team1Name      *string    `db:"team1_name"`
+		Team2Name      *string    `db:"team2_name"`
+		Player1Name    *string    `db:"player1_name"`
+		Player2Name    *string    `db:"player2_name"`
+		Player1Surname *string    `db:"player1_surname"`
+		Player2Surname *string    `db:"player2_surname"`
 	}
 
-	sides := &match.MatchSides{}
+	sides := &match.MatchInfo{}
 
 	if err := sqlscan.Get(ctx, executor, &dbRow, query, args...); err != nil {
 		return nil, fmt.Errorf("match tarafları getirilemedi (id: %s): %w", matchId, err)
 	}
-
+	sides.MatchDate = dbRow.MatchDate
 	if dbRow.Team1Id != nil && dbRow.Team2Id != nil {
 		sides.Side1.Id = *dbRow.Team1Id
 		sides.Side1.Name = *dbRow.Team1Name

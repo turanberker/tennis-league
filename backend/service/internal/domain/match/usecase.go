@@ -20,11 +20,11 @@ type UseCase struct {
 	outboxRepository outbox.Repository
 }
 
-func (u *UseCase) GetMatchSides(ctx context.Context, matchId string) (*MatchSides, error) {
+func (u *UseCase) GetMatchInfo(ctx context.Context, matchId string) (*MatchInfo, error) {
 
-	cacheKey := u.cacheManager.PrepareCacheKey("match-sides", matchId)
-	return cache.Cacheable(u.cacheManager, ctx, cacheKey, 1*time.Hour, func() (*MatchSides, error) {
-		sides, err := u.repository.GetMatchSides(ctx, matchId)
+	cacheKey := u.cacheManager.PrepareCacheKey("match-info", matchId)
+	return cache.Cacheable(u.cacheManager, ctx, cacheKey, 1*time.Hour, func() (*MatchInfo, error) {
+		sides, err := u.repository.GetMatchInfo(ctx, matchId)
 		if err != nil {
 			return nil, err
 		}
@@ -39,10 +39,11 @@ type SaveScore struct {
 }
 
 type SaveMatchScore struct {
-	MatchId  string
-	Set1     SaveScore
-	Set2     SaveScore
-	SuperTie *SaveScore
+	MatchId   string
+	MatchDate *time.Time
+	Set1      SaveScore
+	Set2      SaveScore
+	SuperTie  *SaveScore
 }
 
 func NewUseCase(tm *database.TransactionManager,
@@ -90,7 +91,7 @@ func (u *UseCase) UpdateMatchDate(ctx context.Context, matchId string, source Ma
 
 	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-		err := u.repository.UpdateMatchDate(txCtx, UpdateMatchDate{Id: matchId, Source: source, MatchDate: matchDate})
+		err := u.repository.UpdateMatchDate(txCtx, UpdateMatchDate{Id: matchId, MatchDate: matchDate})
 		if err != nil {
 			return err
 		}
@@ -106,6 +107,11 @@ func (u *UseCase) SaveMatchScore(ctx context.Context, score *SaveMatchScore) (*U
 	}
 	err = u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
+		if err != nil {
+			return err
+		}
+
+		err := u.repository.UpdateMatchDate(txCtx, UpdateMatchDate{Id: score.MatchId, MatchDate: score.MatchDate})
 		if err != nil {
 			return err
 		}
