@@ -446,7 +446,7 @@ func (h *Handler) updateMatchDate(c *gin.Context) {
 		}
 	}
 
-	h.matchUc.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_TOURNAMENT, &req.MatchDate)
+	h.matchUc.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_LEAGUE, &req.MatchDate)
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse(req.MatchDate))
 
 }

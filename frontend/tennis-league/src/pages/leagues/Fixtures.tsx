@@ -149,7 +149,7 @@ export default function Fixtures() {
             rounded
             text
             size='small'
-            label="Maç Skoru Gir"
+            label="Maç Skoru"
             disabled={!selectedMatch}
             icon="pi pi-pencil"
             outlined

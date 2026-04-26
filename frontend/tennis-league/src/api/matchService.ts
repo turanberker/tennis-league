@@ -14,8 +14,8 @@ export const updateMatchScore = async (
   return await axiosClient.put<MatchScoreResponse>(`match/${id}/score`, data);
 };
 
-export const getSetScores = async (id: string): Promise<MatchSetScoreResponse> => {
-  return await axiosClient.get<MatchSetScoreResponse>(`match/${id}/set-scores`);
+export const getMatchInfo = async (id: string): Promise<MatchSetScoreResponse> => {
+  return await axiosClient.get<MatchSetScoreResponse>(`match/${id}/match-info`);
 };
 
 export const approve = async (id: string): Promise<MatchScore> => {

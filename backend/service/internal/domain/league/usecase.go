@@ -66,7 +66,7 @@ func NewUsecase(
 func (u *Usecase) ApproveMatchScore(ctx context.Context, leagueId string, matchId string) error {
 
 	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
-		err := u.matchUc.ApproveScore(txCtx, match.MatchSource_TOURNAMENT, matchId)
+		err := u.matchUc.ApproveScore(txCtx, match.MatchSource_LEAGUE, matchId)
 
 		if err != nil {
 			return err
@@ -191,7 +191,7 @@ func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {
 
 		bulkInsert.Sides = matches
 		bulkInsert.Type = match.MatchType{Id: &leagueId,
-			Source: match.MatchSource_TOURNAMENT,
+			Source: match.MatchSource_LEAGUE,
 			Type:   match.MatchType_DOUBLE,
 		}
 

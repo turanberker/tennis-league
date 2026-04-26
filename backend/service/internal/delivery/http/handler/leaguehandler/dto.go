@@ -15,11 +15,11 @@ type LeagueResponse struct {
 }
 
 type LeagueFixtureMatchResponse struct {
-	Id        string          `json:"id"`
-	Team1     TeamRefResponse `json:"team1"`
-	Team2     TeamRefResponse `json:"team2"`
-	Status    match.Status    `json:"status"`
-	MatchDate *time.Time      `json:"matchDate,omitempty"`
+	Id        string             `json:"id"`
+	Team1     TeamRefResponse    `json:"team1"`
+	Team2     TeamRefResponse    `json:"team2"`
+	Status    match.MATCH_Status `json:"status"`
+	MatchDate *time.Time         `json:"matchDate,omitempty"`
 }
 
 type TeamRefResponse struct {

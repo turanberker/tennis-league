@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/match"
 )
@@ -24,10 +25,10 @@ func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
 	matches := r.Group("/match")
 	{
 		matches.GET("/:id", h.getById)
-		matches.GET("/:id/set-scores", h.getSetScore)
-		matches.PUT("/:id/score", h.updateScore)
-		matches.PUT("/:id/update-date", h.updateDate)
-		matches.PUT("/:id/approve", h.approveScore)
+		matches.GET("/:id/match-info", h.getSetScore)
+		matches.PUT("/:id/score", middleware.RequireAuth(), h.updateScore)
+		matches.PUT("/:id/update-date", middleware.RequireAuth(), h.updateDate)
+		matches.PUT("/:id/approve", middleware.RequireAuth(), h.approveScore)
 	}
 }
 func (h *MatchHandler) approveScore(c *gin.Context) {
@@ -54,33 +55,38 @@ func (h *MatchHandler) getSetScore(c *gin.Context) {
 	}
 
 	response := MatchSetScoreResponse{}
-	response.MatchDate = sides.MatchDate
-	response.Side1 = sides.Side1.Name
-	response.Side2 = sides.Side2.Name
+
+	response.MatchInfo.MatchDate = sides.MatchDate
+	response.MatchInfo.MatchType = sides.MatchType
+	response.MatchInfo.Source = sides.Source
+	response.MatchInfo.SourceId = sides.SourceId
+	response.MatchInfo.Status = sides.Status
+	response.MatchInfo.Side1 = sides.Side1.Name
+	response.MatchInfo.Side2 = sides.Side2.Name
 	for _, s := range setScores {
 		switch s.SetNumber {
 		case 1:
 			if s.Team1Game != nil {
-				response.Set1.Team1Score = *s.Team1Game
+				response.MatchScore.Set1.Team1Score = *s.Team1Game
 			}
 			if s.Team2Game != nil {
-				response.Set1.Team2Score = *s.Team2Game
+				response.MatchScore.Set1.Team2Score = *s.Team2Game
 			}
 		case 2:
 			if s.Team1Game != nil {
-				response.Set2.Team1Score = *s.Team1Game
+				response.MatchScore.Set2.Team1Score = *s.Team1Game
 			}
 			if s.Team2Game != nil {
-				response.Set2.Team2Score = *s.Team2Game
+				response.MatchScore.Set2.Team2Score = *s.Team2Game
 			}
 
 		case 3:
-			response.SuperTie = &SetScore{}
+			response.MatchScore.SuperTie = &SetScore{}
 			if s.Team1TiePoint != nil {
-				response.SuperTie.Team1Score = *s.Team1TiePoint
+				response.MatchScore.SuperTie.Team1Score = *s.Team1TiePoint
 			}
 			if s.Team2TiePoint != nil {
-				response.SuperTie.Team2Score = *s.Team2TiePoint
+				response.MatchScore.SuperTie.Team2Score = *s.Team2TiePoint
 			}
 		}
 

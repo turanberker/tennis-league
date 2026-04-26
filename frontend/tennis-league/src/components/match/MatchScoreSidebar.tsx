@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Sidebar } from 'primereact/sidebar';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { MatchScore } from '../../model/match.model';
+import { MatchScore, Status, UpdateScoreRequest } from '../../model/match.model';
 import * as yup from 'yup';
-import { getSetScores, updateMatchScore } from '../../api/matchService';
+import { getMatchInfo, updateMatchScore } from '../../api/matchService';
 import { Toast } from 'primereact/toast';
 import { Calendar } from 'primereact/calendar';
 import { Button } from 'primereact/button';
@@ -54,8 +54,9 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
     const [showSuperTie, setShowSuperTie] = useState(false);
     const calendarRef = useRef<Calendar>(null);
     const toast = useRef<Toast>(null);
+    const [isReadOnly, setIsReadOnly] = useState(false);
 
-    const { control, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<MatchScore>({
+    const { control, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<UpdateScoreRequest>({
         resolver: yupResolver(matchScoreSchema),
         defaultValues: {
             matchDate: null as any,
@@ -68,17 +69,17 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
     useEffect(() => {
         if (visible && matchId) {
             const loadData = async () => {
-                const res = await getSetScores(matchId);
+                const res = await getMatchInfo(matchId);
                 if (res) {
-                    setSelectedMatch({ side1: res.side1, side2: res.side2 });
+                    setIsReadOnly(res.matchInfo.status === Status.SCORE_APPROVED)
+                    setSelectedMatch({ side1: res.matchInfo.side1, side2: res.matchInfo.side2 });
 
-                    // CRITICAL: String -> Date dönüşümü
-                    setValue('matchDate', res.matchDate ? new Date(res.matchDate) : new Date());
-                    setValue('set1', res.set1 || { team1Score: 0, team2Score: 0 });
-                    setValue('set2', res.set2 || { team1Score: 0, team2Score: 0 });
+                    setValue('matchDate', res.matchInfo.matchDate ? new Date(res.matchInfo.matchDate) : new Date());
+                    setValue('set1', res.setScore.set1 || { team1Score: 0, team2Score: 0 });
+                    setValue('set2', res.setScore.set2 || { team1Score: 0, team2Score: 0 });
 
-                    if (res.superTie) {
-                        setValue('superTie', res.superTie);
+                    if (res.setScore.superTie) {
+                        setValue('superTie', res.setScore.superTie);
                         setShowSuperTie(true);
                     } else {
                         setValue('superTie', null);
@@ -102,7 +103,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
     return (
         <>
             <Toast ref={toast} />
-            <Sidebar visible={visible} position="right" onHide={onHide} header="Maç Skoru Düzenle" className="p-sidebar-md">
+            <Sidebar visible={visible} position="right" onHide={onHide} header={isReadOnly ? "Maç Skoru" : "Maç Skoru Düzenle"} className="p-sidebar-md">
                 <form onSubmit={handleSubmit(onSubmit)} className="p-fluid">
 
                     {/* TARİH ALANI */}
@@ -119,7 +120,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
                                     showTime
                                     hourFormat="24"
                                     stepMinute={10}
-
+                                    disabled={isReadOnly}
                                     className={errors.matchDate ? 'p-invalid' : ''}
                                     footerTemplate={() => (
                                         <div className="flex justify-content-end p-2">
@@ -144,7 +145,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
                                     <Controller
                                         name={`set${setNum}.team1Score` as any}
                                         control={control}
-                                        render={({ field }) => <InputNumber value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
                                     />
                                 </div>
                                 <div className="col-6">
@@ -152,7 +153,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
                                     <Controller
                                         name={`set${setNum}.team2Score` as any}
                                         control={control}
-                                        render={({ field }) => <InputNumber value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
                                     />
                                 </div>
                             </div>
@@ -166,6 +167,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
                     <div className="field-checkbox my-4">
                         <Checkbox
                             inputId="stToggle"
+                            disabled={isReadOnly}
                             checked={showSuperTie}
                             onChange={(e) => {
                                 setShowSuperTie(e.checked || false);
@@ -184,21 +186,23 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
                                     <Controller
                                         name="superTie.team1Score"
                                         control={control}
-                                        render={({ field }) => <InputNumber value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} />}
                                     />
                                 </div>
                                 <div className="col-6">
                                     <Controller
                                         name="superTie.team2Score"
                                         control={control}
-                                        render={({ field }) => <InputNumber value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} />}
                                     />
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <Button type="submit" label="Değişiklikleri Kaydet" icon="pi pi-check" loading={isSubmitting} className="mt-2" />
+                    {!isReadOnly && (
+                        <Button type="submit" label="Değişiklikleri Kaydet" icon="pi pi-check" loading={isSubmitting} />
+                    )}
                 </form>
             </Sidebar>
         </>

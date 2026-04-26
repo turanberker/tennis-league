@@ -4,23 +4,23 @@ import (
 	"time"
 )
 
-type Status string
+type MATCH_Status string
 type Match_TYPE string
 type Match_SOURCE string
 
 const (
-	StatusPending   Status = "PENDING"
-	StatusCompleted Status = "COMPLETED"
-	StatusApproved  Status = "SCORE_APPROVED"
-	StatusCancelled Status = "CANCELLED"
+	StatusPending   MATCH_Status = "PENDING"
+	StatusCompleted MATCH_Status = "COMPLETED"
+	StatusApproved  MATCH_Status = "SCORE_APPROVED"
+	StatusCancelled MATCH_Status = "CANCELLED"
 
 	MatchType_SINGLE Match_TYPE = "SINGLE"
 	MatchType_DOUBLE Match_TYPE = "DOUBLE"
 	MatchType_TEAM   Match_TYPE = "TEAM"
 
-	MatchSource_FRIENDLY   Match_SOURCE = "FRIENDLY"
-	MatchSource_TOURNAMENT Match_SOURCE = "TOURNAMENT"
-	MatchSource_PLAYOFF    Match_SOURCE = "PLAYOFF"
+	MatchSource_FRIENDLY Match_SOURCE = "FRIENDLY"
+	MatchSource_LEAGUE   Match_SOURCE = "LEAGUE"
+	MatchSource_PLAYOFF  Match_SOURCE = "PLAYOFF"
 )
 
 type BulkInsertMatches struct {
@@ -48,7 +48,7 @@ type MatchTeamIds struct {
 	LeagueId string
 	Team1Id  string
 	Team2Id  string
-	Status   Status
+	Status   MATCH_Status
 }
 
 type UpdateMatchScore struct {
@@ -63,7 +63,7 @@ type LeagueFixtureMatch struct {
 	LeagueId  string
 	Team1     TeamRef
 	Team2     TeamRef
-	Status    Status
+	Status    MATCH_Status
 	MatchDate *time.Time
 }
 
@@ -71,6 +71,10 @@ type MatchInfo struct {
 	MatchDate *time.Time
 	Side1     MatchSide
 	Side2     MatchSide
+	Source    Match_SOURCE
+	SourceId  *string
+	MatchType Match_TYPE
+	Status    MATCH_Status
 }
 
 type MatchSide struct {

@@ -84,6 +84,9 @@ func (u *UseCase) ApproveScore(ctx context.Context, source Match_SOURCE, matchId
 			return err
 		}
 
+		cacheKey := u.cacheManager.PrepareCacheKey("match-info", matchId)
+		u.cacheManager.Invalidate(txCtx, cacheKey)
+
 		return nil
 	})
 
@@ -97,6 +100,8 @@ func (u *UseCase) UpdateMatchDate(ctx context.Context, matchId string, source Ma
 		if err != nil {
 			return err
 		}
+		cacheKey := u.cacheManager.PrepareCacheKey("match-info", matchId)
+		u.cacheManager.Invalidate(txCtx, cacheKey)
 		return nil
 	})
 }

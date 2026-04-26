@@ -1,6 +1,10 @@
 package matchhandler
 
-import "time"
+import (
+	"time"
+
+	"github.com/turanberker/tennis-league-service/internal/domain/match"
+)
 
 type SetScore struct {
 	Team1Score int8 `json:"team1Score" binding:"gte=0,lte=99"`
@@ -8,15 +12,13 @@ type SetScore struct {
 }
 
 type UpdateScoreRequest struct {
-	MatchDate *time.Time `json:"matchDate" binding:"omitempty"`
+	MatchDate *time.Time `json:"matchDate" binding:"required"`
 	MatchScore
 }
 
 type MatchSetScoreResponse struct {
-	MatchDate *time.Time `json:"matchDate"`
-	MatchScore
-	Side1 string `json:"side1"`
-	Side2 string `json:"side2"`
+	MatchInfo  MatchInfo  `json:"matchInfo"`
+	MatchScore MatchScore `json:"setScore"`
 }
 
 type MatchScore struct {
@@ -28,4 +30,14 @@ type MatchScore struct {
 type MatchScoreResponse struct {
 	Team1Score int8 `json:"team1Score"`
 	Team2Score int8 `json:"team2Score"`
+}
+
+type MatchInfo struct {
+	MatchDate *time.Time         `json:"matchDate"`
+	Source    match.Match_SOURCE `json:"source"`
+	SourceId  *string            `json:"sourceId"` //leagueId veya TournamentId olacak
+	MatchType match.Match_TYPE   `json:"type"`
+	Status    match.MATCH_Status `json:"status"`
+	Side1     string             `json:"side1"`
+	Side2     string             `json:"side2"`
 }

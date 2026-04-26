@@ -51,13 +51,23 @@ export interface TeamRefResponse extends TeamRef {
   winner?: boolean;
 }
 
-export interface MatchSetScoreResponse extends MatchScore {
-  side1: string;
-  side2: string;
+export interface MatchSetScoreResponse {
+  matchInfo: MatchInfo
+  setScore: MatchScore
+
+}
+
+interface MatchInfo {
+  matchDate?: Date
+  source: MatchSource
+  sourceId?: string
+  type: MatchType
+  status: Status
+  side1: string
+  side2: string
 }
 
 export interface MatchScore {
-  matchDate: Date
   set1: SetScore;
   set2: SetScore;
   superTie: SetScore | null;
@@ -71,4 +81,8 @@ interface SetScore {
 export interface MatchScoreResponse {
   team1: null;
   team2: null;
+}
+
+export interface UpdateScoreRequest extends MatchScore {
+  matchDate: Date
 }

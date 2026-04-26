@@ -43,7 +43,7 @@ func (r *MatchRepository) SaveBulkMatches(ctx context.Context, req *match.BulkIn
 	// Ana sütun listesini oluştur
 	columns := []string{side1Col, side2Col, "source", "match_type"}
 	// Opsiyonel Lig/Turnuva ID kolonu
-	if req.Type.Source == match.MatchSource_TOURNAMENT {
+	if req.Type.Source == match.MatchSource_LEAGUE {
 		columns = append(columns, "league_id")
 	} else {
 		panic("Not İmplemented Yet")
@@ -121,17 +121,17 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 	}
 	// 2. Metod İçi Yerel Struct (sqlscan için)
 	type row struct {
-		ID         string       `db:"id"`
-		T1Id       string       `db:"team_1_id"`
-		T1Name     string       `db:"team_1_name"`
-		T1Score    *int8        `db:"team_1_score"`
-		T1IsWinner *bool        `db:"team_1_is_winner"`
-		T2Id       string       `db:"team_2_id"`
-		T2Name     string       `db:"team_2_name"`
-		T2Score    *int8        `db:"team_2_score"`
-		T2IsWinner *bool        `db:"team_2_is_winner"`
-		Status     match.Status `db:"status"`
-		MatchDate  *time.Time   `db:"match_date"` // Nullable tarih güvenliği
+		ID         string             `db:"id"`
+		T1Id       string             `db:"team_1_id"`
+		T1Name     string             `db:"team_1_name"`
+		T1Score    *int8              `db:"team_1_score"`
+		T1IsWinner *bool              `db:"team_1_is_winner"`
+		T2Id       string             `db:"team_2_id"`
+		T2Name     string             `db:"team_2_name"`
+		T2Score    *int8              `db:"team_2_score"`
+		T2IsWinner *bool              `db:"team_2_is_winner"`
+		Status     match.MATCH_Status `db:"status"`
+		MatchDate  *time.Time         `db:"match_date"` // Nullable tarih güvenliği
 	}
 
 	var rowsData []row
@@ -431,6 +431,11 @@ func (r *MatchRepository) GetMatchInfo(ctx context.Context, matchId string) (*ma
 			"team_2_id",
 			"player_1_id",
 			"player_2_id",
+			"source",
+			"m.league_id",
+			"m.status",
+			"tournament_id",
+			"match_type",
 			"t1.name as team1_name",
 			"t2.name as team2_name",
 			"p1.name as player1_name",
@@ -451,40 +456,62 @@ func (r *MatchRepository) GetMatchInfo(ctx context.Context, matchId string) (*ma
 	}
 
 	var dbRow struct {
-		MatchDate      *time.Time `db:"match_date"`
-		Team1Id        *string    `db:"team_1_id"`
-		Team2Id        *string    `db:"team_2_id"`
-		Player1Id      *string    `db:"player_1_id"`
-		Player2Id      *string    `db:"player_2_id"`
-		Team1Name      *string    `db:"team1_name"`
-		Team2Name      *string    `db:"team2_name"`
-		Player1Name    *string    `db:"player1_name"`
-		Player2Name    *string    `db:"player2_name"`
-		Player1Surname *string    `db:"player1_surname"`
-		Player2Surname *string    `db:"player2_surname"`
+		MatchDate      *time.Time         `db:"match_date"`
+		Team1Id        *string            `db:"team_1_id"`
+		Team2Id        *string            `db:"team_2_id"`
+		Player1Id      *string            `db:"player_1_id"`
+		Player2Id      *string            `db:"player_2_id"`
+		Team1Name      *string            `db:"team1_name"`
+		Team2Name      *string            `db:"team2_name"`
+		Player1Name    *string            `db:"player1_name"`
+		Player2Name    *string            `db:"player2_name"`
+		Player1Surname *string            `db:"player1_surname"`
+		Player2Surname *string            `db:"player2_surname"`
+		Source         match.Match_SOURCE `db:"source"`
+		Status         match.MATCH_Status `db:"status"`
+		Match_Type     match.Match_TYPE   `db:"match_type"`
+		LeagueId       *string            `db:"league_id"`
+		TournamentId   *string            `db:"tournament_id"`
 	}
 
-	sides := &match.MatchInfo{}
+	matchInfo := &match.MatchInfo{}
 
 	if err := sqlscan.Get(ctx, executor, &dbRow, query, args...); err != nil {
-		return nil, fmt.Errorf("match tarafları getirilemedi (id: %s): %w", matchId, err)
+		return nil, fmt.Errorf("Maç Bilgisi Getirilemedi (id: %s): %w", matchId, err)
 	}
-	sides.MatchDate = dbRow.MatchDate
+	matchInfo.MatchDate = dbRow.MatchDate
+	matchInfo.MatchType = dbRow.Match_Type
+	matchInfo.Source = dbRow.Source
+	matchInfo.Status = dbRow.Status
+	switch dbRow.Source {
+	case match.MatchSource_LEAGUE:
+		if dbRow.LeagueId != nil {
+			matchInfo.SourceId = dbRow.LeagueId
+		}
+	case match.MatchSource_PLAYOFF:
+		if dbRow.TournamentId != nil {
+			matchInfo.SourceId = dbRow.TournamentId
+		}
+	default:
+		// Opsiyonel: Bilinmeyen bir kaynak gelirse loglayabilir
+		// veya default bir değer atayabilirsiniz.
+		matchInfo.SourceId = nil
+	}
 	if dbRow.Team1Id != nil && dbRow.Team2Id != nil {
-		sides.Side1.Id = *dbRow.Team1Id
-		sides.Side1.Name = *dbRow.Team1Name
-		sides.Side2.Id = *dbRow.Team2Id
-		sides.Side2.Name = *dbRow.Team2Name
+		matchInfo.Side1.Id = *dbRow.Team1Id
+		matchInfo.Side1.Name = *dbRow.Team1Name
+		matchInfo.Side2.Id = *dbRow.Team2Id
+		matchInfo.Side2.Name = *dbRow.Team2Name
 
 	} else if dbRow.Player1Id != nil && dbRow.Player2Id != nil {
-		sides.Side1.Id = *dbRow.Player1Id
-		sides.Side1.Name = fmt.Sprintf("%s %s", *dbRow.Player1Name, *dbRow.Player1Surname)
-		sides.Side2.Id = *dbRow.Player2Id
-		sides.Side2.Name = fmt.Sprintf("%s %s", *dbRow.Player2Name, *dbRow.Player2Surname)
+		matchInfo.Side1.Id = *dbRow.Player1Id
+		matchInfo.Side1.Name = fmt.Sprintf("%s %s", *dbRow.Player1Name, *dbRow.Player1Surname)
+		matchInfo.Side2.Id = *dbRow.Player2Id
+		matchInfo.Side2.Name = fmt.Sprintf("%s %s", *dbRow.Player2Name, *dbRow.Player2Surname)
 	} else {
 		return nil, fmt.Errorf("match sides not found for match id: %s", matchId)
 	}
 
-	return sides, nil
+	return matchInfo, nil
 
 }
