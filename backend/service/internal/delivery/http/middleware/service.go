@@ -8,17 +8,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/turanberker/tennis-league-service/internal/domain/session"
+	"github.com/turanberker/tennis-league-service/internal/platform"
 )
 
 type TokenService struct {
 	auth              *jwtauth.JWTAuth
 	sessionRepository session.Repository
+	serverConfig      *platform.ServerConfig
 }
 
-func NewTokenService(secret string, sessionRepository session.Repository) *TokenService {
+func NewTokenService(secret string, sessionRepository session.Repository, serverConfig *platform.ServerConfig) *TokenService {
 	return &TokenService{
 		auth:              jwtauth.New("HS256", []byte(secret), nil),
 		sessionRepository: sessionRepository,
+		serverConfig:      serverConfig,
 	}
 }
 
@@ -31,14 +34,15 @@ func (t *TokenService) GenerateAccessTokenAndSetCookie(c *gin.Context, sessionId
 	// CSRF Koruması için SameSite modunu ayarla
 	c.SetSameSite(http.SameSiteLaxMode)
 	// 2. Access Token Cookie (Her istekte gönderilmeli)
+	isProd := t.serverConfig.AppEnv == platform.APP_ENV_PRODUCTION
 	c.SetCookie(
 		"access_token",
 		tokenString,
-		3600,  // 1 saat (Access Token süresiyle uyumlu)
-		"/",   // Tüm endpoint'lerde geçerli
-		"",    // Domain
-		false, // Prod'da true (HTTPS)
-		true,  // HttpOnly: JS erişemez
+		3600,   // 1 saat (Access Token süresiyle uyumlu)
+		"/",    // Tüm endpoint'lerde geçerli
+		"",     // Domain
+		isProd, // Prod'da true (HTTPS)
+		true,   // HttpOnly: JS erişemez
 	)
 	return tokenString, err
 }
@@ -51,13 +55,14 @@ func (t *TokenService) GenerateRefreshTokenAndSetCookie(c *gin.Context, sessionI
 		"exp":        time.Now().Add(7 * 24 * time.Hour).Unix(),
 	})
 	c.SetSameSite(http.SameSiteLaxMode)
+	isProd := t.serverConfig.AppEnv == platform.APP_ENV_PRODUCTION
 	c.SetCookie(
 		"refresh_token", // isim
 		tokenString,     // değer
 		3600*24*7,       // 7 gün (saniye cinsinden)
 		"/auth/refresh", // ÖNEMLİ: Sadece refresh endpointine gönderilsin
 		"",              // domain
-		false,           // local'de çalıştığın için false, prod'da TRUE olmalı (HTTPS)
+		isProd,          // local'de çalıştığın için false, prod'da TRUE olmalı (HTTPS)
 		true,            // HTTP_ONLY: JavaScript erişemez (XSS koruması)
 	)
 

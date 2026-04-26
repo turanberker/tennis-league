@@ -45,7 +45,7 @@ func main() {
 	userUC := user.NewUsecase(transactionManager, userRepo)
 	cacheManager := cache.NewCacheManager(redisClient)
 
-	tokenService := middleware.NewTokenService("tennis", sessionRepository)
+	tokenService := middleware.NewTokenService("tennis", sessionRepository, serverConfig)
 
 	leagueRepository := postgres.NewLeagueRepository(db)
 	teamRepository := postgres.NewTeamRepository(db)
