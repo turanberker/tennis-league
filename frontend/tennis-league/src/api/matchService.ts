@@ -7,7 +7,7 @@ export const updateDate = async (id: string, data: { 'match-date': Date }): Prom
   });
 };
 
-export const updateMatchScore = async (
+export const updateFriendlyMatchScore = async (
   id: string,
   data: MatchScore,
 ): Promise<MatchScoreResponse> => {

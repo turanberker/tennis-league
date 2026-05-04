@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { MatchScore, Status, UpdateScoreRequest } from '../../model/match.model';
 import * as yup from 'yup';
-import { getMatchInfo, updateMatchScore } from '../../api/matchService';
+import { getMatchInfo } from '../../api/matchService';
 import { Toast } from 'primereact/toast';
 import { Calendar } from 'primereact/calendar';
 import { Button } from 'primereact/button';
@@ -17,6 +17,7 @@ export interface MatchScoreSidebarProps {
     matchId?: string;
     onHide: () => void;
     onSuccess: () => void;
+    submitMatchScore: (matchId: string, score: MatchScore) => boolean | Promise<boolean>
 }
 
 // --- Validation Schemas ---
@@ -50,7 +51,7 @@ export const matchScoreSchema = yup.object().shape({
     superTie: superTieSchema,
 });
 
-export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: MatchScoreSidebarProps) {
+export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess, submitMatchScore }: MatchScoreSidebarProps) {
     const [selectedMatch, setSelectedMatch] = useState<{ side1: string; side2: string } | null>(null);
     const [showSuperTie, setShowSuperTie] = useState(false);
     const calendarRef = useRef<Calendar>(null);
@@ -93,7 +94,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess }: Match
     }, [visible, matchId, setValue]);
 
     const onSubmit = async (data: MatchScore) => {
-        const success = await updateMatchScore(matchId!, data);
+        const success = await submitMatchScore(matchId!, data);
         if (success) {
             toast.current?.show({ severity: 'success', summary: 'Başarılı', detail: 'Skor güncellendi' });
             onHide();

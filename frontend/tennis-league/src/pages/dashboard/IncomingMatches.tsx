@@ -6,6 +6,9 @@ import { formatDate } from "../../helper/date.helper";
 import { Button } from "primereact/button";
 import { Divider } from "primereact/divider";
 import { MatchScoreSidebar } from "../../components/match/MatchScoreSidebar";
+import { MatchScore, MatchSource } from "../../model/match.model";
+import { updateFriendlyMatchScore } from "../../api/matchService";
+import { updateLeagueMatchScore } from "../../api/leagueService";
 
 interface IncomingMatchesCardProps extends DashboardProps {
 
@@ -14,11 +17,9 @@ interface IncomingMatchesCardProps extends DashboardProps {
 export default function IncomingMatchesCard({ className = "col-12 md:col-4" }: IncomingMatchesCardProps) {
 
     const [updateScoreVisible, setUpdateScoreVisible] = useState<boolean>(false);
-    const [selectedMatchId, setSelectedMatchId] = useState<string>();
+    const [selectedMatch, setSelectedMatch] = useState<IncomingMatchResponse>();
     const [incomingMatches, setIncomingMatches] = useState<IncomingMatchResponse[]>();
     const [loading, setLoading] = useState(true);
-
-
 
     const fetchIncomigMatches = useCallback(async () => {
         const res = await getIncomingMathces({ limit: 5 })
@@ -31,10 +32,23 @@ export default function IncomingMatchesCard({ className = "col-12 md:col-4" }: I
         fetchIncomigMatches();
     }, [fetchIncomigMatches])
 
-    const handleScoreUpdate = (matchId: string) => {
+    const handleScoreUpdate = (incomingMatch: IncomingMatchResponse) => {
         // Skor güncelleme işlemi burada yapılacak
-        setSelectedMatchId(matchId)
+        setSelectedMatch(incomingMatch)
         setUpdateScoreVisible(true);
+    }
+
+    const handleSubmitScore = async (matchId: string, score: MatchScore): Promise<boolean> => {
+
+        let res;
+        if (selectedMatch?.source === MatchSource.FRIENDLY) {
+            res = await updateFriendlyMatchScore(matchId, score)
+        } else if (selectedMatch?.source === MatchSource.LEAGUE) {
+            res = await updateLeagueMatchScore(selectedMatch.leagueId!, matchId, score)
+        } else {
+            throw new Error("Illegal Argument")
+        }
+        return res != null ? true : false;
     }
 
     return (
@@ -68,7 +82,7 @@ export default function IncomingMatchesCard({ className = "col-12 md:col-4" }: I
                                     icon="pi pi-pencil"
                                     className="p-button-rounded p-button-text p-button-sm"
                                     tooltip="Skor Gir"
-                                    onClick={() => handleScoreUpdate(match.matchId)}
+                                    onClick={() => handleScoreUpdate(match)}
                                 />
                             </div>
                             {/* Son eleman değilse araya çizgi koy */}
@@ -82,7 +96,8 @@ export default function IncomingMatchesCard({ className = "col-12 md:col-4" }: I
                 )}
             </Card>
         </div>
-            <MatchScoreSidebar visible={updateScoreVisible} matchId={selectedMatchId} onHide={() => setUpdateScoreVisible(false)} onSuccess={() => fetchIncomigMatches()} />
+            <MatchScoreSidebar visible={updateScoreVisible} matchId={selectedMatch?.matchId} onHide={() => setUpdateScoreVisible(false)}
+                submitMatchScore={handleSubmitScore} onSuccess={() => fetchIncomigMatches()} />
         </>
 
 

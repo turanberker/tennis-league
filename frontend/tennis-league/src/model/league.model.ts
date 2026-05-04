@@ -1,6 +1,6 @@
 export interface League {
-  id: String;
-  name: String;
+  id: string;
+  name: string;
   format: LEAGUE_FORMAT;
   category: LEAGUE_CATEGORY;
   processType: LEAGUE_PROCESS_TYPE,
@@ -11,14 +11,14 @@ export interface League {
 }
 
 export interface LeagueListResponse {
-  id: String;
-  name: String;
+  id: string;
+  name: string;
   format: LEAGUE_FORMAT;
   category: LEAGUE_CATEGORY;
   processType: LEAGUE_PROCESS_TYPE,
   status: LEAGUE_STATUS,
   totalAttentance: Number;
-  coordinatorUserIds: String[];
+  coordinatorUserIds: string[];
 }
 
 export interface PersistLeagueRequest {

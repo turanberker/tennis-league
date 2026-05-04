@@ -104,7 +104,7 @@ export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
             name: data.name,
             playerIds: [data.player1!.id, data.player2!.id],
         };
-        const res: { teamId: String, totalAttendanceCount: number } = await createTeam(leagueId, payload);
+        const res: { teamId: string, totalAttendanceCount: number } = await createTeam(leagueId, payload);
         if (res) {
             updateLeagueCache({
                 totalAttentance: res.totalAttendanceCount

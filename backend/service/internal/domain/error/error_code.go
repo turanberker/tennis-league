@@ -15,3 +15,4 @@ var ErrInvalidPassword = "USER_101"
 var ErrUserNotExists = "USER_102"
 
 var ErrMatchApprovedCanNotUpdateScore = "MATCH_100"
+var ErrNotParticipatedInMatch = "MATCH_101"

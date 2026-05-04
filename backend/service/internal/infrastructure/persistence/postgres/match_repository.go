@@ -419,6 +419,7 @@ func (r *MatchRepository) GetPlayerIncomingMatches(ctx context.Context, queryPar
 	return result, nil
 
 }
+
 func (r *MatchRepository) GetMatchInfo(ctx context.Context, matchId string) (*match.MatchInfo, error) {
 	executor := r.GetExecutor(ctx)
 
@@ -514,4 +515,37 @@ func (r *MatchRepository) GetMatchInfo(ctx context.Context, matchId string) (*ma
 
 	return matchInfo, nil
 
+}
+
+func (r *MatchRepository) CheckIfPlayerPlayedInMatch(ctx context.Context, matchID string, playerID string) (bool, error) {
+	// Squirrel Builder
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	// Sorgu oluşturma
+	query := psql.Select("COUNT(1)").
+		From("\"match\" m").
+		LeftJoin("team_player tp ON (tp.team_id = m.team_1_id OR tp.team_id = m.team_2_id)").
+		Where(squirrel.Eq{"m.id": matchID}).
+		Where(squirrel.Or{
+			squirrel.Eq{"m.player_1_id": playerID},
+			squirrel.Eq{"m.player_2_id": playerID},
+			squirrel.Eq{"tp.player_id": playerID},
+		})
+
+	// SQL ve Argümanları al
+	sqlStr, args, err := query.ToSql()
+	if err != nil {
+		return false, fmt.Errorf("query building error: %w", err)
+	}
+
+	var count int
+	err = r.db.QueryRowContext(ctx, sqlStr, args...).Scan(&count)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("execution error: %w", err)
+	}
+
+	return count > 0, nil
 }

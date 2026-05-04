@@ -12,7 +12,7 @@ export interface IncomingMatchResponse {
     matchDate: Date;
     matchType: MatchType;
     source: MatchSource;
-    LeagueId?: string;
+    leagueId?: string;
     leagueName?: string;
     oppenentId?: string; // Rakip oyuncunun ID'si (tekler için) veya takım ID'si (çiftler için)
     oppenentName: string; // Rakip oyuncunun adı (tekler için) veya takım adı (çiftler için)

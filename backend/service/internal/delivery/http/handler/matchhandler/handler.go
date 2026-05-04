@@ -1,6 +1,7 @@
 package matchhandler
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -26,9 +27,9 @@ func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
 	{
 		matches.GET("/:id", h.getById)
 		matches.GET("/:id/match-info", h.getSetScore)
-		matches.PUT("/:id/score", middleware.RequireAuth(), h.updateScore)
-		matches.PUT("/:id/update-date", middleware.RequireAuth(), h.updateDate)
-		matches.PUT("/:id/approve", middleware.RequireAuth(), h.approveScore)
+		matches.PUT("/:id/score", middleware.RequireAuth(), h.checkIfMatchIsFriendly, h.checkIfUserIsMatchPlayer, h.updateScore)
+		matches.PUT("/:id/update-date", middleware.RequireAuth(), h.checkIfMatchIsFriendly, h.checkIfUserIsMatchPlayer, h.updateDate)
+		matches.PUT("/:id/approve", middleware.RequireAuth(), h.checkIfMatchIsFriendly, h.checkIfUserIsMatchPlayer, h.approveScore)
 	}
 }
 func (h *MatchHandler) approveScore(c *gin.Context) {
@@ -175,4 +176,49 @@ func (h *MatchHandler) updateDate(c *gin.Context) {
 
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse(req.MatchDate))
 
+}
+
+func (h *MatchHandler) checkIfMatchIsFriendly(c *gin.Context) {
+	matchId := c.Param("id")
+	matchInfo, err := h.u.GetMatchInfo(c.Request.Context(), matchId)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+	if matchInfo.Source != match.MatchSource_FRIENDLY {
+		c.Error(errors.New("Buradan sadece dosluk maçları güncellenebilir"))
+		c.Abort()
+	}
+}
+
+func (h *MatchHandler) checkIfUserIsMatchPlayer(c *gin.Context) {
+	matchId := c.Param("id")
+	playerId, exists := middleware.GetPlayerIdFromContext(c)
+	if !exists {
+		err := &customerror.BusinnesException{
+			StatusCode: http.StatusForbidden,
+			ErrorCode:  customerror.INSUFFICIENT_PERMISSIONS,
+			Message:    "Oyuncu kaydınız bulunamamıştır",
+		}
+		c.Error(err)
+		c.Abort()
+	}
+
+	playedInMatch, err := h.u.IsUserPlayerOfMatch(c.Request.Context(), matchId, playerId)
+
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+	}
+
+	if !playedInMatch {
+		err := &customerror.BusinnesException{
+			StatusCode: http.StatusForbidden,
+			ErrorCode:  customerror.ErrNotParticipatedInMatch,
+			Message:    "Bu maçta oynamadığınız için skoru güncelleyemezsiniz",
+		}
+		c.Error(err)
+		c.Abort()
+	}
 }

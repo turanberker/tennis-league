@@ -1,12 +1,15 @@
 package leaguehandler
 
 import (
+	"errors"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/turanberker/tennis-league-service/internal/delivery"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/matchhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/middleware"
 	customerror "github.com/turanberker/tennis-league-service/internal/domain/error"
 	"github.com/turanberker/tennis-league-service/internal/domain/league"
@@ -53,7 +56,10 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.POST("/:id/coordinator",
 			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
 			h.checkIfCoordinator, h.newCoordinator)
-		leagues.PUT("/:id/match/:matchId/update-score")
+		leagues.PUT("/:id/match/:matchId/update-score", middleware.RequireAuth(),
+			h.checkIfMatchIsLeague,
+			h.checkIfUserIsCoordinatAdminOrPlayer,
+			h.updateScore)
 		leagues.PUT("/:id/match/:matchId/update-date",
 			middleware.RequireRole(user.RoleAdmin, user.RoleCoordinator),
 			h.checkIfCoordinator,
@@ -69,8 +75,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 func (h *Handler) checkIfCoordinator(c *gin.Context) {
 	roleValue, _ := c.Get("Role")
 	leagueId := c.Param("id")
-	userIdValue, _ := c.Get("UserId")
-	userId, _ := userIdValue.(string)
+	userId, _ := middleware.GetUserIdFromContext(c)
 
 	if role, ok := roleValue.(user.Role); ok {
 
@@ -474,4 +479,122 @@ func (h *Handler) approveScore(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
+}
+
+func (h *Handler) checkIfUserIsCoordinatAdminOrPlayer(c *gin.Context) {
+	roleValue, _ := c.Get("Role")
+	userId, _ := middleware.GetUserIdFromContext(c)
+	matchId := c.Param("matchId")
+	// Not: Lig ID'si bu context'te farklı bir isimle (örn: leagueId) geliyorsa onu almalısın.
+	// Eğer match üzerinden leagueId'ye gitmek gerekiyorsa usecase katmanında bu kontrolü yapabilirsin.
+	leagueId := c.Param("id")
+
+	role, ok := roleValue.(user.Role)
+	if !ok {
+		h.abortWithForbidden(c, "Yetki bilgisi alınamadı")
+		return
+	}
+	// 1. Durum: Admin ise sınırsız erişim
+	if role == user.RoleAdmin {
+		c.Next()
+		return
+	}
+
+	// 2. Durum: Koordinatör ise lig bazlı kontrol
+	if role == user.RoleCoordinator {
+		coordinator, err := h.uc.IsUserCoordinator(c.Request.Context(), leagueId, userId)
+		if err == nil && coordinator {
+			c.Next()
+			return
+		}
+		// Eğer koordinatör değilse hemen abort etmiyoruz, belki bu maçın oyuncusudur.
+	}
+
+	// 3. Durum: Oyuncu mu kontrolü (Admin veya Lig Koordinatörü değilse buraya düşer)
+	playedInMatch := h.isPlayerPlayedInMatch(c, matchId)
+	if playedInMatch {
+		c.Next()
+		return
+	}
+
+	// Hiçbir şart sağlanmadıysa erişimi reddet
+	h.abortWithForbidden(c, "Bu işlem için yetkiniz bulunmamaktadır (Koordinatör, Admin veya Maçın Oyuncusu olmalısınız)")
+}
+
+// Yardımcı metod: Kod tekrarını önlemek için
+func (h *Handler) abortWithForbidden(c *gin.Context, message string) {
+	err := &customerror.BusinnesException{
+		StatusCode: http.StatusForbidden,
+		ErrorCode:  customerror.INSUFFICIENT_PERMISSIONS,
+		Message:    message,
+	}
+	c.Error(err)
+	c.Abort()
+}
+
+func (h *Handler) isPlayerPlayedInMatch(c *gin.Context, matchId string) bool {
+	playerId, exists := middleware.GetPlayerIdFromContext(c)
+	if !exists {
+		return false
+	}
+	playedInMatch, _ := h.matchUc.IsUserPlayerOfMatch(c.Request.Context(), matchId, playerId)
+	return playedInMatch
+}
+
+func (h *Handler) checkIfMatchIsLeague(c *gin.Context) {
+	matchId := c.Param("matchId")
+	matchInfo, err := h.matchUc.GetMatchInfo(c.Request.Context(), matchId)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+	if matchInfo.Source != match.MatchSource_LEAGUE {
+		c.Error(errors.New("Buradan sadece Lig maçları güncellenebilir"))
+		c.Abort()
+	}
+}
+
+func (h *Handler) updateScore(c *gin.Context) {
+	matchId := c.Param("matchId")
+
+	macScore := matchhandler.UpdateScoreRequest{}
+
+	if err := c.ShouldBindJSON(&macScore); err != nil {
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			c.Error(customerror.NewValidationError(ve))
+			c.Abort()
+			return
+		} else {
+			c.Error(customerror.NewInternalError(err))
+			c.Abort()
+			return
+		}
+	}
+
+	log.Printf("match id: %s", matchId)
+	log.Printf("score :%+v", macScore)
+
+	set1 := match.SaveScore{Team1Score: macScore.Set1.Team1Score, Team2Score: macScore.Set1.Team2Score}
+	set2 := match.SaveScore{Team1Score: macScore.Set2.Team1Score, Team2Score: macScore.Set2.Team2Score}
+
+	saveMatchScore := &match.SaveMatchScore{MatchId: matchId, MatchDate: macScore.MatchDate, Set1: set1, Set2: set2}
+
+	if macScore.SuperTie != nil {
+
+		saveMatchScore.SuperTie = &match.SaveScore{}
+		saveMatchScore.SuperTie.Team1Score = macScore.SuperTie.Team1Score
+		saveMatchScore.SuperTie.Team2Score = macScore.SuperTie.Team2Score
+
+	}
+
+	response, err := h.matchUc.SaveMatchScore(c.Request.Context(), saveMatchScore)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(&matchhandler.MatchScoreResponse{Team1Score: response.Team1Score, Team2Score: response.Team2Score}))
+
 }

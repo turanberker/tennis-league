@@ -15,4 +15,5 @@ type Repository interface {
 	GetDoubleMatchParticipantsWithPoints(txCtx context.Context, matchID string) ([]MatchParticipant, error)
 	GetPlayerIncomingMatches(ctx context.Context, queryParam PlayerIncomingMatchesQueryParam) ([]PlayerIncomingMatchesResult, error)
 	GetMatchInfo(ctx context.Context, matchId string) (*MatchInfo, error)
+	CheckIfPlayerPlayedInMatch(ctx context.Context, matchId string, playerId string) (bool, error)
 }

@@ -193,3 +193,7 @@ func findSetWinner(score SaveScore, matchScore *UpdateMatchScore) {
 		matchScore.Team2Score += 1
 	}
 }
+
+func (u *UseCase) IsUserPlayerOfMatch(ctx context.Context, matchId string, playerId string) (bool, error) {
+	return u.repository.CheckIfPlayerPlayedInMatch(ctx, matchId, playerId)
+}

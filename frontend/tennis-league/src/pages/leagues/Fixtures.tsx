@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from 'primereact/card';
-import { approveMatchResult, getFixture, getTeams, updateMatchDate } from '../../api/leagueService';
+import { approveMatchResult, getFixture, getTeams, updateLeagueMatchScore, updateMatchDate } from '../../api/leagueService';
 import {
   LeagueFixtureMatchResponse,
+  MatchScore,
   MatchStatusLabels,
   Status,
   TeamRefResponse,
@@ -52,6 +53,17 @@ export default function Fixtures() {
   const loadFixture = async (id: string) => {
     setLoading(true);
     const data = await getFixture(id);
+
+
+    if (selectedMatch) {
+
+      let selectedMatchId = selectedMatch.id;
+      setSelectedMatch(undefined)
+      const selected = data.find(e => e.id === selectedMatchId)
+
+      setSelectedMatch(selected)
+    }
+
     setMatches(data);
     setLoading(false);
   };
@@ -109,6 +121,13 @@ export default function Fixtures() {
       </span>
     );
   };
+
+  const handleSubmitScore = async (matchId: string, score: MatchScore): Promise<boolean> => {
+
+    let res = await updateLeagueMatchScore(id!, matchId, score)
+
+    return res != null ? true : false;
+  }
 
   // --- Filtreleme Mantığı ---
   // Eğer bir takım seçiliyse, o takımın team1 veya team2 olduğu maçları getirir.
@@ -261,7 +280,9 @@ export default function Fixtures() {
           />
         </div>
       </OverlayPanel>
-      <MatchScoreSidebar visible={updateScoreVisible} matchId={selectedMatch?.id} onHide={() => setUpdateScoreVisible(false)} onSuccess={() => loadFixture(id!)} />
+      <MatchScoreSidebar visible={updateScoreVisible} matchId={selectedMatch?.id}
+        onHide={() => setUpdateScoreVisible(false)} submitMatchScore={handleSubmitScore}
+        onSuccess={() => loadFixture(id!)} />
 
     </>
   );

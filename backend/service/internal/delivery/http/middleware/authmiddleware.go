@@ -180,6 +180,11 @@ func GetUserIdFromContext(c *gin.Context) (string, bool) {
 	userIdValue, exists := c.Get("UserId")
 	return userIdValue.(string), exists
 }
+
+func GetPlayerIdFromContext(c *gin.Context) (string, bool) {
+	playerIdIdValue, exists := c.Get("PlayerId")
+	return playerIdIdValue.(string), exists
+}
 func AddCacheControlHeader(maxAge int, cacheType Type) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Dinamik olarak header değerini oluşturuyoruz

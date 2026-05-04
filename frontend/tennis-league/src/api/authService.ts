@@ -6,14 +6,14 @@ import axiosClient from './axiosClient';
 /* ============================= */
 
 export interface LoginRequest {
-  email: String;
-  password: String;
+  email: string;
+  password: string;
 }
 
 export interface CurrentUser {
-  userID: String;
-  name: String;
-  surname: String;
+  userID: string;
+  name: string;
+  surname: string;
   role: Role;
 }
 
@@ -22,10 +22,10 @@ export interface AuthResponse {
 }
 
 export interface RegisterRequest {
-  email: String;
-  name: String;
-  surname: String;
-  password: String;
+  email: string;
+  name: string;
+  surname: string;
+  password: string;
 }
 
 /* ============================= */

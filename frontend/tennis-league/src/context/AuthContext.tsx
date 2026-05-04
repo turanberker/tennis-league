@@ -14,9 +14,9 @@ import { logout as logoutApi } from '../api/authService'
 /* ============================= */
 
 export interface AuthUser {
-  userID: String;
-  name: String;
-  surname: String;
+  userID: string;
+  name: string;
+  surname: string;
   role: Role;
 }
 
