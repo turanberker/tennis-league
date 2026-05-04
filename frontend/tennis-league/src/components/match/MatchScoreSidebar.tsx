@@ -24,31 +24,56 @@ export interface MatchScoreSidebarProps {
 const baseScoreSchema = yup.object().shape({
     team1Score: yup.number().typeError('Sayı giriniz').required('Zorunlu').min(0).max(99),
     team2Score: yup.number().typeError('Sayı giriniz').required('Zorunlu').min(0).max(99),
-});
-
-const tennisSetSchema = baseScoreSchema.test('tennis-set', 'Geçerli set skoru giriniz', (value) => {
+}).test('tennis-set', 'İki tarafında skoru aynı olamaz', (value) => {
     if (!value) return false;
     const { team1Score, team2Score } = value;
-    const max = Math.max(team1Score, team2Score);
-    const min = Math.min(team1Score, team2Score);
-    return (max === 6 && min <= 4) || (max === 7 && min === 5) || (max === 7 && min === 6);
+    return (team1Score !== team2Score);
 });
 
-const superTieSchema = yup.object({
-    team1Score: yup.number().required('Zorunlu').min(0).max(99),
-    team2Score: yup.number().required('Zorunlu').min(0).max(99),
-}).test('super-tie', 'Min 10 ve 2 fark olmalı', (value) => {
+const superTieSchema = yup.object().shape({
+    team1Score: yup.number().typeError('Sayı giriniz').required('Zorunlu').min(0).max(99),
+    team2Score: yup.number().typeError('Sayı giriniz').required('Zorunlu').min(0).max(99),
+}).test("super-tie", 'En az 2 fark olmalı', (value) => {
     if (!value) return true;
-    const max = Math.max(value.team1Score, value.team2Score);
     const diff = Math.abs(value.team1Score - value.team2Score);
-    return max >= 10 && diff >= 2;
+    return diff >= 2;
 }).nullable().default(null);
 
 export const matchScoreSchema = yup.object().shape({
     matchDate: yup.date().typeError('Geçerli bir tarih giriniz').required('Maç tarihi zorunludur'),
-    set1: tennisSetSchema.required(),
-    set2: tennisSetSchema.required(),
+    set1: baseScoreSchema.required(),
+    set2: baseScoreSchema.required(),
     superTie: superTieSchema,
+}).test("super-tie-required", "Eşitlik durumunda süper tie skoru girmelisiniz", function (this: yup.TestContext, value) {
+    debugger
+    if (!value || !value.set1 || !value.set2) return true;
+    const s1Winner = value.set1.team1Score > value.set1.team2Score
+
+    const s2Winner = value.set2.team1Score > value.set2.team2Score
+
+    // Durum 1-1 mi? (Setler paylaşıldı mı?)
+    const isTie = s1Winner !== s2Winner;
+
+    if (isTie) {
+        // DURUM 1: Setler 1-1 ama Super Tie girilmemiş
+        if (!value.superTie) {
+            return this.createError({
+                path: undefined,
+                message: 'Setler berabere olduğu için Super Tie skoru girmelisiniz.'
+            });
+        }
+    } else {
+        // DURUM 2: Setler 2-0 veya 0-2 ama Super Tie alanı dolu/işaretli
+        if (value.superTie !== null) {
+            return this.createError({
+                path: undefined,
+                message: 'Maç 2-0 bittiği durumlarda Super Tie skoru girilemez.'
+            });
+        }
+    }
+
+    // Durum 2-0 veya 0-2 ise Super Tie zorunlu değil
+    return true;
 });
 
 export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess, submitMatchScore }: MatchScoreSidebarProps) {
@@ -94,6 +119,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess, submitM
     }, [visible, matchId, setValue]);
 
     const onSubmit = async (data: MatchScore) => {
+        console.log(data)
         const success = await submitMatchScore(matchId!, data);
         if (success) {
             toast.current?.show({ severity: 'success', summary: 'Başarılı', detail: 'Skor güncellendi' });
@@ -138,32 +164,39 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess, submitM
                     <hr className="my-4" />
 
                     {/* SETLER FONKSİYONU (Tekrarı önlemek için) */}
-                    {[1, 2].map((setNum) => (
-                        <div key={setNum} className="mb-4">
-                            <h4 className="mb-2">Set {setNum}</h4>
-                            <div className="grid">
-                                <div className="col-6">
-                                    <label className="block mb-1 text-sm">{selectedMatch?.side1}</label>
-                                    <Controller
-                                        name={`set${setNum}.team1Score` as any}
-                                        control={control}
-                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
-                                    />
+                    {[1, 2].map((setNum) => {
+                        const setKey = `set${setNum}` as keyof UpdateScoreRequest;
+                        const setError = errors[setKey];
+                        return (
+                            <div key={setNum} className="mb-4">
+                                <h4 className="mb-2">Set {setNum}</h4>
+                                <div className="grid">
+                                    <div className="col-6">
+                                        <label className="block mb-1 text-sm">{selectedMatch?.side1}</label>
+                                        <Controller
+                                            name={`set${setNum}.team1Score` as any}
+                                            control={control}
+                                            render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
+                                        />
+                                    </div>
+                                    <div className="col-6">
+                                        <label className="block mb-1 text-sm">{selectedMatch?.side2}</label>
+                                        <Controller
+                                            name={`set${setNum}.team2Score` as any}
+                                            control={control}
+                                            render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="col-6">
-                                    <label className="block mb-1 text-sm">{selectedMatch?.side2}</label>
-                                    <Controller
-                                        name={`set${setNum}.team2Score` as any}
-                                        control={control}
-                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
-                                    />
-                                </div>
+                                {setError && (
+                                    <small className="p-error block mt-1">
+                                        <i className="pi pi-exclamation-triangle mr-2"></i>     {setError.message || (setError as any).root?.message}
+                                    </small>
+                                )}
                             </div>
-                            {errors[`set${setNum}` as keyof MatchScore] && (
-                                <small className="p-error">{(errors[`set${setNum}` as keyof MatchScore] as any)?.message}</small>
-                            )}
-                        </div>
-                    ))}
+                        )
+                    }
+                    )}
 
                     {/* SUPER TIE TOGGLE */}
                     <div className="field-checkbox my-4">
@@ -178,29 +211,46 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess, submitM
                         />
                         <label htmlFor="stToggle" className="ml-2">Super Tie Oynandı mı?</label>
                     </div>
+                    {(errors.root?.message || (errors as any)[""]?.message) && (
+                        <div className="p-error block mt-2 mb-2">
+                            <small className="p-error flex align-items-center font-bold">
+                                <i className="pi pi-exclamation-triangle mr-2"></i>
+                                {errors.root?.message || (errors as any)[""]?.message}
+                            </small>
+                        </div>
+                    )}
 
                     {/* SUPER TIE INPUTS */}
                     {showSuperTie && (
-                        <div className="p-3 surface-ground border-round mb-4">
+                        <div className="p-3 surface-ground border-round mb-4 " >
                             <h4 className="mt-0">Super Tie</h4>
                             <div className="grid">
                                 <div className="col-6">
                                     <Controller
                                         name="superTie.team1Score"
                                         control={control}
-                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} className={errors.superTie ? 'p-invalid' : ''} onValueChange={(e) => field.onChange(e.value)} min={0} />}
                                     />
                                 </div>
                                 <div className="col-6">
                                     <Controller
                                         name="superTie.team2Score"
                                         control={control}
-                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} className={errors.superTie ? 'p-invalid' : ''} onValueChange={(e) => field.onChange(e.value)} min={0} />}
                                     />
                                 </div>
                             </div>
+                            {errors.superTie && (
+                                <small className="p-error block mt-2">
+                                    <i className="pi pi-exclamation-triangle mr-2"></i>    {(errors.superTie as any).message || (errors.superTie as any).root?.message}
+                                </small>
+                            )}
                         </div>
+
+
                     )}
+
+
                     <Guard onFail={() => setIsReadOnly(true)}>
                         {!isReadOnly && (
                             <Button type="submit" label="Değişiklikleri Kaydet" icon="pi pi-check" loading={isSubmitting} />

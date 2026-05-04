@@ -15,20 +15,8 @@ func RegisterSetValidations() {
 			t1 := score.Team1Score
 			t2 := score.Team2Score
 
-			diff := abs(t1 - t2)
-
 			// biri en az 6 olmalı
-			if t1 < 6 && t2 < 6 {
-				return false
-			}
-
-			// en az 2 fark
-			if diff < 2 && !((t1==7 &&t2==6) ||(t1==6 &&t2==7)) {
-				return false
-			}
-
-			// max 7 olabilir
-			if t1 > 7 || t2 > 7 {
+			if t1 == t2 {
 				return false
 			}
 
@@ -44,16 +32,38 @@ func RegisterSetValidations() {
 
 			diff := abs(t1 - t2)
 
-			if t1 < 10 && t2 < 10 {
-				return false
-			}
-
 			if diff < 2 {
 				return false
 			}
 
 			return true
 		})
+
+		v.RegisterStructValidation(MatchScoreStructValidator, MatchScore{})
+	}
+
+}
+
+// Fonksiyonun kendisi
+func MatchScoreStructValidator(sl validator.StructLevel) {
+	match := sl.Current().Interface().(MatchScore)
+
+	// Set 1 kazananı
+	s1Winner := match.Set1.Team1Score > match.Set1.Team2Score
+	// Set 2 kazananı
+	s2Winner := match.Set2.Team1Score > match.Set2.Team2Score
+
+	isTie := s1Winner != s2Winner
+
+	// Eğer setler 1-1 ise (kazananlar farklıysa)
+	if isTie {
+		if match.SuperTie == nil {
+			sl.ReportError(match.SuperTie, "SuperTie", "superTie", "supertie_required", "")
+		}
+	} else {
+		if match.SuperTie != nil {
+			sl.ReportError(match.SuperTie, "SuperTie", "superTie", "supertie_must_be_null", "")
+		}
 	}
 }
 
