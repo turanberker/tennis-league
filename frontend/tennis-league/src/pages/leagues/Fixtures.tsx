@@ -26,6 +26,7 @@ import { Role } from '../../model/user.model';
 
 export default function Fixtures() {
   const { id } = useParams();
+  const calendarRef = useRef<Calendar>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [matches, setMatches] = useState<LeagueFixtureMatchResponse[]>([]);
   const [updateScoreVisible, setUpdateScoreVisible] = useState<boolean>(false);
@@ -68,20 +69,24 @@ export default function Fixtures() {
     setLoading(false);
   };
 
-  const handleMatchDate = async () => {
-    if (selectedMatch && league && tempDate) {
-      const res = await updateMatchDate(league.id, selectedMatch.id, { 'match-date': tempDate });
+  const handleMatchDate = async (forcedDate?: Date | null) => {
+    calendarRef.current?.hide()
+
+    const dateToSend = forcedDate !== undefined ? forcedDate : tempDate;
+
+    if (selectedMatch && league) {
+      const res = await updateMatchDate(league.id, selectedMatch.id, { 'match-date': dateToSend });
 
       if (res) {
         // Listeyi güncelle
         setMatches((prev) =>
           prev.map((m) =>
-            m.id === selectedMatch.id ? { ...m, matchDate: tempDate } : m,
+            m.id === selectedMatch.id ? { ...m, matchDate: dateToSend } : m,
           ),
         );
 
         // Seçili objeyi güncelle (Senkronizasyon için önemli)
-        setSelectedMatch(prev => prev ? { ...prev, matchDate: tempDate } : prev);
+        setSelectedMatch(prev => prev ? { ...prev, matchDate: dateToSend } : prev);
 
         toast.current?.show({
           severity: 'success',
@@ -165,6 +170,7 @@ export default function Fixtures() {
               size='small'
               onClick={(e) => {
                 dateOP.current?.toggle(e);
+                setTempDate(selectedMatch?.matchDate ? new Date(selectedMatch.matchDate) : null);
               }}
             />
           </Guard>
@@ -261,23 +267,24 @@ export default function Fixtures() {
           <FloatLabel>
             <Calendar
               appendTo="self"
+              ref={calendarRef}
               showButtonBar
               showTime
               hourFormat="24"
               inputId="match_date_input"
-              value={tempDate || (selectedMatch?.matchDate ? new Date(selectedMatch.matchDate) : null)}
+              footerTemplate={() => (
+                <div className="flex justify-content-end p-2">
+                  <Button type="button" label="Tarihi Güncelle" className="p-button-sm" onClick={() => handleMatchDate()} />
+                </div>
+              )}
+              onClearButtonClick={() => { setTempDate(null); handleMatchDate(null) }}
+              value={tempDate}
               onChange={(e) => setTempDate(e.value as Date)}
             />
             <label htmlFor="match_date_input">Maç Tarihi Seçin</label>
           </FloatLabel>
 
-          <Button
-            label="Tarihi Güncelle"
-            icon="pi pi-save"
-            className="p-button-sm"
-            disabled={!tempDate}
-            onClick={handleMatchDate}
-          />
+
         </div>
       </OverlayPanel>
       <MatchScoreSidebar visible={updateScoreVisible} matchId={selectedMatch?.id}

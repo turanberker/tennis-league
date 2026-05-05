@@ -57,7 +57,7 @@ export const assignCoordinator = async (leagueId: string, data: { userId: string
   return await axiosClient.post<Boolean>(`leagues/${leagueId}/coordinator`, null, { params: data })
 }
 
-export const updateMatchDate = async (leagueId: string, matchId: string, data: { 'match-date': Date }): Promise<Date> => {
+export const updateMatchDate = async (leagueId: string, matchId: string, data: { 'match-date': Date | null }): Promise<Boolean> => {
   return await axiosClient.put(`leagues/${leagueId}/match/${matchId}/update-date`, null, {
     params: data,
   });

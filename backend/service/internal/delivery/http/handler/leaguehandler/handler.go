@@ -436,7 +436,7 @@ func (h *Handler) updateMatchDate(c *gin.Context) {
 	matchId := c.Param("matchId")
 
 	var req struct {
-		MatchDate time.Time `form:"match-date" binding:"required" time_format:"2006-01-02T15:04:05Z07:00"`
+		MatchDate *time.Time `form:"match-date" time_format:"2006-01-02T15:04:05Z07:00"`
 	}
 
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -451,8 +451,8 @@ func (h *Handler) updateMatchDate(c *gin.Context) {
 		}
 	}
 
-	h.matchUc.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_LEAGUE, &req.MatchDate)
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(req.MatchDate))
+	h.matchUc.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_LEAGUE, req.MatchDate)
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(true))
 
 }
 

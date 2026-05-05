@@ -43,7 +43,7 @@ export interface LeagueFixtureMatchResponse {
   team1: TeamRefResponse;
   team2: TeamRefResponse;
   status: Status;
-  matchDate: Date;
+  matchDate?: Date | null;
 }
 
 export interface TeamRefResponse extends TeamRef {
