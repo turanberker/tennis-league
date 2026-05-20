@@ -5,9 +5,13 @@ import { ScoreBoardResponse } from '../../model/standing.model';
 import { getStandings } from '../../api/leagueService';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { LeagueCard } from '../../components/LeagueCard';
+import { useLeague } from '../../hooks/useLeague';
 
 export default function Scoreboard() {
   const { id } = useParams();
+
+  const { data: league, isLoading } = useLeague(id);
   const [loading, setLoading] = useState<boolean>(false);
   const [board, setBoard] = useState<ScoreBoardResponse[]>([]);
   useEffect(() => {
@@ -23,27 +27,34 @@ export default function Scoreboard() {
 
 
   return (
-    <Card title="Puan Durumu">
-      <DataTable
-        value={board}
-        loading={loading}
-        emptyMessage="Puan Durumu bulunamadı"
-        tableStyle={{ minWidth: '50rem' }}
-        key="id"
-      >
-        <Column field="order" header="Sıra" />
-        <Column field="name" header="Takım Adı" />
-        <Column field="played" header="Oynadığı Maç" />
-        <Column field="score" header="Toplam Puan" />
+    <>
+      <LeagueCard id={id!}></LeagueCard>
 
-        <Column field="won" header="Kazandığı Maç" />
-        <Column field="lost" header="Kaybettiği Maç" />
-        <Column field="wonSets" header="Kazandığı Set" />
-        <Column field="lostSets" header="Kaybettiği Set" />
+      <Card title="Puan Durumu">
 
-        <Column field="wonGames" header="Kazandığı Oyun" />
-        <Column field="lostGames" header="Kaybettiği Oyun" />
-      </DataTable>
-    </Card>
+
+
+        <DataTable
+          value={board}
+          loading={loading}
+          emptyMessage="Puan Durumu bulunamadı"
+          tableStyle={{ minWidth: '50rem' }}
+          key="id"
+        >
+          <Column field="order" header="Sıra" />
+          <Column field="name" header="Takım Adı" />
+          <Column field="played" header="Oynadığı Maç" />
+          <Column field="score" header="Toplam Puan" />
+
+          <Column field="won" header="Kazandığı Maç" />
+          <Column field="lost" header="Kaybettiği Maç" />
+          <Column field="wonSets" header="Kazandığı Set" />
+          <Column field="lostSets" header="Kaybettiği Set" />
+
+          <Column field="wonGames" header="Kazandığı Oyun" />
+          <Column field="lostGames" header="Kaybettiği Oyun" />
+        </DataTable>
+      </Card>
+    </>
   );
 }

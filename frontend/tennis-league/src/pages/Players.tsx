@@ -69,8 +69,6 @@ export default function Players() {
     setLoading(false);
   }, [sexFilter]);
 
-  useEffect(() => { loadPlayers() }, [loadPlayers])
-
   // CREATE
   const onSubmit = async (data: FormData) => {
     try {

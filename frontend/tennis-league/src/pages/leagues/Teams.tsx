@@ -14,10 +14,7 @@ const Teams: React.FC = () => {
 
   const { data: league, isLoading } = useLeague(id);
 
-
   const toast = useRef<Toast>(null);
-
-
 
   if (isLoading) return <ProgressSpinner />;
 

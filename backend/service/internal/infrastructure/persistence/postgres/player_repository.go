@@ -52,7 +52,7 @@ func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQuer
 			sqlBuilder = sqlBuilder.Where("user_id IS NULL")
 		}
 	}
-
+	sqlBuilder = sqlBuilder.OrderBy("single_point DESC", "double_point DESC")
 	query, args, err := sqlBuilder.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("sorgu oluşturulamadı: %v", err)

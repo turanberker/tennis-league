@@ -222,32 +222,33 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess, submitM
 
                     {/* SUPER TIE INPUTS */}
                     {showSuperTie && (
-                        <div className="p-3 surface-ground border-round mb-4 " >
-                            <h4 className="mt-0">Super Tie</h4>
+
+                        <div className="mb-4">
+                            <h4 className="mb-2">Super Tie</h4>
                             <div className="grid">
                                 <div className="col-6">
+                                    <label className="block mb-1 text-sm">{selectedMatch?.side1}</label>
                                     <Controller
                                         name="superTie.team1Score"
                                         control={control}
-                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} className={errors.superTie ? 'p-invalid' : ''} onValueChange={(e) => field.onChange(e.value)} min={0} />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
                                     />
                                 </div>
                                 <div className="col-6">
+                                    <label className="block mb-1 text-sm">{selectedMatch?.side2}</label>
                                     <Controller
                                         name="superTie.team2Score"
                                         control={control}
-                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} className={errors.superTie ? 'p-invalid' : ''} onValueChange={(e) => field.onChange(e.value)} min={0} />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
                                     />
                                 </div>
                             </div>
                             {errors.superTie && (
-                                <small className="p-error block mt-2">
+                                <small className="p-error block mt-1">
                                     <i className="pi pi-exclamation-triangle mr-2"></i>    {(errors.superTie as any).message || (errors.superTie as any).root?.message}
                                 </small>
                             )}
                         </div>
-
-
                     )}
 
 

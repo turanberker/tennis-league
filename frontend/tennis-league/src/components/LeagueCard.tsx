@@ -4,6 +4,8 @@ import { Skeleton } from 'primereact/skeleton';
 import { Card } from 'primereact/card';
 import { formatDate } from '../helper/date.helper';
 import { useLeague } from '../hooks/useLeague';
+import { Button } from 'primereact/button';
+import { useNavigate } from 'react-router-dom';
 
 
 interface LeagueCardProps {
@@ -13,7 +15,7 @@ interface LeagueCardProps {
 export const LeagueCard: React.FC<LeagueCardProps> = ({ id }) => {
 
     const { data: league, isLoading } = useLeague(id);
-
+    const navigate = useNavigate();
 
     if (isLoading) {
         return <Skeleton width="100%" height="150px" />;
@@ -23,11 +25,51 @@ export const LeagueCard: React.FC<LeagueCardProps> = ({ id }) => {
         return <div>Lig bilgisi bulunamadı.</div>;
     }
 
+    // Header için Başlık ve Butonları bir araya getiren render fonksiyonu
+    const renderCardHeader = () => {
+        return (
+            <div className="flex flex-column sm:flex-row justify-content-between align-items-start sm:align-items-center gap-2 w-full">
+                <span className="text-xl font-bold text-900">{league.name}</span>
+                {/* Butonlar Sağ Üst Köşede Yan Yana Dizilir */}
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        rounded
+                        text
+                        label="Takımlar & Oyuncular"
+                        icon="pi pi-users" // Daha anlamlı bir ikonla güncellendi
+                        outlined
+                        size="small"
+                        onClick={() => navigate(`/leagues/${id}/teams`)}
+                    />
+                    <Button
+                        rounded
+                        text
+                        label="Fikstürü Gör"
+                        icon="pi pi-calendar"
+                        outlined
+                        size="small"
+                        onClick={() => navigate(`/leagues/${id}/fixtures`)}
+                    />
+                    <Button
+                        rounded
+                        text
+                        label="Puan Durumu"
+                        icon="pi pi-chart-bar"
+                        outlined
+                        size="small"
+                        onClick={() => navigate(`/leagues/${id}/standings`)}
+                    />
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <Card className="mb-2 shadow-2" content='p-0' title={league.name} pt={{
-            body: { className: 'p-3' },      // Body padding'ini daralttık
-            content: { className: 'p-0' }    // İçerik padding'ini tamamen sıfırladık
-        }}>
+        <Card className="mb-2 shadow-2" content='p-0' title={renderCardHeader()}
+            pt={{
+                body: { className: 'p-3' },      // Body padding'ini daralttık
+                content: { className: 'p-0' }    // İçerik padding'ini tamamen sıfırladık
+            }}>
             <div className="grid">
                 {/* 1. KOLON: Temel Bilgiler */}
                 <div className="col-12 md:col-4 border-right-1 border-200">
@@ -74,6 +116,7 @@ export const LeagueCard: React.FC<LeagueCardProps> = ({ id }) => {
                             <span>{formatDate(league.endDate)}</span>
                         </div>
                     </div>
+
                 </div>
 
             </div>
