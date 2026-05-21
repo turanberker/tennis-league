@@ -7,11 +7,12 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { LeagueCard } from '../../components/LeagueCard';
 import { useLeague } from '../../hooks/useLeague';
+import TeamInfo from '../../components/DoubleTeamInfo';
 
 export default function Scoreboard() {
   const { id } = useParams();
 
-  const { data: league, isLoading } = useLeague(id);
+  useLeague(id);
   const [loading, setLoading] = useState<boolean>(false);
   const [board, setBoard] = useState<ScoreBoardResponse[]>([]);
   useEffect(() => {
@@ -26,13 +27,20 @@ export default function Scoreboard() {
   }, [id]);
 
 
+  const teamInfoBody = (rowData: ScoreBoardResponse) => {
+    return (
+      <TeamInfo
+        teamName={rowData.name}
+        teamId={rowData.id} // ya da rowData.teamId (senin veri yapına göre)
+      />
+    );
+  };
+
   return (
     <>
       <LeagueCard id={id!}></LeagueCard>
 
       <Card title="Puan Durumu">
-
-
 
         <DataTable
           value={board}
@@ -41,6 +49,7 @@ export default function Scoreboard() {
           tableStyle={{ minWidth: '50rem' }}
           key="id"
         >
+          <Column body={teamInfoBody} header="Takım" />
           <Column field="order" header="Sıra" />
           <Column field="name" header="Takım Adı" />
           <Column field="played" header="Oynadığı Maç" />

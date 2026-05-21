@@ -21,7 +21,7 @@ func NewTeamPlayerRepository(db *sql.DB) *TeamPlayerRepository {
 
 func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId string) ([]*player.Player, error) {
 	exec := r.GetExecutor(ctx)
-	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id FROM team_player tp inner join player p on p.id=tp.player_id WHERE team_id=$1`
+	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id,p.single_point ,p.double_point FROM team_player tp inner join player p on p.id=tp.player_id WHERE team_id=$1`
 	rows, err := exec.QueryContext(ctx, query, teamId)
 
 	if err != nil {
@@ -38,6 +38,8 @@ func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId 
 			&teamPlayer.Surname,
 			&teamPlayer.Sex,
 			&teamPlayer.UserId,
+			&teamPlayer.SinglePoints,
+			&teamPlayer.DoublePoints,
 		); err != nil {
 			return nil, err
 		}

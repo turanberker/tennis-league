@@ -2,8 +2,11 @@ package team
 
 import (
 	"context"
+	"time"
 
+	"github.com/turanberker/tennis-league-service/internal/domain/player"
 	"github.com/turanberker/tennis-league-service/internal/domain/teamplayer"
+	"github.com/turanberker/tennis-league-service/internal/platform/cache"
 	"github.com/turanberker/tennis-league-service/internal/platform/database"
 )
 
@@ -15,12 +18,13 @@ type CreateTeamRequest struct {
 
 type UseCase struct {
 	tm                   *database.TransactionManager
+	cacheManager         *cache.CacheManager
 	repository           Repository
 	teamPlayerRepository teamplayer.Repository
 }
 
-func NewUseCase(tm *database.TransactionManager, repository Repository, teamPlayerRepository teamplayer.Repository) *UseCase {
-	return &UseCase{tm: tm, repository: repository, teamPlayerRepository: teamPlayerRepository}
+func NewUseCase(tm *database.TransactionManager, cacheManager *cache.CacheManager, repository Repository, teamPlayerRepository teamplayer.Repository) *UseCase {
+	return &UseCase{tm: tm, cacheManager: cacheManager, repository: repository, teamPlayerRepository: teamPlayerRepository}
 }
 
 func (u *UseCase) GetById(ctx context.Context, id string) (*Team, error) {
@@ -62,4 +66,17 @@ func (u *UseCase) Save(ctx context.Context, req *CreateTeamRequest) (*string, er
 		return nil, err
 	}
 	return teamId, nil
+}
+
+func (u *UseCase) GetTeamMembers(ctx context.Context, teamId string) ([]*player.Player, error) {
+	cacheKey := u.cacheManager.PrepareCacheKey("getTeamMembers", teamId)
+	return cache.Cacheable(u.cacheManager, ctx, cacheKey, 1*time.Hour, func() ([]*player.Player, error) {
+
+		returnVal, err := u.teamPlayerRepository.GetByPlayersByTeamId(ctx, teamId)
+
+		if err != nil {
+			return nil, err
+		}
+		return returnVal, nil
+	})
 }

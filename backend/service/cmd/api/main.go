@@ -6,6 +6,7 @@ import (
 	"github.com/turanberker/tennis-league-service/internal/delivery/http"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/authhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/dashboard"
+	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/doubleteamhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/leaguehandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/matchhandler"
 	"github.com/turanberker/tennis-league-service/internal/delivery/http/handler/playerhandler"
@@ -58,7 +59,7 @@ func main() {
 	leagueCoordinatorRepository := postgres.NewLeagueCoordinatorRepository(db)
 
 	authUC := auth.NewUsecase(db, userRepo, sessionRepository)
-	teamUseCase := team.NewUseCase(transactionManager, teamRepository, teamPlayerRepository)
+	teamUseCase := team.NewUseCase(transactionManager, cacheManager, teamRepository, teamPlayerRepository)
 	matchUseCase := match.NewUseCase(transactionManager, cacheManager, matchRepository, matchSetRepository, outboxRepository)
 	leagueUseCase := league.NewUsecase(transactionManager, cacheManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
 		matchRepository, outboxRepository, scoreBoardRepository, leagueCoordinatorRepository)
@@ -72,14 +73,15 @@ func main() {
 	userHandler := userhandler.NewUserHandler(userUC)
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
-
+	doubleTeamHandler := doubleteamhandler.NewDoubleTeamHandler(teamUseCase)
 	r := http.NewRouter(serverConfig, middleware.NewAuthMiddleware("tennis", sessionRepository),
 		dashboardHandler,
 		authHandler,
 		leagueHandler,
 		playerhandler,
 		matchHandler,
-		userHandler)
+		userHandler,
+		doubleTeamHandler)
 
 	log.Println("Server running on :" + serverConfig.Port)
 	r.Run(":" + serverConfig.Port)

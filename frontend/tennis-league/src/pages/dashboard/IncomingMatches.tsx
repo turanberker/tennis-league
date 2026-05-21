@@ -6,9 +6,10 @@ import { formatDate } from "../../helper/date.helper";
 import { Button } from "primereact/button";
 import { Divider } from "primereact/divider";
 import { MatchScoreSidebar } from "../../components/match/MatchScoreSidebar";
-import { MatchScore, MatchSource } from "../../model/match.model";
+import { MatchScore, MatchSource, MatchType } from "../../model/match.model";
 import { updateFriendlyMatchScore } from "../../api/matchService";
 import { updateLeagueMatchScore } from "../../api/leagueService";
+import TeamInfo from "../../components/DoubleTeamInfo";
 
 interface IncomingMatchesCardProps extends DashboardProps {
 
@@ -60,10 +61,13 @@ export default function IncomingMatchesCard({ className = "col-12 md:col-4" }: I
                             <div className="flex justify-content-between align-items-center py-2">
                                 <div className="flex flex-column gap-1">
                                     {/* Rakip İsmi */}
-                                    <span className="font-bold text-900">
-                                        {match.oppenentName || "Rakip Bekleniyor"}
-                                    </span>
 
+                                    {match.matchType === MatchType.DOUBLE ? <TeamInfo teamId={match.oppenentId!} teamName={match.oppenentName} /> :
+
+                                        <span className="font-bold text-900">
+                                            {match.oppenentName || "Rakip Bekleniyor"}
+                                        </span>
+                                    }
                                     {/* Lig İsmi */}
                                     <span className="text-sm text-500">
                                         <i className="pi pi-trophy mr-1 text-xs"></i>

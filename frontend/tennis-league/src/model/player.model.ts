@@ -17,7 +17,7 @@ export interface Player {
   id: string;
   name: string;
   surname: string;
-  userId?: number;
+  userId?: string;
   sex: Sex;
 }
 
@@ -25,10 +25,11 @@ export interface PlayerResponse {
   id: string;
   name: string;
   surname: string;
-  userId?: number;
+  userId?: string;
   sex: Sex;
-  double_points: number;
-  single_points: number;
+  doublePoints: number;
+  singlePoints: number;
+
 }
 
 export interface CreatePlayerRequest {

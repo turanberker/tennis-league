@@ -7,7 +7,7 @@ type PlayerResponse struct {
 	Name         string     `json:"name"`
 	Sex          player.Sex `json:"sex"`
 	Surname      string     `json:"surname"`
-	UserId       *string    `json:"user_id"`
-	DoublePoints int        `json:"double_points"`
-	SinglePoints int        `json:"single_points"`
+	UserId       *string    `json:"userId"`
+	DoublePoints int        `json:"doublePoints"`
+	SinglePoints int        `json:"singlePoints"`
 }

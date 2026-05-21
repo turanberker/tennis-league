@@ -19,6 +19,7 @@ import { isFieldRequired } from "../helper/form.helper";
 import { LEAGUE_CATEGORY } from "../model/league.model";
 import Guard from "../helper/Guard";
 import { Role } from "../model/user.model";
+import TeamInfo from "./DoubleTeamInfo";
 
 interface LeagueTeamsProps {
     leagueId: string;
@@ -156,6 +157,15 @@ export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
         );
     };
 
+    const teamNameBodyTemplate = (rowData: LeagueTeamResponse) => {
+        return (
+            <TeamInfo
+                teamName={rowData.name}
+                teamId={rowData.id} // ya da rowData.teamId (senin veri yapına göre)
+            />
+        );
+    };
+
     return (
         <>
             <Card
@@ -170,7 +180,7 @@ export const LeagueTeams: React.FC<LeagueTeamsProps> = ({ leagueId }) => {
                     header={header}
                     key="id"
                 >
-                    <Column field="name" header="Takım Adı" />
+                    <Column body={teamNameBodyTemplate} header="Takım Adı" />
                     <Column field="power" header="Gücü" />
                 </DataTable>
             </Card>

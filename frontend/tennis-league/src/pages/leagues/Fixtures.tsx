@@ -23,6 +23,7 @@ import { LeagueTeamResponse } from '../../model/team.model';
 import { Dropdown } from 'primereact/dropdown';
 import Guard from '../../helper/Guard';
 import { Role } from '../../model/user.model';
+import TeamInfo from '../../components/DoubleTeamInfo';
 
 export default function Fixtures() {
   const { id } = useParams();
@@ -41,8 +42,17 @@ export default function Fixtures() {
   const { data: league } = useLeague(id);
 
   useEffect(() => {
-    loadFixture(id!);
-    loadTeams(id!); // Takımları yükle
+
+    const initializeFixture = async () => {
+      const data = await getFixture(id!);
+      setMatches(data);
+      await loadTeams(id!);
+      setLoading(false); // İşlem bitince yükleniyor durumunu kapat
+    }
+
+    if (id) {
+      initializeFixture();
+    }
   }, [id]);
 
 
@@ -121,9 +131,13 @@ export default function Fixtures() {
 
   const generateTeamName = (team: TeamRefResponse) => {
     return (
-      <span style={{ fontWeight: team.winner ? 'bold' : 'normal' }}>
-        {team.name}
-      </span>
+      <TeamInfo
+        teamName={team.name}
+        teamId={team.id}
+        nameLeftAddon={team.winner && (
+          <i className="pi pi-check-circle" style={{ display: 'inline-flex', alignItems: 'center', color: '#22c55e', fontSize: '1rem' }}></i>
+        )}
+      />
     );
   };
 
@@ -153,6 +167,8 @@ export default function Fixtures() {
             optionValue="id"
             placeholder="Tüm Takımlar"
             showClear
+            filter
+            filterBy="name"
             className="p-inputtext-sm w-full md:w-15rem"
             onChange={(e) => setSelectedTeamId(e.value)}
           />
@@ -201,6 +217,8 @@ export default function Fixtures() {
 
     )
   }
+
+
 
   return (
     <>
