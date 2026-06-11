@@ -1,0 +1,90 @@
+package main
+
+import (
+	"log"
+
+	"tennis-league/common/lib/cache"
+	"tennis-league/common/lib/config"
+	"tennis-league/common/lib/database"
+	authmiddleware "tennis-league/common/security/auth"
+	"tennis-league/common/security/repository"
+	"tennis-league/service/internal/delivery/http"
+	"tennis-league/service/internal/delivery/http/handler/authhandler"
+	"tennis-league/service/internal/delivery/http/handler/dashboard"
+	"tennis-league/service/internal/delivery/http/handler/doubleteamhandler"
+	"tennis-league/service/internal/delivery/http/handler/leaguehandler"
+	"tennis-league/service/internal/delivery/http/handler/matchhandler"
+	"tennis-league/service/internal/delivery/http/handler/playerhandler"
+	"tennis-league/service/internal/delivery/http/handler/userhandler"
+	"tennis-league/service/internal/delivery/http/middleware"
+	"tennis-league/service/internal/domain/auth"
+	"tennis-league/service/internal/domain/league"
+	"tennis-league/service/internal/domain/match"
+	"tennis-league/service/internal/domain/player"
+	"tennis-league/service/internal/domain/scoreboard"
+
+	"tennis-league/service/internal/domain/team"
+	"tennis-league/service/internal/domain/user"
+	"tennis-league/service/internal/infrastructure/persistence/postgres"
+	"tennis-league/service/internal/infrastructure/persistence/redis"
+)
+
+func main() {
+	serverConfig := config.LoadServerConfig()
+	matchhandler.RegisterSetValidations()
+
+	db, err := database.NewPostgres()
+	if err != nil {
+		log.Fatal(err)
+	}
+	redisClient, err := cache.NewRedis()
+	if err != nil {
+		log.Fatal(err)
+	}
+	sessionGetterRepository := repository.NewSessionGetterRepositoryImpl(redisClient)
+	sessionRepository := redis.NewSessionRepository(sessionGetterRepository, redisClient)
+	transactionManager := database.NewTransactionManager(db)
+	userRepo := postgres.NewUserRepository(db)
+	userUC := user.NewUsecase(transactionManager, userRepo)
+	cacheManager := cache.NewCacheManager(redisClient)
+
+	tokenService := middleware.NewTokenService("tennis", sessionRepository, serverConfig)
+
+	leagueRepository := postgres.NewLeagueRepository(db)
+	teamRepository := postgres.NewTeamRepository(db)
+	teamPlayerRepository := postgres.NewTeamPlayerRepository(db)
+	matchRepository := postgres.NewMatchRepository(db)
+	matchSetRepository := postgres.NewMatchSetRepository(db)
+	scoreBoardRepository := postgres.NewScoreBoardRepository(db)
+	outboxRepository := postgres.NewOutboxRepository(db)
+	playerRepository := postgres.NewPlayerRepository(db)
+	leagueCoordinatorRepository := postgres.NewLeagueCoordinatorRepository(db)
+
+	authUC := auth.NewUsecase(db, userRepo, sessionRepository)
+	teamUseCase := team.NewUseCase(transactionManager, cacheManager, teamRepository, teamPlayerRepository)
+	matchUseCase := match.NewUseCase(transactionManager, cacheManager, matchRepository, matchSetRepository, outboxRepository)
+	leagueUseCase := league.NewUsecase(transactionManager, cacheManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
+		matchRepository, outboxRepository, scoreBoardRepository, leagueCoordinatorRepository)
+
+	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
+	playerUc := player.NewUsecase(transactionManager, playerRepository, matchRepository)
+
+	dashboardHandler := dashboard.NewDashboardHandler(playerUc)
+	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc, matchUseCase)
+	authHandler := authhandler.NewAuthHandler(authUC, tokenService)
+	userHandler := userhandler.NewUserHandler(userUC)
+	playerhandler := playerhandler.NewPlayerHandler(playerUc)
+	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
+	doubleTeamHandler := doubleteamhandler.NewDoubleTeamHandler(teamUseCase)
+	r := http.NewRouter(serverConfig, authmiddleware.NewAuthMiddleware("tennis", sessionRepository),
+		dashboardHandler,
+		authHandler,
+		leagueHandler,
+		playerhandler,
+		matchHandler,
+		userHandler,
+		doubleTeamHandler)
+
+	log.Println("Server running on :" + serverConfig.Port)
+	r.Run(":" + serverConfig.Port)
+}

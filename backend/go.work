@@ -1,0 +1,8 @@
+go 1.25.7
+
+use (
+	./common/lib
+	./common/security
+	./service/main
+	./service/user
+)
