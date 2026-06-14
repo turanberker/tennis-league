@@ -179,8 +179,8 @@ export default function Players() {
             header="Cinsiyet"
             body={(rowData) => SexLabels[rowData.sex as Sex]}
           />
-          <Column field="single_points" header="Tekler Puan" />
-          <Column field="double_points" header="Çiftler Puan" />
+          <Column field="singlePoints" header="Tekler Puan" />
+          <Column field="doublePoints" header="Çiftler Puan" />
 
         </DataTable>
       </Card>
