@@ -231,7 +231,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess, submitM
                                     <Controller
                                         name="superTie.team1Score"
                                         control={control}
-                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} showButtons />}
                                     />
                                 </div>
                                 <div className="col-6">
@@ -239,7 +239,7 @@ export function MatchScoreSidebar({ visible, onHide, matchId, onSuccess, submitM
                                     <Controller
                                         name="superTie.team2Score"
                                         control={control}
-                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} max={7} showButtons />}
+                                        render={({ field }) => <InputNumber disabled={isReadOnly} value={field.value} onValueChange={(e) => field.onChange(e.value)} min={0} showButtons />}
                                     />
                                 </div>
                             </div>
