@@ -3,6 +3,7 @@ go 1.25.7
 use (
 	./common/lib
 	./common/security
+	./common/http
 	./service/main
 	./service/user
 )

@@ -26,7 +26,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/georgysavva/scany v1.2.3
-	github.com/gin-contrib/cors v1.7.6
+
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-chi/jwtauth/v5 v5.3.3

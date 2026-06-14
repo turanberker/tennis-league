@@ -3,12 +3,11 @@ package main
 import (
 	"log"
 
+	"tennis-league/common/http/router"
 	"tennis-league/common/lib/cache"
-	"tennis-league/common/lib/config"
 	"tennis-league/common/lib/database"
 	authmiddleware "tennis-league/common/security/auth"
 	"tennis-league/common/security/repository"
-	"tennis-league/service/internal/delivery/http"
 	"tennis-league/service/internal/delivery/http/handler/authhandler"
 	"tennis-league/service/internal/delivery/http/handler/dashboard"
 	"tennis-league/service/internal/delivery/http/handler/doubleteamhandler"
@@ -30,7 +29,7 @@ import (
 )
 
 func main() {
-	serverConfig := config.LoadServerConfig()
+	serverConfig := router.LoadServerConfig()
 	matchhandler.RegisterSetValidations()
 
 	db, err := database.NewPostgres()
@@ -76,7 +75,7 @@ func main() {
 	playerhandler := playerhandler.NewPlayerHandler(playerUc)
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 	doubleTeamHandler := doubleteamhandler.NewDoubleTeamHandler(teamUseCase)
-	r := http.NewRouter(serverConfig, authmiddleware.NewAuthMiddleware("tennis", sessionRepository),
+	r := router.NewRouter(serverConfig, authmiddleware.NewAuthMiddleware("tennis", sessionRepository),
 		dashboardHandler,
 		authHandler,
 		leagueHandler,

@@ -3,7 +3,7 @@ package middleware
 import (
 	"errors"
 	"net/http"
-	"tennis-league/common/lib/config"
+	"tennis-league/common/http/router"
 	"tennis-league/service/internal/domain/session"
 	"time"
 
@@ -14,10 +14,10 @@ import (
 type TokenService struct {
 	auth              *jwtauth.JWTAuth
 	sessionRepository session.Repository
-	serverConfig      *config.ServerConfig
+	serverConfig      *router.ServerConfig
 }
 
-func NewTokenService(secret string, sessionRepository session.Repository, serverConfig *config.ServerConfig) *TokenService {
+func NewTokenService(secret string, sessionRepository session.Repository, serverConfig *router.ServerConfig) *TokenService {
 	return &TokenService{
 		auth:              jwtauth.New("HS256", []byte(secret), nil),
 		sessionRepository: sessionRepository,
@@ -34,7 +34,7 @@ func (t *TokenService) GenerateAccessTokenAndSetCookie(c *gin.Context, sessionId
 	// CSRF Koruması için SameSite modunu ayarla
 	c.SetSameSite(http.SameSiteLaxMode)
 	// 2. Access Token Cookie (Her istekte gönderilmeli)
-	isProd := t.serverConfig.AppEnv == config.APP_ENV_PRODUCTION
+	isProd := t.serverConfig.AppEnv == router.APP_ENV_PRODUCTION
 	c.SetCookie(
 		"access_token",
 		tokenString,
@@ -55,7 +55,7 @@ func (t *TokenService) GenerateRefreshTokenAndSetCookie(c *gin.Context, sessionI
 		"exp":        time.Now().Add(7 * 24 * time.Hour).Unix(),
 	})
 	c.SetSameSite(http.SameSiteLaxMode)
-	isProd := t.serverConfig.AppEnv == config.APP_ENV_PRODUCTION
+	isProd := t.serverConfig.AppEnv == router.APP_ENV_PRODUCTION
 	c.SetCookie(
 		"refresh_token", // isim
 		tokenString,     // değer

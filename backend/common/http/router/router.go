@@ -1,9 +1,8 @@
-package http
+package router
 
 import (
 	"time"
 
-	"tennis-league/common/lib/config"
 	"tennis-league/common/lib/error/handler"
 	authmiddleware "tennis-league/common/security/auth"
 
@@ -11,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(serverConfig *config.ServerConfig, auth *authmiddleware.AuthMiddleware,
+func NewRouter(serverConfig *ServerConfig, auth *authmiddleware.AuthMiddleware,
 	handlers ...RegisterableHandler) *gin.Engine {
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
