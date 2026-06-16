@@ -304,7 +304,7 @@ func (r *MatchRepository) GetDoubleMatchParticipantsWithPoints(ctx context.Conte
 		return nil, fmt.Errorf("failed to select participants: %w", err)
 	}
 
-	// 3. Database row'larını domain modeline (match.MatchParticipant) dönüştür
+	// 3. Database row'larını service modeline (match.MatchParticipant) dönüştür
 	result := make([]match.MatchParticipant, len(rows))
 	for i, row := range rows {
 		result[i] = match.MatchParticipant{
@@ -403,7 +403,7 @@ func (r *MatchRepository) GetPlayerIncomingMatches(ctx context.Context, queryPar
 		return nil, fmt.Errorf("failed to select participants: %w", err)
 	}
 
-	// 3. Database row'larını domain modeline (match.MatchParticipant) dönüştür
+	// 3. Database row'larını service modeline (match.MatchParticipant) dönüştür
 	result := make([]match.PlayerIncomingMatchesResult, len(rows))
 	for i, row := range rows {
 		result[i] = match.PlayerIncomingMatchesResult{

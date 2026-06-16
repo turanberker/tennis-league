@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"tennis-league/common/security/dto"
+	service "tennis-league/user-service/internal"
+	"tennis-league/user-service/internal/service/session"
+	userService "tennis-league/user-service/internal/service/user"
 
 	customerror "tennis-league/common/lib/error"
-
-	errorcodes "tennis-league/service/internal/domain/error_codes"
-	"tennis-league/service/internal/domain/session"
-	"tennis-league/service/internal/domain/user"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,15 +19,15 @@ var ErrInvalidCredentials = errors.New("invalid email or password")
 
 type Usecase struct {
 	db                *sql.DB
-	repo              user.Repository
+	repo              userService.Repository
 	sessionRepository session.Repository
 }
 
-func NewUsecase(db *sql.DB, r user.Repository, sessionRepository session.Repository) *Usecase {
+func NewUsecase(db *sql.DB, r userService.Repository, sessionRepository session.Repository) *Usecase {
 	return &Usecase{db: db, repo: r, sessionRepository: sessionRepository}
 }
 
-func (u *Usecase) Login(ctx context.Context, email, password string) (*user.LoggedInUser, error) {
+func (u *Usecase) Login(ctx context.Context, email, password string) (*LoggedInUser, error) {
 	usr, err := u.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, ErrInvalidCredentials
@@ -47,7 +47,7 @@ func (u *Usecase) Login(ctx context.Context, email, password string) (*user.Logg
 	if err != nil {
 		return nil, err
 	}
-	var response = &user.LoggedInUser{
+	var response = &LoggedInUser{
 		SessionId: session.SessionId,
 		ID:        usr.ID,
 		Name:      usr.Name,
@@ -58,25 +58,25 @@ func (u *Usecase) Login(ctx context.Context, email, password string) (*user.Logg
 	return response, nil
 }
 
-func (u Usecase) RegisterUser(ctx context.Context, req *user.RegisterUserInput) (*user.LoggedInUser, error) {
+func (u Usecase) RegisterUser(ctx context.Context, req *RegisterUserInput) (*LoggedInUser, error) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	userId, err := u.repo.SaveUser(ctx, &user.PersistUser{
+	userId, err := u.repo.SaveUser(ctx, &userService.PersistUser{
 		Email:        req.Email,
 		Name:         req.Name,
 		Surname:      req.Surname,
 		PasswordHash: string(hashedPassword),
-		Role:         user.RolePlayer,
+		Role:         dto.RolePlayer,
 	})
 	if err != nil {
-		if errors.Is(err, user.USER_EXISTS_ERROR) {
+		if errors.Is(err, userService.USER_EXISTS_ERROR) {
 			return nil, &customerror.BusinnesException{
 				StatusCode: http.StatusOK,
-				ErrorCode:  errorcodes.ErrCodeEmailAlreadyExists, // "EMAIL_ALREADY_EXISTS"
+				ErrorCode:  service.ErrCodeEmailAlreadyExists, // "EMAIL_ALREADY_EXISTS"
 				Message:    "Bu e-posta adresiyle daha önce kayıt olunmuş.",
 			}
 		}
@@ -85,7 +85,7 @@ func (u Usecase) RegisterUser(ctx context.Context, req *user.RegisterUserInput) 
 
 	startSessionInput := session.StartSessionInput{
 		UserId:   userId,
-		Role:     string(user.RolePlayer),
+		Role:     string(dto.RolePlayer),
 		PlayerId: nil,
 	}
 
@@ -93,12 +93,12 @@ func (u Usecase) RegisterUser(ctx context.Context, req *user.RegisterUserInput) 
 	if err != nil {
 		return nil, err
 	}
-	return &user.LoggedInUser{
+	return &LoggedInUser{
 		Name:      req.Name,
 		Surname:   req.Surname,
 		ID:        userId,
 		SessionId: session.SessionId,
-		Role:      user.RolePlayer,
+		Role:      dto.RolePlayer,
 		PlayerId:  nil}, nil
 }
 

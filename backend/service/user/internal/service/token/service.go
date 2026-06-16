@@ -1,10 +1,11 @@
-package middleware
+package token
 
 import (
 	"errors"
 	"net/http"
 	"tennis-league/common/http/router"
-	"tennis-league/service/internal/domain/session"
+	"tennis-league/user-service/internal/service/session"
+
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -61,7 +62,7 @@ func (t *TokenService) GenerateRefreshTokenAndSetCookie(c *gin.Context, sessionI
 		tokenString,     // değer
 		3600*24*7,       // 7 gün (saniye cinsinden)
 		"/auth/refresh", // ÖNEMLİ: Sadece refresh endpointine gönderilsin
-		"",              // domain
+		"",              // service
 		isProd,          // local'de çalıştığın için false, prod'da TRUE olmalı (HTTPS)
 		true,            // HTTP_ONLY: JavaScript erişemez (XSS koruması)
 	)

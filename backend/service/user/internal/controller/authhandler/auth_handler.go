@@ -3,27 +3,23 @@ package authhandler
 import (
 	"errors"
 	"net/http"
+	service "tennis-league/user-service/internal"
+	"tennis-league/user-service/internal/service/auth"
+	"tennis-league/user-service/internal/service/token"
 
 	customerror "tennis-league/common/lib/error"
 	"tennis-league/common/lib/http/delivery"
 
-	"tennis-league/service/internal/delivery/http/middleware"
-
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-
-	"tennis-league/service/internal/domain/auth"
-	errorcodes "tennis-league/service/internal/domain/error_codes"
-
-	"tennis-league/service/internal/domain/user"
 )
 
 type AuthHandler struct {
 	uc           *auth.Usecase
-	tokenService *middleware.TokenService
+	tokenService *token.TokenService
 }
 
-func NewAuthHandler(uc *auth.Usecase, tokenService *middleware.TokenService) *AuthHandler {
+func NewAuthHandler(uc *auth.Usecase, tokenService *token.TokenService) *AuthHandler {
 	return &AuthHandler{uc: uc, tokenService: tokenService}
 }
 
@@ -73,7 +69,7 @@ func (h *AuthHandler) login(c *gin.Context) {
 	usr, err := h.uc.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		c.Error(customerror.NewBussinnessError(http.StatusUnauthorized,
-			errorcodes.INVALID_CREDENTIAL, "invalid email or password"))
+			service.INVALID_CREDENTIAL, "invalid email or password"))
 		c.Abort()
 		return
 	}
@@ -141,7 +137,7 @@ func (h *AuthHandler) register(c *gin.Context) {
 
 	usr, err := h.uc.RegisterUser(
 		c.Request.Context(),
-		&user.RegisterUserInput{
+		&auth.RegisterUserInput{
 			Email:    req.Email,
 			Name:     req.Name,
 			Surname:  req.Surname,

@@ -2,13 +2,12 @@ package userhandler
 
 import (
 	"net/http"
+	"tennis-league/user-service/internal/service/user"
 
 	customerror "tennis-league/common/lib/error"
 	"tennis-league/common/lib/http/delivery"
 	authmiddleware "tennis-league/common/security/auth"
 	"tennis-league/common/security/dto"
-
-	"tennis-league/service/internal/domain/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -37,12 +36,11 @@ func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 }
 
 func (h *UserHandler) getAll(c *gin.Context) {
-	users, error := h.userUc.GetAll(c.Request.Context())
-	if error != nil {
-		c.Error(error)
+	users, err := h.userUc.GetAll(c.Request.Context())
+	if err != nil {
+		c.Error(err)
 		c.Abort()
 		return
-
 	}
 	usersResponse := make([]*UserResponse, 0, len(users))
 

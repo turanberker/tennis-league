@@ -19,7 +19,6 @@ import (
 	"tennis-league/service/internal/domain/match"
 	"tennis-league/service/internal/domain/scoreboard"
 	"tennis-league/service/internal/domain/team"
-	"tennis-league/service/internal/domain/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -82,10 +81,10 @@ func (h *Handler) checkIfCoordinator(c *gin.Context) {
 	leagueId := c.Param("id")
 	userId, _ := authmiddleware.GetUserIdFromContext(c)
 
-	if role, ok := roleValue.(user.Role); ok {
+	if role, ok := roleValue.(dto.Role); ok {
 
 		// 3. Karşılaştırma yap
-		if role == user.RoleCoordinator {
+		if role == dto.RoleCoordinator {
 			coordinator, err := h.uc.IsUserCoordinator(c.Request.Context(), leagueId, userId)
 			if err != nil {
 				c.Error(customerror.NewInternalError(err))
@@ -104,7 +103,7 @@ func (h *Handler) checkIfCoordinator(c *gin.Context) {
 			}
 		}
 
-		if role == user.RoleAdmin {
+		if role == dto.RoleAdmin {
 			c.Next()
 		}
 	} else {
@@ -494,19 +493,19 @@ func (h *Handler) checkIfUserIsCoordinatAdminOrPlayer(c *gin.Context) {
 	// Eğer match üzerinden leagueId'ye gitmek gerekiyorsa usecase katmanında bu kontrolü yapabilirsin.
 	leagueId := c.Param("id")
 
-	role, ok := roleValue.(user.Role)
+	role, ok := roleValue.(dto.Role)
 	if !ok {
 		h.abortWithForbidden(c, "Yetki bilgisi alınamadı")
 		return
 	}
 	// 1. Durum: Admin ise sınırsız erişim
-	if role == user.RoleAdmin {
+	if role == dto.RoleAdmin {
 		c.Next()
 		return
 	}
 
 	// 2. Durum: Koordinatör ise lig bazlı kontrol
-	if role == user.RoleCoordinator {
+	if role == dto.RoleCoordinator {
 		coordinator, err := h.uc.IsUserCoordinator(c.Request.Context(), leagueId, userId)
 		if err == nil && coordinator {
 			c.Next()
