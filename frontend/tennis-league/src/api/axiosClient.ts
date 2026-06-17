@@ -58,7 +58,7 @@ instance.interceptors.response.use(
 
       try {
         // Backend'e refresh isteği at (Cookie otomatik gider)
-        await axios.post(`${process.env.REACT_APP_API_URL}/auth/refresh`, {}, { withCredentials: true });
+        await axios.post(`${process.env.REACT_APP_USER_URL}/auth/refresh`, {}, { withCredentials: true });
 
         isRefreshing = false;
         processQueue(null); // Bekleyen diğer 401'li istekleri serbest bırak

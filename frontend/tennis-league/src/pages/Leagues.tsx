@@ -35,7 +35,7 @@ import Guard from "../helper/Guard";
 import { MenuItem } from "primereact/menuitem";
 import { useAuth } from "../context/AuthContext";
 import { isFieldRequired } from "../helper/form.helper";
-import { getUsers } from "../api/userService";
+import { getUsers } from "../api/user/userService";
 import { Dialog } from "primereact/dialog";
 
 

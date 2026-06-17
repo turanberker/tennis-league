@@ -2,7 +2,6 @@ package doubleteamhandler
 
 import (
 	"net/http"
-	"tennis-league/user-service/internal/controller/playerhandler"
 
 	"tennis-league/common/lib/http/delivery"
 	httpcache "tennis-league/common/lib/http/http-cache"

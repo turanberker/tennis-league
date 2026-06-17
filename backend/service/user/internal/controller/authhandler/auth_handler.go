@@ -24,7 +24,7 @@ func NewAuthHandler(uc *auth.Usecase, tokenService *token.TokenService) *AuthHan
 }
 
 func (h *AuthHandler) RegisterRoutes(r *gin.Engine) {
-	authGroup := r.Group("/authmiddleware")
+	authGroup := r.Group("/auth")
 	{
 		authGroup.POST("/login", h.login)
 		authGroup.POST("/refresh", h.refresh)

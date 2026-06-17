@@ -1,5 +1,5 @@
-import { Role } from '../model/user.model';
-import axiosClient from './axiosClient';
+import { Role } from '../../model/user.model';
+import axiosClient from '../axiosClient';
 
 /* ============================= */
 /*            TYPES              */
@@ -31,18 +31,19 @@ export interface RegisterRequest {
 /* ============================= */
 /*        SERVICE METHODS        */
 /* ============================= */
+const USER_API_URL = process.env.REACT_APP_USER_URL || 'http://localhost:8000';
 
 export const login = async (payload: LoginRequest): Promise<AuthResponse> => {
-  return axiosClient.post<AuthResponse>('/auth/login', payload);
+  return axiosClient.post<AuthResponse>(`${USER_API_URL}/auth/login`, payload);
 };
 
 export const logout = async (): Promise<void> => {
-  return axiosClient.post<void>('/auth/logout');
+  return axiosClient.post<void>(`${USER_API_URL}/auth/logout`);
 };
 
 
 export const register = async (
   payload: RegisterRequest,
 ): Promise<AuthResponse> => {
-  return axiosClient.post<AuthResponse>('/auth/register', payload);
+  return axiosClient.post<AuthResponse>(`${USER_API_URL}/auth/register`, payload);
 };

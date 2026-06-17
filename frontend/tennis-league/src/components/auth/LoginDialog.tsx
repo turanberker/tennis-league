@@ -4,7 +4,7 @@ import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
-import { login } from '../../api/authService';
+import { login } from '../../api/user/authService';
 
 interface LoginDialogProps {
   visible: boolean;

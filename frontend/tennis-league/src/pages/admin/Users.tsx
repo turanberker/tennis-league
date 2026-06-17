@@ -5,11 +5,11 @@ import { DataTable } from 'primereact/datatable';
 import { Role, RoleLabels, User } from '../../model/user.model';
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
-import { getUsers } from '../../api/userService';
+import { getUsers } from '../../api/user/userService';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { Dropdown } from 'primereact/dropdown';
 import { Player, Sex, SexOptions } from '../../model/player.model';
-import { assignPlayerToUser, getUnassignedPlayers } from '../../api/playersService';
+import { assignPlayerToUser, getUnassignedPlayers } from '../../api/user/playersService';
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);

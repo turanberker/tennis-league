@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"log"
-	"tennis-league/user-service/internal/service/player"
 
 	sqlrepository "tennis-league/common/lib/repository/sql"
 	"tennis-league/service/internal/domain/teamplayer"
@@ -21,7 +20,7 @@ func NewTeamPlayerRepository(db *sql.DB) *TeamPlayerRepository {
 	return &TeamPlayerRepository{Repository: *sqlrepository.NewRepository(db)}
 }
 
-func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId string) ([]*player.Player, error) {
+func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId string) ([]*teamplayer.Player, error) {
 	exec := r.GetExecutor(ctx)
 	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id,p.single_point ,p.double_point FROM team_player tp inner join player p on p.id=tp.player_id WHERE team_id=$1`
 	rows, err := exec.QueryContext(ctx, query, teamId)
@@ -31,9 +30,9 @@ func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId 
 		return nil, err
 	}
 	defer rows.Close()
-	var teamPlayers []*player.Player
+	var teamPlayers []*teamplayer.Player
 	for rows.Next() {
-		teamPlayer := &player.Player{}
+		teamPlayer := &teamplayer.Player{}
 		if err := rows.Scan(
 			&teamPlayer.ID,
 			&teamPlayer.Name,

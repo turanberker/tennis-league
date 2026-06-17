@@ -8,7 +8,7 @@ import { Controller, FormProvider, useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 import * as yup from 'yup';
 import { yupResolver } from "@hookform/resolvers/yup";
-import { getPlayers } from "../api/playersService";
+import { getPlayers } from "../api/user/playersService";
 import { createTeam, getTeams } from "../api/leagueService";
 import { Column } from "primereact/column";
 import { Dropdown } from "primereact/dropdown";

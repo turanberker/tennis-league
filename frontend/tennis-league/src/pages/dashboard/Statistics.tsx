@@ -1,6 +1,6 @@
 import { Card } from "primereact/card";
 import { useEffect, useState } from "react";
-import { getStatistics } from "../../api/dashboardService";
+import { getStatistics } from "../../api/user/dashboardService";
 import { PlayerStatisticsResponse } from "../../model/dashboard.model";
 
 interface StatisticsProps extends DashboardProps {

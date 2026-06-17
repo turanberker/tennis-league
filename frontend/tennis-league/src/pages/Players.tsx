@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
-import { getPlayers, createPlayer } from '../api/playersService';
+import { getPlayers, createPlayer } from '../api/user/playersService';
 import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import { InputText } from 'primereact/inputtext';

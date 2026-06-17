@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { Role } from '../model/user.model';
 import { useNavigate } from 'react-router-dom';
-import { logout as logoutApi } from '../api/authService'
+import { logout as logoutApi } from '../api/user/authService'
 /* ============================= */
 /*            TYPES              */
 /* ============================= */
