@@ -2,10 +2,10 @@ package doubleteamhandler
 
 import (
 	"net/http"
+	"tennis-league/user-service/internal/controller/playerhandler"
 
 	"tennis-league/common/lib/http/delivery"
 	httpcache "tennis-league/common/lib/http/http-cache"
-	"tennis-league/service/internal/delivery/http/handler/playerhandler"
 	"tennis-league/service/internal/domain/team"
 
 	"github.com/gin-gonic/gin"

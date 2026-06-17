@@ -9,7 +9,7 @@ import (
 	"tennis-league/common/lib/database"
 	customerror "tennis-league/common/lib/error"
 	"tennis-league/common/lib/http/delivery"
-	authmiddleware "tennis-league/common/security/auth"
+	authmiddleware "tennis-league/common/security/authmiddleware"
 	"tennis-league/common/security/dto"
 
 	"tennis-league/service/internal/delivery/http/handler/matchhandler"

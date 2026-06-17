@@ -24,7 +24,7 @@ func NewAuthHandler(uc *auth.Usecase, tokenService *token.TokenService) *AuthHan
 }
 
 func (h *AuthHandler) RegisterRoutes(r *gin.Engine) {
-	authGroup := r.Group("/auth")
+	authGroup := r.Group("/authmiddleware")
 	{
 		authGroup.POST("/login", h.login)
 		authGroup.POST("/refresh", h.refresh)
@@ -43,7 +43,7 @@ func (h *AuthHandler) logout(c *gin.Context) {
 
 	// 2. Tarayıcıdaki cookie'leri temizle (Sürelerini -1 yaparak)
 	c.SetCookie("access_token", "", -1, "/", "", false, true)
-	c.SetCookie("refresh_token", "", -1, "/auth/refresh", "", false, true)
+	c.SetCookie("refresh_token", "", -1, "/authmiddleware/refresh", "", false, true)
 
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse("Çıkış Yaptınız"))
 }

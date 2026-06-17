@@ -2,8 +2,7 @@ package teamplayer
 
 import (
 	"context"
-
-	"tennis-league/service/internal/domain/player"
+	"tennis-league/user-service/internal/service/player"
 )
 
 type Repository interface {

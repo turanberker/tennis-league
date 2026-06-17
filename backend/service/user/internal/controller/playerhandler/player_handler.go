@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"tennis-league/common/lib/http/delivery"
-	authmiddleware "tennis-league/common/security/auth"
+	authmiddleware "tennis-league/common/security/authmiddleware"
 	"tennis-league/common/security/dto"
-	"tennis-league/service/internal/domain/player"
+	"tennis-league/user-service/internal/service/player"
 )
 
 type PlayerHandler struct {

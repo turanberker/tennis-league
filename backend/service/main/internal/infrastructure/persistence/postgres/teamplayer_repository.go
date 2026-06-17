@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"tennis-league/user-service/internal/service/player"
 
 	sqlrepository "tennis-league/common/lib/repository/sql"
-	"tennis-league/service/internal/domain/player"
 	"tennis-league/service/internal/domain/teamplayer"
 
 	"github.com/lib/pq"

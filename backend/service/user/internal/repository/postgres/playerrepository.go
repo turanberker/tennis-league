@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"tennis-league/user-service/internal/service/player"
 
 	sqlrepository "tennis-league/common/lib/repository/sql"
-	"tennis-league/service/internal/domain/player"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/sqlscan"

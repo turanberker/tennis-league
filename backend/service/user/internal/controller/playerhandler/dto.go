@@ -1,6 +1,6 @@
 package playerhandler
 
-import "tennis-league/service/internal/domain/player"
+import "tennis-league/user-service/internal/service/player"
 
 type PlayerResponse struct {
 	ID           string     `json:"id"`

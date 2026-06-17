@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"tennis-league/service/internal/delivery/message/consumer/match_score/leaguematch"
+	postgres2 "tennis-league/user-service/internal/repository/postgres"
 
 	"os"
 	"os/signal"
@@ -39,7 +40,7 @@ func main() {
 	playerEarcnedPointRepository := postgres.NewPlayerEarnedPointRepository(db)
 	setRepository := postgres.NewMatchSetRepository(db)
 	scoreboardRepository := postgres.NewScoreBoardRepository(db)
-	playerRepository := postgres.NewPlayerRepository(db)
+	playerRepository := postgres2.NewPlayerRepository(db)
 	if err != nil {
 		log.Fatal(err)
 	}

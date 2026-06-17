@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"tennis-league/common/lib/error/handler"
-	authmiddleware "tennis-league/common/security/auth"
+	authmiddleware "tennis-league/common/security/authmiddleware"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

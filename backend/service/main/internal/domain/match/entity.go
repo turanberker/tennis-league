@@ -117,3 +117,19 @@ type PlayerIncomingMatchesResult struct {
 type FixtureFilter struct {
 	TeamId *string
 }
+
+type PlayerIncomingMatchesRequest struct {
+	PlayerId string
+	Limit    int16
+}
+
+type IncomingMatches struct {
+	MatchId      string
+	MatchDate    *time.Time
+	MatchType    Match_TYPE
+	Source       Match_SOURCE
+	LeagueId     *string
+	LeagueName   *string
+	OppenentId   string
+	OppenentName string
+}

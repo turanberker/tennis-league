@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"tennis-league/user-service/internal/service/player"
 
 	"tennis-league/common/lib/database"
 	"tennis-league/service/internal/delivery/message/consumer"
 	"tennis-league/service/internal/domain/match"
-	"tennis-league/service/internal/domain/player"
 
 	"github.com/rabbitmq/amqp091-go"
 )

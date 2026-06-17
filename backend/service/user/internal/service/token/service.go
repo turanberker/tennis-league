@@ -58,13 +58,13 @@ func (t *TokenService) GenerateRefreshTokenAndSetCookie(c *gin.Context, sessionI
 	c.SetSameSite(http.SameSiteLaxMode)
 	isProd := t.serverConfig.AppEnv == router.APP_ENV_PRODUCTION
 	c.SetCookie(
-		"refresh_token", // isim
-		tokenString,     // değer
-		3600*24*7,       // 7 gün (saniye cinsinden)
-		"/auth/refresh", // ÖNEMLİ: Sadece refresh endpointine gönderilsin
-		"",              // service
-		isProd,          // local'de çalıştığın için false, prod'da TRUE olmalı (HTTPS)
-		true,            // HTTP_ONLY: JavaScript erişemez (XSS koruması)
+		"refresh_token",           // isim
+		tokenString,               // değer
+		3600*24*7,                 // 7 gün (saniye cinsinden)
+		"/authmiddleware/refresh", // ÖNEMLİ: Sadece refresh endpointine gönderilsin
+		"",                        // service
+		isProd,                    // local'de çalıştığın için false, prod'da TRUE olmalı (HTTPS)
+		true,                      // HTTP_ONLY: JavaScript erişemez (XSS koruması)
 	)
 
 	return tokenString, err

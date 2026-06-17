@@ -2,11 +2,11 @@ package team
 
 import (
 	"context"
+	"tennis-league/user-service/internal/service/player"
 	"time"
 
 	"tennis-league/common/lib/cache"
 	"tennis-league/common/lib/database"
-	"tennis-league/service/internal/domain/player"
 	"tennis-league/service/internal/domain/teamplayer"
 )
 

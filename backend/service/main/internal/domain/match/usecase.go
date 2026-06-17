@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -198,4 +199,30 @@ func findSetWinner(score SaveScore, matchScore *UpdateMatchScore) {
 
 func (u *UseCase) IsUserPlayerOfMatch(ctx context.Context, matchId string, playerId string) (bool, error) {
 	return u.repository.CheckIfPlayerPlayedInMatch(ctx, matchId, playerId)
+}
+
+func (u *UseCase) GetImconimgMatches(ctx context.Context, dto PlayerIncomingMatchesRequest) ([]IncomingMatches, error) {
+
+	matches, err := u.repository.GetPlayerIncomingMatches(ctx, PlayerIncomingMatchesQueryParam{PlayerId: dto.PlayerId, Limit: dto.Limit})
+
+	if err != nil {
+		log.Printf("Error while fetching incoming matches for player %s: %v", dto.PlayerId, err)
+		return nil, err
+	}
+
+	var incomingMatches []IncomingMatches
+	for _, m := range matches {
+		incomingMatches = append(incomingMatches,
+			IncomingMatches{MatchId: m.MatchId,
+				MatchDate:    m.MatchDate,
+				MatchType:    m.MatchType,
+				Source:       m.Source,
+				LeagueId:     m.LeagueId,
+				LeagueName:   m.LeagueName,
+				OppenentId:   m.OppenentId,
+				OppenentName: m.OppenentName,
+			})
+	}
+	return incomingMatches, nil
+
 }
