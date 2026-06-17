@@ -4,6 +4,7 @@ use (
 	./common/lib
 	./common/security
 	./common/http
+	./common/consumer
 	./service/main
 	./service/user
 )

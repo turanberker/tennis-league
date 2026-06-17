@@ -1,10 +1,11 @@
-package consumer
+package leaguematch
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"tennis-league/common/consumer"
 
 	"tennis-league/common/lib/database"
 	"tennis-league/service/internal/domain/league"
@@ -16,7 +17,7 @@ import (
 )
 
 type LeagueMatchApprovedEventConsumer struct {
-	*Consumer
+	*consumer.Consumer
 	tm             *database.TransactionManager
 	matchRepo      match.Repository
 	setRepo        matchSet.Repository
@@ -36,7 +37,7 @@ func NewLeagueMatchApprovedEventConsumer(tm *database.TransactionManager,
 		scoreboradRepo: scoreboradRepo,
 	}
 
-	c.Consumer = &Consumer{
+	c.Consumer = &consumer.Consumer{
 		Queue:       "league_match_score_update_queue",
 		RoutingName: "LeagueMatchApproved",
 		Handler:     c.handle, // 👈 struct method

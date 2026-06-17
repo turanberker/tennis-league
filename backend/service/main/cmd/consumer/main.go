@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"log"
+	"tennis-league/service/internal/delivery/message/consumer/match_score/leaguematch"
 
 	"os"
 	"os/signal"
 	"syscall"
 
+	"tennis-league/common/consumer"
 	"tennis-league/common/lib/database"
-	"tennis-league/service/internal/delivery/message/consumer"
+
 	"tennis-league/service/internal/delivery/message/consumer/match_score/matchScoreApproved"
 
 	"tennis-league/service/internal/infrastructure/persistence/postgres"
@@ -42,7 +44,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	leagueMatchApprovedConsumer := consumer.NewLeagueMatchApprovedEventConsumer(transactionManager, matchRepository, setRepository, scoreboardRepository)
+	leagueMatchApprovedConsumer := leaguematch.NewLeagueMatchApprovedEventConsumer(transactionManager, matchRepository, setRepository, scoreboardRepository)
 	consumer.RegisterConsumer(rabbit, ctx, leagueMatchApprovedConsumer.Consumer)
 
 	updatePlayerPointsConsumer := matchScoreApproved.NewEventConsumer(transactionManager, matchRepository, playerRepository, playerEarcnedPointRepository)
