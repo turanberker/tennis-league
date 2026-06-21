@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"tennis-league/user-interface/constants"
 	"tennis-league/user-service/internal/consumer/playerpoint"
 	"tennis-league/user-service/internal/service/player"
 
@@ -81,7 +82,7 @@ func (r *PlayerRepository) List(ctx context.Context, queryParams player.ListQuer
 			ID:           d.ID,
 			Name:         d.Name,
 			Surname:      d.Surname,
-			Sex:          player.Sex(d.Sex),
+			Sex:          constants.Sex(d.Sex),
 			UserId:       d.UserID,
 			SinglePoints: d.SinglePoints,
 			DoublePoints: d.DoublePoints,

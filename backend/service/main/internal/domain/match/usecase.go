@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"tennis-league/user-interface/updateplayerpoint"
 	"time"
 
 	"tennis-league/common/lib/database"
@@ -72,14 +73,31 @@ func (u *UseCase) ApproveScore(ctx context.Context, source Match_SOURCE, matchId
 			return err
 		}
 
-		event := MatchApprovedEvent{
-			MatchID: matchId,
+		participants, err := u.repository.GetPlayersIdsAndWinnerStatus(txCtx, matchId)
+		if err != nil {
+			return err
+		}
+		var winners []string
+		var losers []string
+
+		// Tüm katılımcıları dönüyoruz
+		for _, p := range participants {
+			if p.IsWinner {
+				winners = append(winners, p.PlayerID)
+			} else {
+				losers = append(losers, p.PlayerID)
+			}
+		}
+
+		event := updateplayerpoint.MatchPlayers{
+			LooserPlayerIds: losers,
+			WinnerPlayerIds: winners,
 		}
 		payload, _ := json.Marshal(event)
 		outboxEntity := &outbox.PersistEntity{
 			AggregateType: "match",
 			AggregateID:   matchId,
-			EventType:     "MatchApproved",
+			EventType:     updateplayerpoint.RoutingName_MatchApproved,
 			Payload:       payload,
 		}
 		err = u.outboxRepository.Save(txCtx, outboxEntity)

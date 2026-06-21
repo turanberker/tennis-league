@@ -1,5 +1,7 @@
 package outbox
 
+import "tennis-league/common/consumer"
+
 type Status string
 
 const (
@@ -12,7 +14,7 @@ const (
 type PersistEntity struct {
 	AggregateType string
 	AggregateID   string
-	EventType     string
+	EventType     consumer.RoutingName
 	Payload       []byte
 }
 

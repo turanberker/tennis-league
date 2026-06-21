@@ -38,9 +38,9 @@ func (h *DoubleTeamHandler) getTeamMembers(c *gin.Context) {
 		return
 	}
 
-	var response []playerhandler.PlayerResponse
+	var response []PlayerResponse
 	for _, p := range players {
-		response = append(response, playerhandler.PlayerResponse{
+		response = append(response, PlayerResponse{
 			ID:           p.ID,
 			Name:         p.Name,
 			Surname:      p.Surname,

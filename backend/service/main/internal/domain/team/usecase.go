@@ -2,7 +2,7 @@ package team
 
 import (
 	"context"
-	"tennis-league/user-service/internal/service/player"
+
 	"time"
 
 	"tennis-league/common/lib/cache"
@@ -68,9 +68,9 @@ func (u *UseCase) Save(ctx context.Context, req *CreateTeamRequest) (*string, er
 	return teamId, nil
 }
 
-func (u *UseCase) GetTeamMembers(ctx context.Context, teamId string) ([]*player.Player, error) {
+func (u *UseCase) GetTeamMembers(ctx context.Context, teamId string) ([]teamplayer.Player, error) {
 	cacheKey := u.cacheManager.PrepareCacheKey("getTeamMembers", teamId)
-	return cache.Cacheable(u.cacheManager, ctx, cacheKey, 1*time.Hour, func() ([]*player.Player, error) {
+	return cache.Cacheable(u.cacheManager, ctx, cacheKey, 1*time.Hour, func() ([]teamplayer.Player, error) {
 
 		returnVal, err := u.teamPlayerRepository.GetByPlayersByTeamId(ctx, teamId)
 

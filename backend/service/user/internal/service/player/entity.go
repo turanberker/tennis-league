@@ -1,10 +1,12 @@
 package player
 
+import "tennis-league/user-interface/constants"
+
 type Player struct {
 	ID           string
 	Name         string
 	Surname      string
-	Sex          Sex
+	Sex          constants.Sex
 	UserId       *string
 	DoublePoints int
 	SinglePoints int
@@ -13,24 +15,13 @@ type Player struct {
 type PersistPlayer struct {
 	Name    string
 	Surname string
-	Sex     Sex
+	Sex     constants.Sex
 	UserId  *int64
 }
 
-type Sex string
-
-func (s Sex) IsValid() bool {
-	return s == SexMale || s == SexFemale
-}
-
-const (
-	SexMale   Sex = "M"
-	SexFemale Sex = "F"
-)
-
 type ListQueryParameters struct {
 	Name    *string
-	Sex     *Sex
+	Sex     *constants.Sex
 	HasUser *bool
 }
 

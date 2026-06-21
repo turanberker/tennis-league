@@ -32,7 +32,7 @@ func NewEventConsumer(tm *database.TransactionManager,
 
 	c.Consumer = &consumer.Consumer{
 		Queue:       "update_player_points_queue",
-		RoutingName: "MatchApproved",
+		RoutingName: updateplayerpoint.RoutingName_MatchApproved,
 		Handler:     c.handle,
 	}
 

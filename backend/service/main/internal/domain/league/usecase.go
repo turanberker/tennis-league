@@ -82,7 +82,7 @@ func (u *Usecase) ApproveMatchScore(ctx context.Context, leagueId string, matchI
 		outboxEntity := &outbox.PersistEntity{
 			AggregateType: "match",
 			AggregateID:   matchId,
-			EventType:     "LeagueMatchApproved",
+			EventType:     RoutingName_LeagueMatchApproved,
 			Payload:       payload,
 		}
 		err = u.outboxRepository.Save(txCtx, outboxEntity)

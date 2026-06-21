@@ -12,7 +12,7 @@ type Repository interface {
 	UpdateMatchScore(ctx context.Context, macScore *UpdateMatchScore) error
 	ApproveScore(ctx context.Context, source Match_SOURCE, matchId string) error
 	GetMatchType(txCtx context.Context, matchId string) (*Match_TYPE, error)
-	GetDoubleMatchParticipantsWithPoints(txCtx context.Context, matchID string) ([]MatchParticipant, error)
+	GetPlayersIdsAndWinnerStatus(txCtx context.Context, matchID string) ([]MatchParticipant, error)
 	GetPlayerIncomingMatches(ctx context.Context, queryParam PlayerIncomingMatchesQueryParam) ([]PlayerIncomingMatchesResult, error)
 	GetMatchInfo(ctx context.Context, matchId string) (*MatchInfo, error)
 	CheckIfPlayerPlayedInMatch(ctx context.Context, matchId string, playerId string) (bool, error)

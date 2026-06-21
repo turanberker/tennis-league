@@ -93,9 +93,8 @@ type MatchApprovedEvent struct {
 }
 
 type MatchParticipant struct {
-	PlayerID    string
-	DoublePoint int
-	IsWinner    bool
+	PlayerID string
+	IsWinner bool
 }
 
 type PlayerIncomingMatchesQueryParam struct {

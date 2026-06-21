@@ -267,23 +267,27 @@ func (r *MatchRepository) GetMatchType(ctx context.Context, matchId string) (*ma
 	return &response, nil
 }
 
-func (r *MatchRepository) GetDoubleMatchParticipantsWithPoints(ctx context.Context, matchID string) ([]match.MatchParticipant, error) {
+func (r *MatchRepository) GetPlayersIdsAndWinnerStatus(ctx context.Context, matchID string) ([]match.MatchParticipant, error) {
 
-	// 1. Squirrel ile sorguyu inşa et
-	// psql formatı ($1, $2) için PlaceholderFormat(sq.Dollar) kullanıyoruz
 	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	isWinnerCase := squirrel.Case().
+		When("t.id IS NOT NULL", "t.id = m.winner_id").
+		Else("singles.player_id = m.winner_id")
 
 	query, args, err := psql.
 		Select(
-			"p.id AS player_id",
-			"p.double_point",
-			"(t.id = m.winner_id) AS is_winner",
+			"COALESCE(tp.player_id, singles.player_id) AS player_id",
 		).
+		Column(isWinnerCase, "is_winner"). // Case yapısını kolona bağlıyoruz
 		From("match m").
-		Join("team t on t.id IN (m.team_1_id, m.team_2_id)").
-		Join("team_player tp ON tp.team_id = t.id").
-		Join("player p ON p.id = tp.player_id").
+		LeftJoin("team t ON t.id IN (m.team_1_id, m.team_2_id)").
+		LeftJoin("team_player tp ON tp.team_id = t.id").
+		// LATERAL bloğunu ham SQL (Raw) olarak LeftJoin içine gömüyoruz
+		LeftJoin("LATERAL (VALUES (m.player_1_id), (m.player_2_id)) AS singles(player_id) ON m.player_1_id IS NOT NULL").
 		Where(squirrel.Eq{"m.id": matchID}).
+		// Dolu satırları filtreleyen WHERE koşulu
+		Where("(tp.player_id IS NOT NULL OR singles.player_id IS NOT NULL)").
 		ToSql()
 
 	if err != nil {
@@ -294,9 +298,8 @@ func (r *MatchRepository) GetDoubleMatchParticipantsWithPoints(ctx context.Conte
 	// r.db burada *sql.DB veya *sql.Tx olabilir, scany ikisini de destekler
 
 	type dbRow struct {
-		PlayerID    string `db:"player_id"`
-		DoublePoint int    `db:"double_point"`
-		IsWinner    bool   `db:"is_winner"`
+		PlayerID string `db:"player_id"`
+		IsWinner bool   `db:"is_winner"`
 	}
 
 	var rows []dbRow
@@ -308,9 +311,8 @@ func (r *MatchRepository) GetDoubleMatchParticipantsWithPoints(ctx context.Conte
 	result := make([]match.MatchParticipant, len(rows))
 	for i, row := range rows {
 		result[i] = match.MatchParticipant{
-			PlayerID:    row.PlayerID,
-			DoublePoint: row.DoublePoint,
-			IsWinner:    row.IsWinner,
+			PlayerID: row.PlayerID,
+			IsWinner: row.IsWinner,
 		}
 	}
 

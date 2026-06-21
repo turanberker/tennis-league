@@ -2,6 +2,7 @@ package league
 
 import (
 	"errors"
+	"tennis-league/common/consumer"
 	"time"
 )
 
@@ -63,3 +64,5 @@ type LeagueMatchApprovedEvent struct {
 	LeagueId string `json:"leagueId"`
 	MatchId  string `json:"matchId"`
 }
+
+const RoutingName_LeagueMatchApproved consumer.RoutingName = "LeagueMatchApproved"

@@ -39,7 +39,7 @@ func NewLeagueMatchApprovedEventConsumer(tm *database.TransactionManager,
 
 	c.Consumer = &consumer.Consumer{
 		Queue:       "league_match_score_update_queue",
-		RoutingName: "LeagueMatchApproved",
+		RoutingName: league.RoutingName_LeagueMatchApproved,
 		Handler:     c.handle, // 👈 struct method
 	}
 

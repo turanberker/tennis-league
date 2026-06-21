@@ -2,13 +2,14 @@ package playerhandler
 
 import (
 	"net/http"
+	"tennis-league/user-interface/constants"
+	"tennis-league/user-service/internal/service/player"
 
 	"github.com/gin-gonic/gin"
 
 	"tennis-league/common/lib/http/delivery"
-	authmiddleware "tennis-league/common/security/authmiddleware"
+	"tennis-league/common/security/authmiddleware"
 	"tennis-league/common/security/dto"
-	"tennis-league/user-service/internal/service/player"
 )
 
 type PlayerHandler struct {
@@ -35,9 +36,9 @@ func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
 func (h *PlayerHandler) save(c *gin.Context) {
 
 	var req struct {
-		Name    string     `json:"name" binding:"min=3,max=75,required"`
-		Surname string     `json:"surname" binding:"min=3,max=75,required"`
-		Sex     player.Sex `json:"sex" binding:"required,oneof=M F"`
+		Name    string        `json:"name" binding:"min=3,max=75,required"`
+		Surname string        `json:"surname" binding:"min=3,max=75,required"`
+		Sex     constants.Sex `json:"sex" binding:"required,oneof=M F"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -88,8 +89,8 @@ func (h *PlayerHandler) assignToUser(c *gin.Context) {
 
 func (h *PlayerHandler) getAll(c *gin.Context) {
 	var req struct {
-		Name *string     `form:"name" binding:"omitempty"`
-		Sex  *player.Sex `form:"sex" binding:"omitempty,oneof=M F"`
+		Name *string        `form:"name" binding:"omitempty"`
+		Sex  *constants.Sex `form:"sex" binding:"omitempty,oneof=M F"`
 	}
 
 	// Gin otomatik olarak URL'deki ?name=...&sex=... kısımlarını struct'a doldurur
@@ -115,7 +116,7 @@ func (h *PlayerHandler) getAll(c *gin.Context) {
 func (h *PlayerHandler) unassignedPlayers(c *gin.Context) {
 
 	var req struct {
-		Sex player.Sex `form:"sex" binding:"oneof=M F"`
+		Sex constants.Sex `form:"sex" binding:"oneof=M F"`
 	}
 	// Gin otomatik olarak URL'deki ?name=...&sex=... kısımlarını struct'a doldurur
 	if err := c.ShouldBindQuery(&req); err != nil {
