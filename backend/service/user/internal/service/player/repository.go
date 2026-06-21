@@ -13,9 +13,5 @@ type Repository interface {
 
 	AssignToUser(ctx context.Context, playerId string, userId string) error
 
-	DecreaseDoublePoint(ctx context.Context, playerId string, change int) (int, error)
-
-	IncreaseDoublePoint(ctx context.Context, playerId string, change int) (int, error)
-
 	GetPlayerStatistics(context context.Context, request PlayerStatisticsRequest) (*PlayerStatistics, error)
 }

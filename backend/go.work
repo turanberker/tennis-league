@@ -1,10 +1,11 @@
-go 1.25.0
+go 1.25.7
 
 use (
+	./common/consumer
+	./common/http
 	./common/lib
 	./common/security
-	./common/http
-	./common/consumer
 	./service/main
 	./service/user
+	./service/user-interface
 )

@@ -1,4 +1,4 @@
-package matchScoreApproved
+package playerpoint
 
 import (
 	"context"
@@ -7,11 +7,8 @@ import (
 	"log"
 	"math"
 	"tennis-league/common/consumer"
-	"tennis-league/user-service/internal/service/player"
-
 	"tennis-league/common/lib/database"
-
-	"tennis-league/service/internal/domain/match"
+	"tennis-league/user-interface/updateplayerpoint"
 
 	"github.com/rabbitmq/amqp091-go"
 )
@@ -19,27 +16,24 @@ import (
 type EventConsumer struct {
 	*consumer.Consumer
 	tm                    *database.TransactionManager
-	matchRepo             match.Repository
-	playerRepo            player.Repository
-	earnedPointRepository Repository
+	playerRepository      PlayerRepository
+	earnedPointRepository EarnedPointRepository
 }
 
 func NewEventConsumer(tm *database.TransactionManager,
-	matchRepo match.Repository,
-	playerRepo player.Repository,
-	earnedPointRepository Repository) *EventConsumer {
+	playerRepo PlayerRepository,
+	earnedPointRepository EarnedPointRepository) *EventConsumer {
 
 	c := &EventConsumer{
 		tm:                    tm,
-		matchRepo:             matchRepo,
-		playerRepo:            playerRepo,
+		playerRepository:      playerRepo,
 		earnedPointRepository: earnedPointRepository,
 	}
 
 	c.Consumer = &consumer.Consumer{
 		Queue:       "update_player_points_queue",
 		RoutingName: "MatchApproved",
-		Handler:     c.handle, // 👈 struct method
+		Handler:     c.handle,
 	}
 
 	return c
@@ -49,7 +43,7 @@ func NewEventConsumer(tm *database.TransactionManager,
 func (c *EventConsumer) handle(msg amqp091.Delivery) error {
 	ctx := context.Background()
 
-	var event = &match.MatchApprovedEvent{}
+	var event = &updateplayerpoint.MatchPlayers{}
 
 	err := json.Unmarshal(msg.Body, &event)
 	if err != nil {
@@ -57,28 +51,45 @@ func (c *EventConsumer) handle(msg amqp091.Delivery) error {
 	}
 
 	return c.tm.WithTransaction(ctx, func(txCtx context.Context) error {
-		matchType, err := c.matchRepo.GetMatchType(txCtx, event.MatchID)
-
-		if err != nil {
-			//Log yaz
-			return err
+		var scoreType SCORE_TYPE
+		if len(event.LooserPlayerIds) == 2 && len(event.WinnerPlayerIds) == 2 {
+			scoreType = SCORE_TYPE_DOUBLE
+		} else if len(event.LooserPlayerIds) == 1 && len(event.WinnerPlayerIds) == 1 {
+			scoreType = SCORE_TYPE_SINGLE
+		} else {
+			return fmt.Errorf("Oyuncu sayıları ya eşit değil ya da yanlış")
 		}
 
-		switch *matchType {
-		case match.MatchType_DOUBLE:
-			c.updateUserDoublePoints(txCtx, event)
-		case match.MatchType_SINGLE:
+		switch scoreType {
+		case SCORE_TYPE_DOUBLE:
+			err := c.updateUserDoublePoints(txCtx, event)
+			if err != nil {
+				return err
+			}
+		case SCORE_TYPE_SINGLE:
 			log.Panic("Not Implemented")
 		}
 
-		log.Println("Match Approved:", event.MatchID)
+		log.Printf("Player Points Statistics -> Winners: %v, Losers: %v\n", event.WinnerPlayerIds, event.LooserPlayerIds)
 		return nil
 	})
 
 }
 
-func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *match.MatchApprovedEvent) error {
-	participants, err := c.matchRepo.GetDoubleMatchParticipantsWithPoints(txCtx, event.MatchID)
+func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *updateplayerpoint.MatchPlayers) error {
+
+	playerPoints, err := c.playerRepository.GetPlayerPoints(txCtx, event.WinnerPlayerIds)
+	var participants []matchParticipant
+
+	for _, playerpoint := range playerPoints {
+
+		participants = append(participants, matchParticipant{
+			PlayerID:    playerpoint.ID,
+			IsWinner:    true,
+			DoublePoint: playerpoint.DoublePoint,
+		})
+	}
+
 	if err != nil {
 		//Log yaz
 		return err
@@ -91,13 +102,13 @@ func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *mat
 	}
 	for _, p := range participants {
 		if p.IsWinner {
-			_, err = c.playerRepo.IncreaseDoublePoint(txCtx, p.PlayerID, *change)
+			_, err = c.playerRepository.IncreaseDoublePoint(txCtx, p.PlayerID, *change)
 			if err != nil {
 				log.Printf("Kazanan Oyuncu Puanı Güncellenirken Hata Oluştu(Player: %s): %v", p.PlayerID, err)
 				return err
 			}
 		} else {
-			_, err = c.playerRepo.DecreaseDoublePoint(txCtx, p.PlayerID, *change)
+			_, err = c.playerRepository.DecreaseDoublePoint(txCtx, p.PlayerID, *change)
 			if err != nil {
 				log.Printf("Kaybeden Oyuncu Puanı Güncellenirken Hata Oluştu(Player: %s): %v", p.PlayerID, err)
 				return err
@@ -113,7 +124,7 @@ func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *mat
 		err = c.earnedPointRepository.AddPlayerPoint(txCtx, &AddPlayerPoint{
 			PlayerId:    p.PlayerID,
 			EarnedPoint: recordPoint,
-			MatchType:   match.MatchType_DOUBLE,
+			ScoreType:   SCORE_TYPE_DOUBLE,
 		})
 
 		if err != nil {
@@ -124,7 +135,7 @@ func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *mat
 	return nil
 }
 
-func (c *EventConsumer) calculateDoubleMatchElo(participants []match.MatchParticipant) (*int, error) {
+func (c *EventConsumer) calculateDoubleMatchElo(participants []matchParticipant) (*int, error) {
 	// K-Factor: Bir maçta kazanılabilecek maksimum puan.
 	// Rekabetin hızını artırmak istersen 40, daha stabil olsun dersen 24 yapabilirsin.
 	const kFactor = 32.0

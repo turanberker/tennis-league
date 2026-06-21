@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"tennis-league/user-service/internal/consumer/playerpoint"
 	"tennis-league/user-service/internal/service/player"
 
 	sqlrepository "tennis-league/common/lib/repository/sql"
@@ -236,4 +237,39 @@ func (r *PlayerRepository) GetPlayerStatistics(ctx context.Context, request play
 		LastDoublePointsSum: rowData.EarnedDoublePoint,
 		LastSinglePointsSum: rowData.EarnedSinglePoint,
 	}, nil
+}
+
+func (r PlayerRepository) GetPlayerPoints(ctx context.Context, Ids []string) ([]playerpoint.PlayerPoints, error) {
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	sqlBuilder := psql.Select("id", "single_point", "double_point").From("player")
+
+	sqlBuilder = sqlBuilder.Where("id in ?", Ids)
+
+	query, args, err := sqlBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("sorgu oluşturulamadı: %v", err)
+	}
+
+	type row struct {
+		ID           string `db:"id"`
+		SinglePoints int    `db:"single_point"`
+		DoublePoints int    `db:"double_point"`
+	}
+	var rowsData []row
+	err = sqlscan.Select(ctx, r.GetExecutor(ctx), &rowsData, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("veritabanı hatası: %v", err)
+	}
+
+	// Gelen ham veriyi kendi Player modelinize dönüştürme (Mapping)
+	var players []playerpoint.PlayerPoints
+	for _, d := range rowsData {
+		players = append(players, playerpoint.PlayerPoints{
+			ID:          d.ID,
+			SinglePoint: d.SinglePoints,
+			DoublePoint: d.DoublePoints,
+		})
+	}
+
+	return players, nil
 }
