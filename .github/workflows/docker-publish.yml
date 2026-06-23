@@ -40,45 +40,67 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # 1. Backend: API Image
-      - name: Build and push API
+      - name: Build and Push Main API
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/service
-          file: ./backend/service/Dockerfile
-          build-args: |
-            APP_NAME=api
+          context: .
+          file: ./backend/Dockerfile
+          target: main-api # Dockerfile'daki ilgili target
           push: true
           tags: |
-            berkerturan/tennis-league-api:latest
-            berkerturan/tennis-league-api:${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-main-api:latest
+            berkerturan/tennis-league-main-api:${{ steps.vars.outputs.tag }}
 
-      # 2. Backend: Scheduler Image
-      - name: Build and push Scheduler
+      # 2. Backend: Main Comsumer Image
+      - name: Build and Push Main Consumer
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/service
-          file: ./backend/service/Dockerfile
-          build-args: |
-            APP_NAME=publisher
+          context: .
+          file: ./backend/Dockerfile
+          target: main-consumer
           push: true
           tags: |
-            berkerturan/tennis-league-scheduler:latest
-            berkerturan/tennis-league-scheduler:${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-main-consumer:latest
+            berkerturan/tennis-league-main-consumer:${{ steps.vars.outputs.tag }}
 
-      # 3. Backend: Consumer Image
-      - name: Build and push Consumer
+      # 3. Backend: Main Comsumer Image
+      - name: Build and Push Main Publisher
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/service
-          file: ./backend/service/Dockerfile
-          build-args: |
-            APP_NAME=consumer
+          context: .
+          file: ./backend/Dockerfile
+          target: main-publisher
           push: true
           tags: |
-            berkerturan/tennis-league-consumer:latest
-            berkerturan/tennis-league-consumer:${{ steps.vars.outputs.tag }}
+            berkerturan/tennis-league-main-publisher:latest
+            berkerturan/tennis-league-main-publisher:${{ steps.vars.outputs.tag }}
 
-      # 4. Frontend: UI-Docker
+      # 4. Backend: User Service Image
+      - name: Build and Push User API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./backend/Dockerfile
+          target: user-api
+          push: true
+          tags: |
+            berkerturan/tennis-league-user-api:latest
+            berkerturan/tennis-league-user-api:${{ steps.vars.outputs.tag }}
+            
+
+      # 5. Backend: User Comsumer Image
+      - name: Build and Push User Consumer
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./backend/Dockerfile
+          target: user-consumer
+          push: true
+          tags: |
+            berkerturan/tennis-league-user-consumer:latest
+            berkerturan/tennis-league-user-consumer:${{ steps.vars.outputs.tag }}
+
+      # 6. Frontend: UI-Docker
       - name: Build and push Frontend Docker
         uses: docker/build-push-action@v5
         with:
@@ -91,7 +113,7 @@ jobs:
             berkerturan/tennis-league-ui-docker:latest
             berkerturan/tennis-league-ui-docker:${{ steps.vars.outputs.tag }}
 
-      # 5. Frontend: UI-Prod
+      # 7. Frontend: UI-Prod
       - name: Build and push Frontend Prod
         uses: docker/build-push-action@v5
         with:
@@ -103,7 +125,7 @@ jobs:
             berkerturan/tennis-league-ui-prod:${{ steps.vars.outputs.tag }}
 
 
-      # 6. Migrate Image
+      # 8. Migrate Image
       - name: Build and push Migrate
         uses: docker/build-push-action@v5
         with:
