@@ -274,12 +274,15 @@ func (r *MatchRepository) GetPlayersIdsAndWinnerStatus(ctx context.Context, matc
 	isWinnerCase := squirrel.Case().
 		When("t.id IS NOT NULL", "t.id = m.winner_id").
 		Else("singles.player_id = m.winner_id")
-
+	caseSql, _, err := isWinnerCase.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build case clause: %w", err)
+	}
 	query, args, err := psql.
 		Select(
 			"COALESCE(tp.player_id, singles.player_id) AS player_id",
+			fmt.Sprintf("(%s) AS is_winner", caseSql),
 		).
-		Column(isWinnerCase, "is_winner"). // Case yapısını kolona bağlıyoruz
 		From("match m").
 		LeftJoin("team t ON t.id IN (m.team_1_id, m.team_2_id)").
 		LeftJoin("team_player tp ON tp.team_id = t.id").

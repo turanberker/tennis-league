@@ -78,22 +78,30 @@ func (c *EventConsumer) handle(msg amqp091.Delivery) error {
 
 func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *updateplayerpoint.MatchPlayers) error {
 
-	playerPoints, err := c.playerRepository.GetPlayerPoints(txCtx, event.WinnerPlayerIds)
 	var participants []matchParticipant
+	getPlayerPoints := func(playerIds []string, isWinner bool) error {
+		playerPoints, err := c.playerRepository.GetPlayerPoints(txCtx, event.WinnerPlayerIds)
+		if err != nil {
+			return err
+		}
+		for _, playerpoint := range playerPoints {
 
-	for _, playerpoint := range playerPoints {
-
-		participants = append(participants, matchParticipant{
-			PlayerID:    playerpoint.ID,
-			IsWinner:    true,
-			DoublePoint: playerpoint.DoublePoint,
-		})
+			participants = append(participants, matchParticipant{
+				PlayerID:    playerpoint.ID,
+				IsWinner:    isWinner,
+				DoublePoint: playerpoint.DoublePoint,
+			})
+		}
+		return nil
 	}
+
+	err := getPlayerPoints(event.WinnerPlayerIds, true)
 
 	if err != nil {
 		//Log yaz
 		return err
 	}
+	err = getPlayerPoints(event.LooserPlayerIds, false)
 
 	change, err := c.calculateDoubleMatchElo(participants)
 	if err != nil {

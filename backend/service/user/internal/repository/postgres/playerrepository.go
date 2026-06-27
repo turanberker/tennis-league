@@ -244,7 +244,7 @@ func (r PlayerRepository) GetPlayerPoints(ctx context.Context, Ids []string) ([]
 	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	sqlBuilder := psql.Select("id", "single_point", "double_point").From("player")
 
-	sqlBuilder = sqlBuilder.Where("id in ?", Ids)
+	sqlBuilder = sqlBuilder.Where(squirrel.Eq{"id": Ids})
 
 	query, args, err := sqlBuilder.ToSql()
 	if err != nil {
