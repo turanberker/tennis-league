@@ -1,6 +1,6 @@
 // hooks/useLeague.ts
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getLeagueById } from '../api/leagueService';
+import { getLeagueById } from '../api/mail/leagueService';
 import { League } from '../model/league.model';
 
 export const useLeague = (leagueId: string | undefined) => {

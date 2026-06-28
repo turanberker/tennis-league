@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { IncomingMatchResponse } from "../../model/dashboard.model";
-import { getIncomingMathces } from "../../api/dashboardService";
+import { getIncomingMathces } from "../../api/mail/dashboardService";
 import { Card } from "primereact/card";
 import { formatDate } from "../../helper/date.helper";
 import { Button } from "primereact/button";
 import { Divider } from "primereact/divider";
 import { MatchScoreSidebar } from "../../components/match/MatchScoreSidebar";
 import { MatchScore, MatchSource, MatchType } from "../../model/match.model";
-import { updateFriendlyMatchScore } from "../../api/matchService";
-import { updateLeagueMatchScore } from "../../api/leagueService";
+import { updateFriendlyMatchScore } from "../../api/mail/matchService";
+import { updateLeagueMatchScore } from "../../api/mail/leagueService";
 import TeamInfo from "../../components/DoubleTeamInfo";
 
 interface IncomingMatchesCardProps extends DashboardProps {

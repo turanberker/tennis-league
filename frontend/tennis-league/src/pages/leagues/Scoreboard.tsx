@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from 'primereact/card';
 import { useParams } from 'react-router-dom';
 import { ScoreBoardResponse } from '../../model/standing.model';
-import { getStandings } from '../../api/leagueService';
+import { getStandings } from '../../api/mail/leagueService';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { LeagueCard } from '../../components/LeagueCard';

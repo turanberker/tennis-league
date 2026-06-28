@@ -6,7 +6,7 @@ import * as Yup from 'yup';
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { ChangePasswordRequest } from "../../model/user.model";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { changeMyPassword, } from "../../api/profileService";
+import { changeMyPassword, } from "../../api/mail/profileService";
 import { useToast } from "../../hooks/useToast";
 import { isFieldRequired } from "../../helper/form.helper";
 

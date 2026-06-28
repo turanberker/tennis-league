@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import * as yup from 'yup';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { getPlayers } from "../api/user/playersService";
-import { createTeam, getTeams } from "../api/leagueService";
+import { createTeam, getTeams } from "../api/mail/leagueService";
 import { Column } from "primereact/column";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";

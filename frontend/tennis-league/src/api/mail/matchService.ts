@@ -1,5 +1,5 @@
-import { MatchScore, MatchScoreResponse, MatchSetScoreResponse } from '../model/match.model';
-import {mainClient} from "./axiosClient";
+import { MatchScore, MatchScoreResponse, MatchSetScoreResponse } from '../../model/match.model';
+import {mainClient} from "../axiosClient";
 
 
 export const updateDate = async (id: string, data: { 'match-date': Date }): Promise<Date> => {

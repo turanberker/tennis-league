@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { MatchScore, Status, UpdateScoreRequest } from '../../model/match.model';
 import * as yup from 'yup';
-import { getMatchInfo } from '../../api/matchService';
+import { getMatchInfo } from '../../api/mail/matchService';
 import { Toast } from 'primereact/toast';
 import { Calendar } from 'primereact/calendar';
 import { Button } from 'primereact/button';

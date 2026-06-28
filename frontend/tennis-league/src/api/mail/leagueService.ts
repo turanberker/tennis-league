@@ -1,9 +1,9 @@
-import {CreateTeamRequest, LeagueTeamResponse} from "../model/team.model";
-import {LeagueFixtureMatchResponse, MatchScore, MatchScoreResponse} from "../model/match.model";
+import {CreateTeamRequest, LeagueTeamResponse} from "../../model/team.model";
+import {LeagueFixtureMatchResponse, MatchScore, MatchScoreResponse} from "../../model/match.model";
 
-import {ScoreBoardResponse} from "../model/standing.model";
-import {League, LeagueListResponse, PersistLeagueRequest} from "../model/league.model";
-import {mainClient} from "./axiosClient";
+import {ScoreBoardResponse} from "../../model/standing.model";
+import {League, LeagueListResponse, PersistLeagueRequest} from "../../model/league.model";
+import {mainClient} from "../axiosClient";
 
 export const getLeagues = async (params?: { name?: string }): Promise<LeagueListResponse[]> => {
     return await mainClient.get("leagues/list", {params});

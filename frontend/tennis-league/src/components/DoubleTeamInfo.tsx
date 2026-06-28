@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 
 import { PlayerResponse, Sex } from '../model/player.model';
-import { getTeamMembers } from '../api/doubleTeamService';
+import { getTeamMembers } from '../api/mail/doubleTeamService';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';

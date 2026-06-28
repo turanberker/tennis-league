@@ -3,7 +3,7 @@ import { Card } from "primereact/card";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
-import { assignCoordinator, createFixture, getLeagues, saveLeague } from "../api/leagueService";
+import { assignCoordinator, createFixture, getLeagues, saveLeague } from "../api/mail/leagueService";
 import * as yup from "yup";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from 'primereact/card';
-import { approveMatchResult, getFixture, getTeams, updateLeagueMatchScore, updateMatchDate } from '../../api/leagueService';
+import { approveMatchResult, getFixture, getTeams, updateLeagueMatchScore, updateMatchDate } from '../../api/mail/leagueService';
 import {
   LeagueFixtureMatchResponse,
   MatchScore,
