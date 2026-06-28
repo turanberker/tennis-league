@@ -3,7 +3,7 @@ include:
 
 services: # Burası eksikti, tüm servisler bunun altında olmalı
   api: # Servis adı kısa ve öz olabilir
-    image: berkerturan/tennis-league-api:latest
+    image: berkerturan/tennis-league-main-api:latest
     pull_policy: always
     container_name: tennis-league-api
     ports:
@@ -28,10 +28,36 @@ services: # Burası eksikti, tüm servisler bunun altında olmalı
       redis:
         condition: service_healthy
 
-  scheduler:
-    image: berkerturan/tennis-league-scheduler:latest
+  user-api: # Servis adı kısa ve öz olabilir
+    image: berkerturan/tennis-league-user-api:latest
     pull_policy: always
-    container_name: tennis-league-scheduler
+    container_name: user-api
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=tennisleague
+      - POSTGRES_PASSWORD=tennisleague
+      - POSTGRES_DB=tennisleague
+      - POSTGRES_SSLMODE=disable
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    networks:
+      - tennis-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      schema-initializer:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  main-publisher:
+    image: berkerturan/tennis-league-main-publisher:latest
+    pull_policy: always
+    container_name: main-publisher
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -54,10 +80,36 @@ services: # Burası eksikti, tüm servisler bunun altında olmalı
       schema-initializer:
         condition: service_completed_successfully
 
-  consumer:
-    image: berkerturan/tennis-league-consumer:latest
+  main-consumer:
+    image: berkerturan/tennis-league-main-consumer:latest
     pull_policy: always
-    container_name: tennis-league-consumer
+    container_name: main-consumer
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=tennisleague
+      - POSTGRES_PASSWORD=tennisleague
+      - POSTGRES_DB=tennisleague
+      - POSTGRES_SSLMODE=disable
+      - RABBIT_USER=admin
+      - RABBIT_PASSWORD=admin123
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - RABBIT_VHOST=/
+    networks:
+      - tennis-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      schema-initializer:
+        condition: service_completed_successfully
+
+  user-consumer:
+    image: berkerturan/tennis-league-user-consumer:latest
+    pull_policy: always
+    container_name: user-consumer
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
