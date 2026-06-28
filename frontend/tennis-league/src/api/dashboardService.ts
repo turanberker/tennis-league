@@ -1,6 +1,7 @@
 import { IncomingMatchResponse, PlayerStatisticsResponse } from "../model/dashboard.model";
-import axiosClient from "./axiosClient";
+import {mainClient} from "./axiosClient";
+
 
 export const getIncomingMathces = async (params?: { limit?: number }): Promise<IncomingMatchResponse[]> => {
-    return await axiosClient.get("me/incoming-matches", { params });
+    return await mainClient.get("me/incoming-matches", { params });
 }

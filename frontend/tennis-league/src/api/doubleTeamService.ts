@@ -1,6 +1,6 @@
 import { PlayerResponse } from "../model/player.model";
-import axiosClient from "./axiosClient";
+import  {mainClient} from "./axiosClient";
 
 export const getTeamMembers = async (id: string): Promise<PlayerResponse[]> => {
-    return await axiosClient.get(`double-team/${id}/members`);
+    return await mainClient.get(`double-team/${id}/members`);
 };

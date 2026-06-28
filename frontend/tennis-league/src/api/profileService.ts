@@ -1,8 +1,8 @@
 
-import axiosClient from './axiosClient';
+import  {mainClient} from './axiosClient';
 
 import { ChangePasswordRequest } from '../model/user.model';
 
 export const changeMyPassword = async (changePasswordRequest: ChangePasswordRequest): Promise<string> => {
-    return axiosClient.patch<string>('/user/profile/change-password', changePasswordRequest);
+    return mainClient.patch<string>('/user/profile/change-password', changePasswordRequest);
 };
