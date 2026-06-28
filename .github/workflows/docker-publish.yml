@@ -43,7 +43,7 @@ jobs:
       - name: Build and Push Main API
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
           file: ./backend/Dockerfile
           target: main-api # Dockerfile'daki ilgili target
           push: true
@@ -55,7 +55,7 @@ jobs:
       - name: Build and Push Main Consumer
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
           file: ./backend/Dockerfile
           target: main-consumer
           push: true
@@ -67,7 +67,7 @@ jobs:
       - name: Build and Push Main Publisher
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
           file: ./backend/Dockerfile
           target: main-publisher
           push: true
@@ -79,7 +79,7 @@ jobs:
       - name: Build and Push User API
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
           file: ./backend/Dockerfile
           target: user-api
           push: true
@@ -92,7 +92,7 @@ jobs:
       - name: Build and Push User Consumer
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
           file: ./backend/Dockerfile
           target: user-consumer
           push: true
