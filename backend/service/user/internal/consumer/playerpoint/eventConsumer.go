@@ -80,7 +80,7 @@ func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *upd
 
 	var participants []matchParticipant
 	getPlayerPoints := func(playerIds []string, isWinner bool) error {
-		playerPoints, err := c.playerRepository.GetPlayerPoints(txCtx, event.WinnerPlayerIds)
+		playerPoints, err := c.playerRepository.GetPlayerPoints(txCtx, playerIds)
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,10 @@ func (c *EventConsumer) updateUserDoublePoints(txCtx context.Context, event *upd
 		return err
 	}
 	err = getPlayerPoints(event.LooserPlayerIds, false)
-
+	if err != nil {
+		//Log yaz
+		return err
+	}
 	change, err := c.calculateDoubleMatchElo(participants)
 	if err != nil {
 		//Log yaz
