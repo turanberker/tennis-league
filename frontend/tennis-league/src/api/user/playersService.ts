@@ -1,5 +1,6 @@
-import userClient from '../axiosClient';
+
 import { Player, CreatePlayerRequest, Sex, PlayerResponse } from '../../model/player.model';
+import {userClient} from "../axiosClient";
 
 
 export const getPlayers = async (data?: { name?: string, sex?: Sex }): Promise<PlayerResponse[]> => {

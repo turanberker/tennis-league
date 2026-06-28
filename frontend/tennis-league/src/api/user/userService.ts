@@ -1,5 +1,3 @@
-
-
 import {User} from '../../model/user.model';
 import {userClient} from "../axiosClient";
 
