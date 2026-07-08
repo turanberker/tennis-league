@@ -7,5 +7,6 @@ use (
 	./common/security
 	./service/main
 	./service/user
+	./service/club
 	./service/user-interface
 )
