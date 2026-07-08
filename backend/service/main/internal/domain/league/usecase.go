@@ -25,17 +25,18 @@ var ErrNameFieldRequired = errors.New("Name can not be null or empty string")
 var ErrNameLenghtError = errors.New("Name size must between 5 and 75 characters")
 
 type Usecase struct {
-	tm                    *database.TransactionManager
-	cacheManager          *cache.CacheManager
-	userUsecase           *user.Usecase
-	teamUseCase           *team.UseCase
-	matchUc               *match.UseCase
-	outboxRepository      outbox.Repository
-	repo                  Repository
-	teamRepo              team.Repository
-	matchRepo             match.Repository
-	scoreBoardRepo        scoreboard.Repository
-	coordinatorRepository leaguecoordinator.Repository
+	tm                               *database.TransactionManager
+	cacheManager                     *cache.CacheManager
+	userUsecase                      *user.Usecase
+	teamUseCase                      *team.UseCase
+	matchUc                          *match.UseCase
+	outboxRepository                 outbox.Repository
+	repo                             Repository
+	teamRepo                         team.Repository
+	matchRepo                        match.Repository
+	scoreBoardRepo                   scoreboard.Repository
+	coordinatorRepository            leaguecoordinator.Repository
+	singleLeagueAttendenceReposirory SingleLeagueAttendenceRepository
 }
 
 func NewUsecase(
@@ -50,18 +51,20 @@ func NewUsecase(
 	outboxRepository outbox.Repository,
 	scoreBoardRepo scoreboard.Repository,
 	coordinatorRepository leaguecoordinator.Repository,
+	singleLeagueAttendenceReposirory SingleLeagueAttendenceRepository,
 ) *Usecase {
 	return &Usecase{repo: repo,
-		teamUseCase:           teamUc,
-		cacheManager:          cacheManager,
-		matchUc:               matchUc,
-		teamRepo:              teamRepo,
-		matchRepo:             matchRepo,
-		scoreBoardRepo:        scoreBoardRepo,
-		coordinatorRepository: coordinatorRepository,
-		userUsecase:           userUseCase,
-		tm:                    tm,
-		outboxRepository:      outboxRepository,
+		teamUseCase:                      teamUc,
+		cacheManager:                     cacheManager,
+		matchUc:                          matchUc,
+		teamRepo:                         teamRepo,
+		matchRepo:                        matchRepo,
+		scoreBoardRepo:                   scoreBoardRepo,
+		coordinatorRepository:            coordinatorRepository,
+		userUsecase:                      userUseCase,
+		tm:                               tm,
+		outboxRepository:                 outboxRepository,
+		singleLeagueAttendenceReposirory: singleLeagueAttendenceReposirory,
 	}
 }
 
@@ -267,4 +270,8 @@ func (u *Usecase) CreateTeam(ctx context.Context, createTeamDto *CreateTeamReque
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (u *Usecase) GetPlayersByLeagueId(ctx context.Context, leagueId string) ([]SingleLeagueAttendance, error) {
+	return u.singleLeagueAttendenceReposirory.SingleLeagueAttendanceList(ctx, leagueId)
 }

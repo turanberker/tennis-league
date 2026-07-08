@@ -96,3 +96,10 @@ export const League_Status_Options = [
   { label: "Aktif", value: LEAGUE_STATUS.ACTIVE },
   { label: "Tamamlandı", value: LEAGUE_STATUS.COMPLETED },
 ];
+
+export interface SingleLeagueAttendanceResponse {
+  id: string;
+  firstname: string;
+  surname:string;
+  power: number
+}

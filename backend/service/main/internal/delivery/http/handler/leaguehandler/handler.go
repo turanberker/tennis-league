@@ -55,6 +55,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
 			h.checkIfCoordinator,
 			h.newTeam)
+		leagues.GET(":id/players", h.players)
 		leagues.GET("/:id/fixture", h.getFixture)
 		leagues.GET("/:id/standings", h.getScoreBoard)
 		leagues.POST("/:id/coordinator",
@@ -251,7 +252,35 @@ func (h *Handler) getAll(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 
 }
+func (h *Handler) players(c *gin.Context) {
+	idParam := c.Param("id")
+	players, err := h.uc.GetPlayersByLeagueId(c.Request.Context(), idParam)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+	type PlayerResponse struct {
+		ID        string `json:"id"`
+		FirstName string `json:"firstname"`
+		SurName   string `json:"surname"`
+		Power     int    `json:"power"`
+	}
+	response := make([]PlayerResponse, 0, len(players))
 
+	for _, l := range players {
+
+		pr := PlayerResponse{
+			ID:        l.ID,
+			FirstName: l.Firstname,
+			SurName:   l.Surname,
+			Power:     l.Power,
+		}
+		response = append(response, pr)
+	}
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
+
+}
 func (h *Handler) getTeams(c *gin.Context) {
 
 	idParam := c.Param("id") // query param

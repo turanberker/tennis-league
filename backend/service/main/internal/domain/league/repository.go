@@ -17,3 +17,7 @@ type Repository interface {
 
 	IncreaseAttandanceCount(ctx context.Context, leagueId string) (*int32, error)
 }
+
+type SingleLeagueAttendenceRepository interface {
+	SingleLeagueAttendanceList(ctx context.Context, leagueId string) ([]SingleLeagueAttendance, error)
+}

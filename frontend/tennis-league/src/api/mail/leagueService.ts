@@ -2,7 +2,12 @@ import {CreateTeamRequest, LeagueTeamResponse} from "../../model/team.model";
 import {LeagueFixtureMatchResponse, MatchScore, MatchScoreResponse} from "../../model/match.model";
 
 import {ScoreBoardResponse} from "../../model/standing.model";
-import {League, LeagueListResponse, PersistLeagueRequest} from "../../model/league.model";
+import {
+    League,
+    LeagueListResponse,
+    PersistLeagueRequest,
+    SingleLeagueAttendanceResponse
+} from "../../model/league.model";
 import {mainClient} from "../axiosClient";
 
 export const getLeagues = async (params?: { name?: string }): Promise<LeagueListResponse[]> => {
@@ -22,6 +27,13 @@ export const saveLeague = async (
 export const getTeams = async (leagueId: string): Promise<LeagueTeamResponse[]> => {
     const res = await mainClient.get<LeagueTeamResponse[]>(
         `leagues/${leagueId}/teams`,
+    );
+    return res;
+};
+
+export const getPlayers = async (leagueId: string): Promise<SingleLeagueAttendanceResponse[]> => {
+    const res = await mainClient.get<SingleLeagueAttendanceResponse[]>(
+        `leagues/${leagueId}/players`,
     );
     return res;
 };

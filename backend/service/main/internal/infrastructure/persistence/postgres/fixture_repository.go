@@ -6,9 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
-
+	customerror "tennis-league/common/lib/error"
 	sqlrepository "tennis-league/common/lib/repository/sql"
+	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/scoreboard"
+
+	"github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/sqlscan"
 )
 
 type ScoreBoardRepository struct {
@@ -126,4 +130,51 @@ func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, update scoreboar
 	}
 
 	return nil
+}
+
+func (f *ScoreBoardRepository) SingleLeagueAttendanceList(ctx context.Context, leagueId string) ([]league.SingleLeagueAttendance, error) {
+	executor := f.GetExecutor(ctx)
+
+	query, args, err := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Select(
+			"sb.player_id",
+			"p.name",
+			"p.surname",
+			"p.single_point",
+		).
+		From("score_board sb").
+		Join("player p ON p.id = sb.player_id").
+		Where(squirrel.Eq{
+			"sb.league_id": leagueId,
+		}).
+		ToSql()
+	if err != nil {
+		return nil, customerror.NewInternalError(err)
+	}
+
+	type attendanceRow struct {
+		ID           string `db:"player_id"`
+		Name         string `db:"name"`
+		Surname      string `db:"surname"`
+		SinglePoints int    `db:"single_point"`
+	}
+	var rowsData []attendanceRow
+	err = sqlscan.Select(ctx, executor, &rowsData, query, args...)
+	if err != nil {
+		return nil, customerror.NewInternalError(err)
+	}
+
+	// Gelen ham veriyi kendi Player modelinize dönüştürme (Mapping)
+	players := make([]league.SingleLeagueAttendance, 0, len(rowsData))
+	for _, d := range rowsData {
+		players = append(players, league.SingleLeagueAttendance{
+			ID:        d.ID,
+			Firstname: d.Name,
+			Surname:   d.Surname,
+			Power:     d.SinglePoints,
+		})
+	}
+
+	return players, nil
 }

@@ -65,4 +65,11 @@ type LeagueMatchApprovedEvent struct {
 	MatchId  string `json:"matchId"`
 }
 
+type SingleLeagueAttendance struct {
+	ID        string
+	Firstname string
+	Surname   string
+	Power     int
+}
+
 const RoutingName_LeagueMatchApproved consumer.RoutingName = "LeagueMatchApproved"
