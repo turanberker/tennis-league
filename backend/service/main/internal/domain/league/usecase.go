@@ -230,7 +230,6 @@ func (u *Usecase) Save(ctx context.Context, persistLeague *PersistLeague) (*stri
 			return nil, customerror.NewBussinnessError(http.StatusConflict,
 				errorcodes.ErrLeagueAlreadyExists, "Bu isimli bir lig tanımlıdır")
 		}
-	} else {
 		return nil, customerror.NewInternalError(err)
 	}
 
