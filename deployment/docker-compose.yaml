@@ -35,6 +35,7 @@ services: # Burası eksikti, tüm servisler bunun altında olmalı
     ports:
       - "8000:8000"
     environment:
+      - SERVER_PORT=8000
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=tennisleague
