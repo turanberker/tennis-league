@@ -9,7 +9,7 @@ import { LeaguePlayers } from '../../components/LeaguePlayers';
 import { LeagueTeams } from '../../components/LeagueTeams';
 
 
-const Teams: React.FC = () => {
+const Participants: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
   const { data: league, isLoading } = useLeague(id);
@@ -35,4 +35,4 @@ const Teams: React.FC = () => {
   );
 };
 
-export default Teams;
+export default Participants;

@@ -39,7 +39,7 @@ export const LeagueCard: React.FC<LeagueCardProps> = ({ id }) => {
                         icon="pi pi-users" // Daha anlamlı bir ikonla güncellendi
                         outlined
                         size="small"
-                        onClick={() => navigate(`/leagues/${id}/teams`)}
+                        onClick={() => navigate(`/leagues/${id}/participants`)}
                     />
                     <Button
                         rounded

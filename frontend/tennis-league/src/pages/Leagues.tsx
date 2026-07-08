@@ -189,7 +189,7 @@ export default function Leagues() {
   };
 
   const handleTeams = () => {
-    navigate(`/leagues/${selectedLeague!.id}/teams`);
+    navigate(`/leagues/${selectedLeague!.id}/participants`);
   };
 
   const onSubmit = async (data: PersistLeagueRequest) => {

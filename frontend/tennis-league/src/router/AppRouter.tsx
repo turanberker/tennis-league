@@ -6,7 +6,7 @@ import Players from '../pages/Players';
 import Matches from '../pages/Matches';
 import ProtectedRoute from './ProtectedRoute';
 import Fixtures from '../pages/leagues/Fixtures';
-import Teams from '../pages/leagues/Teams';
+import Participants from '../pages/leagues/Participants';
 import PlayerDetail from '../pages/player/PlayerDetail';
 import Scoreboard from '../pages/leagues/Scoreboard';
 import { useAuth } from '../context/AuthContext';
@@ -63,7 +63,7 @@ export function AppRoutes() {
       <Route path="/" element={<Dashboard />} />
 
       <Route path="/leagues" element={<Leagues />} />
-      <Route path="/leagues/:id/teams" element={<Teams />} />
+      <Route path="/leagues/:id/participants" element={<Participants />} />
       <Route path="/leagues/:id/fixtures" element={<Fixtures />} />
       <Route path="/leagues/:id/standings" element={<Scoreboard />} />
       <Route path="/players" element={<Players />} />
