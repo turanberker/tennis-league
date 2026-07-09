@@ -24,7 +24,7 @@ interface LeaguePlayersProps {
 
 
 const schema = yup.object({
-    player: yup.mixed<Player>().required('Oyuncuyu seçin')
+    player: yup.mixed<string>().required('Oyuncuyu seçin')
 });
 
 type CreatePlayerForm = yup.InferType<typeof schema>;
@@ -47,7 +47,7 @@ export const LeaguePlayers: React.FC<LeaguePlayersProps> = ({leagueId}) => {
         if (!leagueId) return;
 
 
-        const res: { playerId: string, totalAttendanceCount: number } = await addPlayer(leagueId, data.player.id);
+        const res: { playerId: string, totalAttendanceCount: number } = await addPlayer(leagueId, data.player);
         if (res) {
             updateLeagueCache({
                 totalAttentance: res.totalAttendanceCount
@@ -127,7 +127,7 @@ export const LeaguePlayers: React.FC<LeaguePlayersProps> = ({leagueId}) => {
 
             {/* Yeni Takım Dialog */}
             <Sidebar
-                header="Yeni Takım Oluştur"
+                header="Yeni Oyuncu Ekle"
                 visible={createDialogVisible}
                 className="w-full md:w-25rem"
                 position="right"
@@ -146,12 +146,15 @@ export const LeaguePlayers: React.FC<LeaguePlayersProps> = ({leagueId}) => {
                                 render={({field}) => (
                                     <Dropdown
                                         {...field}
+                                        value={field.value}
                                         onChange={(e) => field.onChange(e.value)}
                                         filterMatchMode="contains"
                                         filter
                                         filterBy="name,surname"
                                         filterLocale="tr"
+                                        optionLabel="name"
                                         options={availablePlayers}
+                                        optionValue="id"
                                         dataKey="id"
                                         itemTemplate={playerLabelItemTemplate}
                                         valueTemplate={playerLabelItemTemplate}

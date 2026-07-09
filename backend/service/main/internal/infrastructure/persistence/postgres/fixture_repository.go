@@ -6,13 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	customerror "tennis-league/common/lib/error"
 	sqlrepository "tennis-league/common/lib/repository/sql"
+	errorcodes "tennis-league/service/internal/domain/error_codes"
 	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/scoreboard"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/sqlscan"
+	"github.com/lib/pq"
 )
 
 type ScoreBoardRepository struct {
@@ -192,6 +195,13 @@ func (f *ScoreBoardRepository) AddPlayerToLeague(ctx context.Context, leagueId s
 	}
 	_, err = executor.ExecContext(ctx, query, args...)
 	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			if pqErr.Constraint == "uidx_league_single_player" {
+				return customerror.NewBusinessError(http.StatusConflict, errorcodes.ErrorPlayerAlreadyAddedToLeague, "Bu oyuncu bu lige zaten eklenmiş.")
+			}
+		}
+
 		// Veritabanı hatasını projenizin özel hata yapısıyla sarmalıyoruz
 		return customerror.NewInternalError(err)
 	}

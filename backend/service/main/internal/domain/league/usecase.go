@@ -159,7 +159,7 @@ func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {
 			return err
 		}
 		if created {
-			return customerror.NewBussinnessError(http.StatusConflict,
+			return customerror.NewBusinessError(http.StatusConflict,
 				errorcodes.ErrLeagueAlreadyFixtureCreated,
 				"Fikstür zaten oluşturulmuş")
 		}
@@ -230,7 +230,7 @@ func (u *Usecase) Save(ctx context.Context, persistLeague *PersistLeague) (*stri
 	id, err := u.repo.Save(ctx, persistLeague)
 	if err != nil {
 		if errors.Is(err, LEAGE_WITH_NAME_EXISTS) {
-			return nil, customerror.NewBussinnessError(http.StatusConflict,
+			return nil, customerror.NewBusinessError(http.StatusConflict,
 				errorcodes.ErrLeagueAlreadyExists, "Bu isimli bir lig tanımlıdır")
 		}
 		return nil, customerror.NewInternalError(err)

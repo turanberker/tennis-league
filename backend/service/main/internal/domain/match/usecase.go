@@ -150,7 +150,7 @@ func (u *UseCase) SaveMatchScore(ctx context.Context, score *SaveMatchScore) (*U
 		}
 
 		if teamIds.Status == StatusApproved {
-			return customerror.NewBussinnessError(http.StatusConflict, errorcodes.ErrMatchApprovedCanNotUpdateScore, "Maç skoru onaylandığı için güncelleyemezsiniz")
+			return customerror.NewBusinessError(http.StatusConflict, errorcodes.ErrMatchApprovedCanNotUpdateScore, "Maç skoru onaylandığı için güncelleyemezsiniz")
 		}
 
 		if macScore.Team1Score > macScore.Team2Score {

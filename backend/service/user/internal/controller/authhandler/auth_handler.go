@@ -68,7 +68,7 @@ func (h *AuthHandler) login(c *gin.Context) {
 
 	usr, err := h.uc.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		c.Error(customerror.NewBussinnessError(http.StatusUnauthorized,
+		c.Error(customerror.NewBusinessError(http.StatusUnauthorized,
 			service.INVALID_CREDENTIAL, "invalid email or password"))
 		c.Abort()
 		return

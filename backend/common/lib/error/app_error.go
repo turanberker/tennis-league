@@ -20,7 +20,7 @@ func (e *BusinnesException) Error() string {
 	return fmt.Sprintf("[%s] %s", e.ErrorCode, e.Message)
 }
 
-func NewBussinnessError(statusCode int, errorCode string, message string) *BusinnesException {
+func NewBusinessError(statusCode int, errorCode string, message string) *BusinnesException {
 	return &BusinnesException{
 		StatusCode: statusCode, ErrorCode: errorCode, Message: message,
 	}
