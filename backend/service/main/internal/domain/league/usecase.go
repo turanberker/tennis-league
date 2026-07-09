@@ -275,3 +275,35 @@ func (u *Usecase) CreateTeam(ctx context.Context, createTeamDto *CreateTeamReque
 func (u *Usecase) GetPlayersByLeagueId(ctx context.Context, leagueId string) ([]SingleLeagueAttendance, error) {
 	return u.singleLeagueAttendenceReposirory.SingleLeagueAttendanceList(ctx, leagueId)
 }
+
+func (u *Usecase) AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) (*int32, error) {
+
+	var response *int32
+	err := u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
+
+		err := u.singleLeagueAttendenceReposirory.AddPlayerToLeague(txCtx, leagueId, playerId)
+		if err != nil {
+			return err
+		}
+
+		totalAttendance, err := u.repo.IncreaseAttandanceCount(txCtx, leagueId)
+
+		if err != nil {
+			return err
+		}
+		response = totalAttendance
+
+		cacheKey := u.cacheManager.PrepareCacheKey("league", leagueId)
+		err = u.cacheManager.Invalidate(txCtx, cacheKey)
+		if err != nil {
+			return err
+		}
+		return nil
+
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}

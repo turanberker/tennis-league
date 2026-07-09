@@ -178,3 +178,24 @@ func (f *ScoreBoardRepository) SingleLeagueAttendanceList(ctx context.Context, l
 
 	return players, nil
 }
+
+func (f *ScoreBoardRepository) AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) error {
+	executor := f.GetExecutor(ctx)
+	query, args, err := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Insert("score_board").
+		Columns("league_id", "player_id").
+		Values(leagueId, playerId).
+		ToSql()
+	if err != nil {
+		return customerror.NewInternalError(err)
+	}
+	_, err = executor.ExecContext(ctx, query, args...)
+	if err != nil {
+		// Veritabanı hatasını projenizin özel hata yapısıyla sarmalıyoruz
+		return customerror.NewInternalError(err)
+	}
+
+	// Her şey yolunda gittiyse nil dönüyoruz
+	return nil
+}

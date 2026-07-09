@@ -20,4 +20,6 @@ type Repository interface {
 
 type SingleLeagueAttendenceRepository interface {
 	SingleLeagueAttendanceList(ctx context.Context, leagueId string) ([]SingleLeagueAttendance, error)
+
+	AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) error
 }

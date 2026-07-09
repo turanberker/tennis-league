@@ -45,6 +45,18 @@ export const createTeam = async (
     return await mainClient.post<{ teamId: string, totalAttendanceCount: number }>(`leagues/${leagueId}/teams`, team);
 };
 
+export const addPlayer = async (
+    leagueId: string,
+    playerId: string,
+): Promise<{ playerId: string, totalAttendanceCount: number }> => {
+
+   console.log(playerId)
+    return await mainClient.post<{
+        playerId: string,
+        totalAttendanceCount: number
+    }>(`leagues/${leagueId}/players`, {playerId: playerId});
+};
+
 export const createFixture = async (leagueId: string) => {
     return await mainClient.post(`leagues/${leagueId}/create-fixture`);
 };

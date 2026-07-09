@@ -12,12 +12,3 @@ type QueryExecutor interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
-
-// database paketi içinde
-func GetExecutor(ctx context.Context, db *sql.DB) QueryExecutor {
-
-	if tx, ok := GetTxFromContext(ctx); ok {
-		return tx
-	}
-	return db
-}

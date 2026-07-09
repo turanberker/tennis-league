@@ -56,6 +56,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 			h.checkIfCoordinator,
 			h.newTeam)
 		leagues.GET(":id/players", h.players)
+		leagues.POST(":id/players", h.addPlayer)
 		leagues.GET("/:id/fixture", h.getFixture)
 		leagues.GET("/:id/standings", h.getScoreBoard)
 		leagues.POST("/:id/coordinator",
@@ -252,6 +253,36 @@ func (h *Handler) getAll(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 
 }
+
+func (h *Handler) addPlayer(c *gin.Context) {
+	leagueId := c.Param("id")
+
+	var req struct {
+		PlayerId string `form:"playerId" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		errorMessage := delivery.ValidationError(err)
+		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+		return
+	}
+
+	totalAttendance, err := h.uc.AddPlayerToLeague(c.Request.Context(), leagueId, req.PlayerId)
+	if err != nil {
+		c.Error(err)
+		c.Abort()
+		return
+	}
+
+	type addPlayerResponse struct {
+		PlayerId             string `json:"playerId"`
+		TotalAttendanceCount *int32 `json:"totalAttendanceCount"`
+	}
+	response := addPlayerResponse{PlayerId: req.PlayerId, TotalAttendanceCount: totalAttendance}
+
+	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
+}
+
 func (h *Handler) players(c *gin.Context) {
 	idParam := c.Param("id")
 	players, err := h.uc.GetPlayersByLeagueId(c.Request.Context(), idParam)
