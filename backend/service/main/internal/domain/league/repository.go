@@ -15,11 +15,13 @@ type Repository interface {
 
 	IsFixtureCreated(ctx context.Context, leagueId string) (bool, error)
 
-	IncreaseAttandanceCount(ctx context.Context, leagueId string) (*int32, error)
+	IncreaseAttendanceCount(ctx context.Context, leagueId string) (*int32, error)
 }
 
-type SingleLeagueAttendenceRepository interface {
+type ParticipantRepository interface {
 	SingleLeagueAttendanceList(ctx context.Context, leagueId string) ([]SingleLeagueAttendance, error)
 
 	AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) error
+
+	AddTeamToLeague(ctx context.Context, leagueId string, teamId string) error
 }

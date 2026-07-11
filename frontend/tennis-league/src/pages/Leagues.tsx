@@ -3,7 +3,7 @@ import { Card } from "primereact/card";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
-import { assignCoordinator, createFixture, getLeagues, saveLeague } from "../api/mail/leagueService";
+import { assignCoordinator, startLeague, getLeagues, saveLeague } from "../api/mail/leagueService";
 import * as yup from "yup";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -100,12 +100,12 @@ export default function Leagues() {
 
   const handleCreateFixture = useCallback(async () => {
     if (!selectedLeague) return;
-    const data = await createFixture(selectedLeague.id);
+    const data = await startLeague(selectedLeague.id);
     if (data) {
       toast.current?.show({
         severity: "success",
         summary: "Başarılı",
-        detail: "Fikstür başarıyla oluşturuldu",
+        detail: "Lig başlatıldı",
         life: 3000,
       });
       loadLeagues();
@@ -120,7 +120,7 @@ export default function Leagues() {
 
     return [
       {
-        label: "Fikstür Oluştur",
+        label: "Başlat",
         icon: "pi pi-plus-circle",
         disabled: !isSelected || selectedLeague?.totalAttentance === 0 || !hasRole,
         command: () => handleCreateFixture()

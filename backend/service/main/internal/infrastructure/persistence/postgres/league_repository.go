@@ -150,7 +150,7 @@ func (r *LeagueRepository) IsFixtureCreated(ctx context.Context, leagueId string
 	return exists, nil
 }
 
-func (r *LeagueRepository) IncreaseAttandanceCount(ctx context.Context, leagueId string) (*int32, error) {
+func (r *LeagueRepository) IncreaseAttendanceCount(ctx context.Context, leagueId string) (*int32, error) {
 	exec := r.GetExecutor(ctx)
 	query := `UPDATE league SET total_attendance =total_attendance+1  WHERE id = $1 RETURNING total_attendance`
 	var updatedAttendance int32

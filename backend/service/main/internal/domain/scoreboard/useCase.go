@@ -11,5 +11,5 @@ func NewUseCase(r Repository) *UseCase {
 }
 
 func (u *UseCase) GetScoreBoard(ctx context.Context, leagueId string) ([]*ScoreBoard, error) {
-	return u.r.GetScoreBoard(ctx, leagueId)
+	return u.r.FetchScoreBoard(ctx, leagueId)
 }

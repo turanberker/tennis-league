@@ -11,7 +11,6 @@ import (
 	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/match"
 	matchSet "tennis-league/service/internal/domain/matchset"
-	"tennis-league/service/internal/domain/scoreboard"
 
 	"github.com/rabbitmq/amqp091-go"
 )
@@ -21,20 +20,20 @@ type LeagueMatchApprovedEventConsumer struct {
 	tm             *database.TransactionManager
 	matchRepo      match.Repository
 	setRepo        matchSet.Repository
-	scoreboradRepo scoreboard.Repository
+	scoreboardRepo Repository
 }
 
 func NewLeagueMatchApprovedEventConsumer(tm *database.TransactionManager,
 	matchRepo match.Repository,
 	setRepo matchSet.Repository,
-	scoreboradRepo scoreboard.Repository,
+	scoreboardRepo Repository,
 ) *LeagueMatchApprovedEventConsumer {
 
 	c := &LeagueMatchApprovedEventConsumer{
 		tm:             tm,
 		matchRepo:      matchRepo,
 		setRepo:        setRepo,
-		scoreboradRepo: scoreboradRepo,
+		scoreboardRepo: scoreboardRepo,
 	}
 
 	c.Consumer = &consumer.Consumer{
@@ -67,7 +66,7 @@ func (c *LeagueMatchApprovedEventConsumer) handle(msg amqp091.Delivery) error {
 
 		setScores := c.setRepo.GetSetScoreList(txCtx, event.MatchId)
 
-		var team1Update = &scoreboard.IncreaseTeamScore{
+		var team1Update = &IncreaseTeamScore{
 			LeagueId:      event.LeagueId,
 			TeamId:        matchTeams.Team1Id,
 			Won:           false,
@@ -78,7 +77,7 @@ func (c *LeagueMatchApprovedEventConsumer) handle(msg amqp091.Delivery) error {
 			IncreaseScore: 0,
 		}
 
-		var team2Update = &scoreboard.IncreaseTeamScore{
+		var team2Update = &IncreaseTeamScore{
 			LeagueId:      event.LeagueId,
 			TeamId:        matchTeams.Team2Id,
 			Won:           false,
@@ -125,8 +124,14 @@ func (c *LeagueMatchApprovedEventConsumer) handle(msg amqp091.Delivery) error {
 			team2Update.Won = true
 		}
 
-		c.scoreboradRepo.UpdateScore(txCtx, *team1Update)
-		c.scoreboradRepo.UpdateScore(txCtx, *team2Update)
+		err := c.scoreboardRepo.UpdateScore(txCtx, *team1Update)
+		if err != nil {
+			return err
+		}
+		err = c.scoreboardRepo.UpdateScore(txCtx, *team2Update)
+		if err != nil {
+			return err
+		}
 		log.Println("Match Approved:", event.MatchId, ", LeagueId: ", event.LeagueId)
 
 		return nil

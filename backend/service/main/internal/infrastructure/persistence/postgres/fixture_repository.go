@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	customerror "tennis-league/common/lib/error"
 	sqlrepository "tennis-league/common/lib/repository/sql"
+	"tennis-league/service/internal/delivery/message/consumer/match_score/leaguematch"
 	errorcodes "tennis-league/service/internal/domain/error_codes"
 	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/scoreboard"
@@ -26,38 +26,36 @@ func NewScoreBoardRepository(db *sql.DB) *ScoreBoardRepository {
 	return &ScoreBoardRepository{Repository: *sqlrepository.NewRepository(db)}
 }
 
-func (f *ScoreBoardRepository) SaveFixture(ctx context.Context, leagueId string, teams []string) error {
+func (f *ScoreBoardRepository) AddTeamToLeague(ctx context.Context, leagueId string, teamId string) error {
+	executor := f.GetExecutor(ctx)
 
-	tx := f.GetExecutor(ctx)
-
-	if len(teams) == 0 {
-		return errors.New("Takım Listesi boş olamaz")
-	}
-
-	// INSERT INTO fixtures (league_id, home_team_id, away_team_id) VALUES ($1,$2,$3), ...
-	query := "INSERT INTO score_board (league_id, team_id) VALUES "
-	args := []interface{}{}
-
-	for i, m := range teams {
-		// Her match için 2 parametre
-		query += fmt.Sprintf("($%d,$%d)", i*2+1, i*2+2)
-		if i != len(teams)-1 {
-			query += ", "
-		}
-		args = append(args, leagueId, m)
-	}
-
-	// Bulk insert
-	_, err := tx.ExecContext(ctx, query, args...)
+	query, args, err := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Insert("score_board").
+		Columns("league_id", "team_id").
+		Values(leagueId, teamId).
+		ToSql()
 	if err != nil {
-		log.Println("Scoreboard initlenirken hata oluştu:", err)
-		return err
+		return customerror.NewInternalError(err)
+	}
+	_, err = executor.ExecContext(ctx, query, args...)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			if pqErr.Constraint == "uidx_league_team" {
+				return customerror.NewBusinessError(http.StatusConflict, errorcodes.ErrorPlayerAlreadyAddedToLeague, "Bu takım bu lige zaten eklenmiş.")
+			}
+		}
+
+		// Veritabanı hatasını projenizin özel hata yapısıyla sarmalıyoruz
+		return customerror.NewInternalError(err)
 	}
 
+	// Her şey yolunda gittiyse nil dönüyoruz
 	return nil
 }
 
-func (f *ScoreBoardRepository) GetScoreBoard(ctx context.Context, leagueId string) ([]*scoreboard.ScoreBoard, error) {
+func (f *ScoreBoardRepository) FetchScoreBoard(ctx context.Context, leagueId string) ([]*scoreboard.ScoreBoard, error) {
 	exec := f.GetExecutor(ctx)
 	query := `Select f.team_id,t.name ,f.played,f.won, f.lost,
 		f.won_sets, f.lost_sets,f.won_games,f.lost_games,score
@@ -88,7 +86,7 @@ func (f *ScoreBoardRepository) GetScoreBoard(ctx context.Context, leagueId strin
 
 }
 
-func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, update scoreboard.IncreaseTeamScore) error {
+func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, update leaguematch.IncreaseTeamScore) error {
 
 	exec := f.GetExecutor(ctx)
 	query := `

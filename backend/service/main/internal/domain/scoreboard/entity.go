@@ -16,14 +16,3 @@ type ScoreBoard struct {
 	LostGames int16
 	Score     int16
 }
-
-type IncreaseTeamScore struct {
-	LeagueId      string
-	TeamId        string
-	Won           bool
-	WonSets       int16
-	LostSets      int16
-	WonGames      int16
-	LostGames     int16
-	IncreaseScore int16
-}

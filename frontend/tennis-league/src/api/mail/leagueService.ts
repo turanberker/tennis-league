@@ -57,8 +57,8 @@ export const addPlayer = async (
     }>(`leagues/${leagueId}/players`, {playerId: playerId});
 };
 
-export const createFixture = async (leagueId: string) => {
-    return await mainClient.post(`leagues/${leagueId}/create-fixture`);
+export const startLeague = async (leagueId: string) => {
+    return await mainClient.post(`leagues/${leagueId}/start`);
 };
 
 export const getFixture = async (

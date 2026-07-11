@@ -52,7 +52,7 @@ func main() {
 	teamUseCase := team.NewUseCase(transactionManager, cacheManager, teamRepository, teamPlayerRepository)
 	matchUseCase := match.NewUseCase(transactionManager, cacheManager, matchRepository, matchSetRepository, outboxRepository)
 	leagueUseCase := league.NewUsecase(transactionManager, cacheManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
-		matchRepository, outboxRepository, scoreBoardRepository, leagueCoordinatorRepository, scoreBoardRepository)
+		matchRepository, outboxRepository, leagueCoordinatorRepository, scoreBoardRepository)
 
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
 

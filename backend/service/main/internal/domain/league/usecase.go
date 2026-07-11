@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"math/rand"
 	"net/http"
 	"time"
 
@@ -16,27 +15,22 @@ import (
 	"tennis-league/service/internal/domain/leaguecoordinator"
 	"tennis-league/service/internal/domain/match"
 	"tennis-league/service/internal/domain/outbox"
-	"tennis-league/service/internal/domain/scoreboard"
 	"tennis-league/service/internal/domain/team"
 	"tennis-league/service/internal/domain/user"
 )
 
-var ErrNameFieldRequired = errors.New("Name can not be null or empty string")
-var ErrNameLenghtError = errors.New("Name size must between 5 and 75 characters")
-
 type Usecase struct {
-	tm                               *database.TransactionManager
-	cacheManager                     *cache.CacheManager
-	userUsecase                      *user.Usecase
-	teamUseCase                      *team.UseCase
-	matchUc                          *match.UseCase
-	outboxRepository                 outbox.Repository
-	repo                             Repository
-	teamRepo                         team.Repository
-	matchRepo                        match.Repository
-	scoreBoardRepo                   scoreboard.Repository
-	coordinatorRepository            leaguecoordinator.Repository
-	singleLeagueAttendenceReposirory SingleLeagueAttendenceRepository
+	tm                    *database.TransactionManager
+	cacheManager          *cache.CacheManager
+	userUsecase           *user.Usecase
+	teamUseCase           *team.UseCase
+	matchUc               *match.UseCase
+	outboxRepository      outbox.Repository
+	repo                  Repository
+	teamRepo              team.Repository
+	matchRepo             match.Repository
+	coordinatorRepository leaguecoordinator.Repository
+	participantRepository ParticipantRepository
 }
 
 func NewUsecase(
@@ -49,22 +43,20 @@ func NewUsecase(
 	teamRepo team.Repository,
 	matchRepo match.Repository,
 	outboxRepository outbox.Repository,
-	scoreBoardRepo scoreboard.Repository,
 	coordinatorRepository leaguecoordinator.Repository,
-	singleLeagueAttendenceReposirory SingleLeagueAttendenceRepository,
+	participantRepository ParticipantRepository,
 ) *Usecase {
 	return &Usecase{repo: repo,
-		teamUseCase:                      teamUc,
-		cacheManager:                     cacheManager,
-		matchUc:                          matchUc,
-		teamRepo:                         teamRepo,
-		matchRepo:                        matchRepo,
-		scoreBoardRepo:                   scoreBoardRepo,
-		coordinatorRepository:            coordinatorRepository,
-		userUsecase:                      userUseCase,
-		tm:                               tm,
-		outboxRepository:                 outboxRepository,
-		singleLeagueAttendenceReposirory: singleLeagueAttendenceReposirory,
+		teamUseCase:           teamUc,
+		cacheManager:          cacheManager,
+		matchUc:               matchUc,
+		teamRepo:              teamRepo,
+		matchRepo:             matchRepo,
+		coordinatorRepository: coordinatorRepository,
+		userUsecase:           userUseCase,
+		tm:                    tm,
+		outboxRepository:      outboxRepository,
+		participantRepository: participantRepository,
 	}
 }
 
@@ -150,65 +142,32 @@ func (u *Usecase) GetFixture(context context.Context, leagueId string, filterPar
 	return u.matchRepo.GetFixtureByLeagueId(context, leagueId, &filter)
 }
 
-func (u *Usecase) CreateFixture(ctx context.Context, leagueId string) error {
+func (u *Usecase) Start(ctx context.Context, leagueId string) error {
 
 	return u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-		created, err := u.repo.IsFixtureCreated(txCtx, leagueId)
+		league, err := u.repo.GetById(ctx, leagueId)
 		if err != nil {
 			return err
 		}
-		if created {
+		if league.Status != LeagueStatus_DRAFT {
 			return customerror.NewBusinessError(http.StatusConflict,
 				errorcodes.ErrLeagueAlreadyFixtureCreated,
-				"Fikstür zaten oluşturulmuş")
-		}
-		//TODO Burada ligin Single- double olmasına göre işlem yapılacak
-		teams, err := u.teamRepo.GetByLeagueId(txCtx, leagueId)
-		var bulkInsert match.BulkInsertMatches
-		var matches []match.SideIds
-		var teamIds []string
-
-		for i := 0; i < len(teams); i++ {
-
-			teamIds = append(teamIds, teams[i].ID)
-			for j := i + 1; j < len(teams); j++ { // j=i+1 → tekrar ve kendisiyle maç yok
-				team1Id := teams[i].ID
-				team2Id := teams[j].ID
-
-				// 50% ihtimalle takımların yerini değiştir
-				if rand.Intn(2) == 0 {
-					team1Id, team2Id = team2Id, team1Id
-				}
-
-				match := match.SideIds{
-					Side1: team1Id,
-					Side2: team2Id,
-				}
-
-				matches = append(matches, match)
-			}
-		}
-		//Maçların sırasını karıştır (Opsiyonel ama daha profesyonel bir fikstür sağlar)
-		rand.Shuffle(len(matches), func(i, j int) {
-			matches[i], matches[j] = matches[j], matches[i]
-		})
-
-		bulkInsert.Sides = matches
-		bulkInsert.Type = match.MatchType{Id: &leagueId,
-			Source: match.MatchSource_LEAGUE,
-			Type:   match.MatchType_DOUBLE,
+				"Lig başlamıştır")
 		}
 
+		starter, err := u.leagueStarterGetter(*league, u.teamRepo, u.matchRepo)
+		err = starter.Start(txCtx, leagueId)
+		if err != nil {
+			return err
+		}
 		err = u.repo.StartLeague(txCtx, leagueId)
 		if err != nil {
 			return err
 		}
-		err = u.matchRepo.SaveBulkMatches(txCtx, &bulkInsert)
-		if err != nil {
-			return err
-		}
-		return u.scoreBoardRepo.SaveFixture(txCtx, leagueId, teamIds)
+		leageuCacheKey := u.cacheManager.PrepareCacheKey("league", leagueId)
+		err = u.cacheManager.Invalidate(txCtx, leageuCacheKey)
+		return err
 	})
 
 }
@@ -257,8 +216,8 @@ func (u *Usecase) CreateTeam(ctx context.Context, createTeamDto *CreateTeamReque
 
 		response.TeamId = *teamId
 
-		totalAttendance, err := u.repo.IncreaseAttandanceCount(txCtx, createTeamDto.LeagueId)
-
+		err = u.participantRepository.AddTeamToLeague(txCtx, createTeamDto.LeagueId, *teamId)
+		totalAttendance, err := u.repo.IncreaseAttendanceCount(txCtx, createTeamDto.LeagueId)
 		if err != nil {
 			return err
 		}
@@ -273,7 +232,7 @@ func (u *Usecase) CreateTeam(ctx context.Context, createTeamDto *CreateTeamReque
 }
 
 func (u *Usecase) GetPlayersByLeagueId(ctx context.Context, leagueId string) ([]SingleLeagueAttendance, error) {
-	return u.singleLeagueAttendenceReposirory.SingleLeagueAttendanceList(ctx, leagueId)
+	return u.participantRepository.SingleLeagueAttendanceList(ctx, leagueId)
 }
 
 func (u *Usecase) AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) (*int32, error) {
@@ -281,12 +240,12 @@ func (u *Usecase) AddPlayerToLeague(ctx context.Context, leagueId string, player
 	var response *int32
 	err := u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-		err := u.singleLeagueAttendenceReposirory.AddPlayerToLeague(txCtx, leagueId, playerId)
+		err := u.participantRepository.AddPlayerToLeague(txCtx, leagueId, playerId)
 		if err != nil {
 			return err
 		}
 
-		totalAttendance, err := u.repo.IncreaseAttandanceCount(txCtx, leagueId)
+		totalAttendance, err := u.repo.IncreaseAttendanceCount(txCtx, leagueId)
 
 		if err != nil {
 			return err

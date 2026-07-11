@@ -28,14 +28,14 @@ type Handler struct {
 	tm           *database.TransactionManager
 	uc           *league.Usecase
 	teamUc       *team.UseCase
-	scoreBaordUc *scoreboard.UseCase
+	scoreBoardUc *scoreboard.UseCase
 	matchUc      *match.UseCase
 }
 
-func NewHandler(uc *league.Usecase, teamUc *team.UseCase, scoreBaordUc *scoreboard.UseCase, matchUc *match.UseCase) *Handler {
+func NewHandler(uc *league.Usecase, teamUc *team.UseCase, scoreBoardUc *scoreboard.UseCase, matchUc *match.UseCase) *Handler {
 	return &Handler{uc: uc,
 		teamUc:       teamUc,
-		scoreBaordUc: scoreBaordUc,
+		scoreBoardUc: scoreBoardUc,
 		matchUc:      matchUc}
 }
 
@@ -46,10 +46,10 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.GET("/list", h.getAll)
 		leagues.POST("", authmiddleware.RequireRole(dto.RoleAdmin), h.save)
 		leagues.GET("/:id", h.getById)
-		leagues.POST("/:id/create-fixture",
+		leagues.POST("/:id/start",
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
 			h.checkIfCoordinator,
-			h.createFixture)
+			h.startLeague)
 		leagues.GET("/:id/teams", h.getTeams)
 		leagues.POST("/:id/teams",
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
@@ -387,17 +387,17 @@ func (h *Handler) newTeam(c *gin.Context) {
 
 }
 
-func (h *Handler) createFixture(c *gin.Context) {
+func (h *Handler) startLeague(c *gin.Context) {
 
 	leagueId := c.Param("id") // query param
-	err := h.uc.CreateFixture(c.Request.Context(), leagueId)
+	err := h.uc.Start(c.Request.Context(), leagueId)
 	if err != nil {
 		c.Error(err)
 		c.Abort()
 		return
 	}
 
-	res := delivery.NewSuccessResponse("Fikstür oluşturuldu")
+	res := delivery.NewSuccessResponse("Lig Başladı")
 	c.JSON(http.StatusOK, res)
 }
 
@@ -437,7 +437,7 @@ func (h *Handler) getFixture(c *gin.Context) {
 func (h *Handler) getScoreBoard(c *gin.Context) {
 	leagueId := c.Param("id")
 
-	board, err := h.scoreBaordUc.GetScoreBoard(c.Request.Context(), leagueId)
+	board, err := h.scoreBoardUc.GetScoreBoard(c.Request.Context(), leagueId)
 	if err != nil {
 		res := delivery.NewErrorResponse(err.Error())
 		c.JSON(http.StatusOK, res)
