@@ -29,14 +29,22 @@ type Handler struct {
 	scoreBoardUc            *scoreboard.UseCase
 	matchUc                 *match.UseCase
 	leagueHandlerMiddleware *leagueHandlerMiddleware
+	leagueAttendanceHandler *leagueAttendanceHandler
 }
 
 func NewHandler(uc *league.Usecase, teamUc *team.UseCase, scoreBoardUc *scoreboard.UseCase, matchUc *match.UseCase) *Handler {
+
+	leagueHandlerMiddleware :=
+		&leagueHandlerMiddleware{uc: uc, matchUc: matchUc}
+
+	leagueAttendanceHandler := &leagueAttendanceHandler{leagueHandlerMiddleware: leagueHandlerMiddleware, teamUc: teamUc, uc: uc}
 	return &Handler{uc: uc,
 		teamUc:                  teamUc,
 		scoreBoardUc:            scoreBoardUc,
 		matchUc:                 matchUc,
-		leagueHandlerMiddleware: &leagueHandlerMiddleware{uc: uc, matchUc: matchUc}}
+		leagueHandlerMiddleware: leagueHandlerMiddleware,
+		leagueAttendanceHandler: leagueAttendanceHandler,
+	}
 }
 
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
@@ -50,13 +58,9 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
 			h.leagueHandlerMiddleware.checkIfCoordinator,
 			h.startLeague)
-		leagues.GET("/:id/teams", h.getTeams)
-		leagues.POST("/:id/teams",
-			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
-			h.leagueHandlerMiddleware.checkIfCoordinator,
-			h.newTeam)
-		leagues.GET(":id/players", h.players)
-		leagues.POST(":id/players", h.addPlayer)
+		attendance := leagues.Group("/:id/attendance")
+		h.leagueAttendanceHandler.registerSubRoutes(attendance)
+
 		leagues.GET("/:id/fixture", h.getFixture)
 		leagues.GET("/:id/standings", h.getScoreBoard)
 		leagues.POST("/:id/coordinator",
@@ -209,139 +213,6 @@ func (h *Handler) getAll(c *gin.Context) {
 	}
 
 	res := delivery.NewSuccessResponse(leagueResponse)
-	c.JSON(http.StatusOK, res)
-
-}
-
-func (h *Handler) addPlayer(c *gin.Context) {
-	leagueId := c.Param("id")
-
-	var req struct {
-		PlayerId string `form:"playerId" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
-		return
-	}
-
-	totalAttendance, err := h.uc.AddPlayerToLeague(c.Request.Context(), leagueId, req.PlayerId)
-	if err != nil {
-		c.Error(err)
-		c.Abort()
-		return
-	}
-
-	type addPlayerResponse struct {
-		PlayerId             string `json:"playerId"`
-		TotalAttendanceCount *int32 `json:"totalAttendanceCount"`
-	}
-	response := addPlayerResponse{PlayerId: req.PlayerId, TotalAttendanceCount: totalAttendance}
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
-}
-
-func (h *Handler) players(c *gin.Context) {
-	idParam := c.Param("id")
-	players, err := h.uc.GetPlayersByLeagueId(c.Request.Context(), idParam)
-	if err != nil {
-		c.Error(err)
-		c.Abort()
-		return
-	}
-	type PlayerResponse struct {
-		ID        string `json:"id"`
-		FirstName string `json:"firstname"`
-		SurName   string `json:"surname"`
-		Power     int    `json:"power"`
-	}
-	response := make([]PlayerResponse, 0, len(players))
-
-	for _, l := range players {
-
-		pr := PlayerResponse{
-			ID:        l.ID,
-			FirstName: l.Firstname,
-			SurName:   l.Surname,
-			Power:     l.Power,
-		}
-		response = append(response, pr)
-	}
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
-
-}
-func (h *Handler) getTeams(c *gin.Context) {
-
-	idParam := c.Param("id") // query param
-
-	teams, err := h.teamUc.GetByLeagueId(c.Request.Context(), idParam)
-
-	if err != nil {
-		c.Error(err)
-		c.Abort()
-		return
-	}
-	type TeamResponse struct {
-		ID    string `json:"id"`
-		Name  string `json:"name"`
-		Power int32  `json:"power"`
-	}
-
-	teamResponse := make([]*TeamResponse, 0, len(teams))
-
-	for _, l := range teams {
-
-		team := &TeamResponse{
-			ID:    l.ID,
-			Name:  l.Name,
-			Power: l.Power,
-		}
-		teamResponse = append(teamResponse, team)
-	}
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(teamResponse))
-}
-
-func (h *Handler) newTeam(c *gin.Context) {
-
-	leagueId := c.Param("id") // query param
-
-	var req struct {
-		Name      string   `json:"name" binding:"min=3,max=75,required"`
-		PlayerIDs []string `json:"playerIds" binding:"required,len=2,dive,gt=0"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
-	}
-
-	response, err := h.uc.CreateTeam(c.Request.Context(), &league.CreateTeamRequestDto{
-		LeagueId:  leagueId,
-		Name:      req.Name,
-		PlayerIDs: req.PlayerIDs,
-	})
-
-	if err != nil {
-		c.Error(err)
-		c.Abort()
-		return
-	}
-
-	var resModel struct {
-		TeamId               string `json:"teamId"`
-		TotalAttendanceCount int32  `json:"totalAttendanceCount"`
-	}
-	resModel.TeamId = response.TeamId
-	resModel.TotalAttendanceCount = response.TotalAttendance
-	res := delivery.NewSuccessResponse(resModel)
 	c.JSON(http.StatusOK, res)
 
 }

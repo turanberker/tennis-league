@@ -10,6 +10,8 @@ import {
 } from "../../model/league.model";
 import {mainClient} from "../axiosClient";
 
+const attendances="attendance";
+
 export const getLeagues = async (params?: { name?: string }): Promise<LeagueListResponse[]> => {
     return await mainClient.get("leagues/list", {params});
 };
@@ -26,14 +28,14 @@ export const saveLeague = async (
 
 export const getTeams = async (leagueId: string): Promise<LeagueTeamResponse[]> => {
     const res = await mainClient.get<LeagueTeamResponse[]>(
-        `leagues/${leagueId}/teams`,
+        `leagues/${leagueId}/${attendances}/teams`,
     );
     return res;
 };
 
 export const getPlayers = async (leagueId: string): Promise<SingleLeagueAttendanceResponse[]> => {
     const res = await mainClient.get<SingleLeagueAttendanceResponse[]>(
-        `leagues/${leagueId}/players`,
+        `leagues/${leagueId}/${attendances}/players`,
     );
     return res;
 };
@@ -42,7 +44,7 @@ export const createTeam = async (
     leagueId: string,
     team: CreateTeamRequest,
 ): Promise<{ teamId: string, totalAttendanceCount: number }> => {
-    return await mainClient.post<{ teamId: string, totalAttendanceCount: number }>(`leagues/${leagueId}/teams`, team);
+    return await mainClient.post<{ teamId: string, totalAttendanceCount: number }>(`leagues/${leagueId}/${attendances}/teams`, team);
 };
 
 export const addPlayer = async (
@@ -54,7 +56,7 @@ export const addPlayer = async (
     return await mainClient.post<{
         playerId: string,
         totalAttendanceCount: number
-    }>(`leagues/${leagueId}/players`, {playerId: playerId});
+    }>(`leagues/${leagueId}/${attendances}/players`, {playerId: playerId});
 };
 
 export const startLeague = async (leagueId: string) => {
