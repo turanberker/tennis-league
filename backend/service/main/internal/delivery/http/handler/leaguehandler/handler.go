@@ -1,7 +1,6 @@
 package leaguehandler
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -14,7 +13,6 @@ import (
 
 	"tennis-league/service/internal/delivery/http/handler/matchhandler"
 
-	errorcodes "tennis-league/service/internal/domain/error_codes"
 	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/match"
 	"tennis-league/service/internal/domain/scoreboard"
@@ -25,18 +23,20 @@ import (
 )
 
 type Handler struct {
-	tm           *database.TransactionManager
-	uc           *league.Usecase
-	teamUc       *team.UseCase
-	scoreBoardUc *scoreboard.UseCase
-	matchUc      *match.UseCase
+	tm                      *database.TransactionManager
+	uc                      *league.Usecase
+	teamUc                  *team.UseCase
+	scoreBoardUc            *scoreboard.UseCase
+	matchUc                 *match.UseCase
+	leagueHandlerMiddleware *leagueHandlerMiddleware
 }
 
 func NewHandler(uc *league.Usecase, teamUc *team.UseCase, scoreBoardUc *scoreboard.UseCase, matchUc *match.UseCase) *Handler {
 	return &Handler{uc: uc,
-		teamUc:       teamUc,
-		scoreBoardUc: scoreBoardUc,
-		matchUc:      matchUc}
+		teamUc:                  teamUc,
+		scoreBoardUc:            scoreBoardUc,
+		matchUc:                 matchUc,
+		leagueHandlerMiddleware: &leagueHandlerMiddleware{uc: uc, matchUc: matchUc}}
 }
 
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
@@ -48,12 +48,12 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.GET("/:id", h.getById)
 		leagues.POST("/:id/start",
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
-			h.checkIfCoordinator,
+			h.leagueHandlerMiddleware.checkIfCoordinator,
 			h.startLeague)
 		leagues.GET("/:id/teams", h.getTeams)
 		leagues.POST("/:id/teams",
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
-			h.checkIfCoordinator,
+			h.leagueHandlerMiddleware.checkIfCoordinator,
 			h.newTeam)
 		leagues.GET(":id/players", h.players)
 		leagues.POST(":id/players", h.addPlayer)
@@ -61,62 +61,21 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		leagues.GET("/:id/standings", h.getScoreBoard)
 		leagues.POST("/:id/coordinator",
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
-			h.checkIfCoordinator, h.newCoordinator)
+			h.leagueHandlerMiddleware.checkIfCoordinator, h.newCoordinator)
 		leagues.PUT("/:id/match/:matchId/update-score", authmiddleware.RequireAuth(),
-			h.checkIfMatchIsLeague,
-			h.checkIfUserIsCoordinatAdminOrPlayer,
+			h.leagueHandlerMiddleware.checkIfMatchIsLeague,
+			h.leagueHandlerMiddleware.checkIfUserIsCoordinatAdminOrPlayer,
 			h.updateScore)
 		leagues.PUT("/:id/match/:matchId/update-date",
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
-			h.checkIfCoordinator,
+			h.leagueHandlerMiddleware.checkIfCoordinator,
 			h.updateMatchDate)
 		leagues.PUT("/:id/match/:matchId/approve",
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
-			h.checkIfCoordinator,
+			h.leagueHandlerMiddleware.checkIfCoordinator,
 			h.approveScore)
 	}
 
-}
-
-func (h *Handler) checkIfCoordinator(c *gin.Context) {
-	roleValue, _ := c.Get("Role")
-	leagueId := c.Param("id")
-	userId, _ := authmiddleware.GetUserIdFromContext(c)
-
-	if role, ok := roleValue.(dto.Role); ok {
-
-		// 3. Karşılaştırma yap
-		if role == dto.RoleCoordinator {
-			coordinator, err := h.uc.IsUserCoordinator(c.Request.Context(), leagueId, userId)
-			if err != nil {
-				c.Error(customerror.NewInternalError(err))
-				c.Abort()
-			}
-			if coordinator {
-				c.Next()
-			} else {
-				err := &customerror.BusinnesException{
-					StatusCode: http.StatusForbidden,
-					ErrorCode:  errorcodes.INSUFFICIENT_PERMISSIONS,
-					Message:    "Bu ligde koordinatör değilsiniz",
-				}
-				c.Error(err)
-				c.Abort()
-			}
-		}
-
-		if role == dto.RoleAdmin {
-			c.Next()
-		}
-	} else {
-		err := &customerror.BusinnesException{
-			StatusCode: http.StatusForbidden,
-			ErrorCode:  errorcodes.INSUFFICIENT_PERMISSIONS,
-			Message:    "Bu ligde yetkiniz yok",
-		}
-		c.Error(err)
-		c.Abort()
-	}
 }
 
 func (h *Handler) getById(c *gin.Context) {
@@ -543,80 +502,6 @@ func (h *Handler) approveScore(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
-}
-
-func (h *Handler) checkIfUserIsCoordinatAdminOrPlayer(c *gin.Context) {
-	roleValue, _ := c.Get("Role")
-	userId, _ := authmiddleware.GetUserIdFromContext(c)
-	matchId := c.Param("matchId")
-	// Not: Lig ID'si bu context'te farklı bir isimle (örn: leagueId) geliyorsa onu almalısın.
-	// Eğer match üzerinden leagueId'ye gitmek gerekiyorsa usecase katmanında bu kontrolü yapabilirsin.
-	leagueId := c.Param("id")
-
-	role, ok := roleValue.(dto.Role)
-	if !ok {
-		h.abortWithForbidden(c, "Yetki bilgisi alınamadı")
-		return
-	}
-	// 1. Durum: Admin ise sınırsız erişim
-	if role == dto.RoleAdmin {
-		c.Next()
-		return
-	}
-
-	// 2. Durum: Koordinatör ise lig bazlı kontrol
-	if role == dto.RoleCoordinator {
-		coordinator, err := h.uc.IsUserCoordinator(c.Request.Context(), leagueId, userId)
-		if err == nil && coordinator {
-			c.Next()
-			return
-		}
-		// Eğer koordinatör değilse hemen abort etmiyoruz, belki bu maçın oyuncusudur.
-	}
-
-	// 3. Durum: Oyuncu mu kontrolü (Admin veya Lig Koordinatörü değilse buraya düşer)
-	playedInMatch := h.isPlayerPlayedInMatch(c, matchId)
-	if playedInMatch {
-		c.Next()
-		return
-	}
-
-	// Hiçbir şart sağlanmadıysa erişimi reddet
-	h.abortWithForbidden(c, "Bu işlem için yetkiniz bulunmamaktadır (Koordinatör, Admin veya Maçın Oyuncusu olmalısınız)")
-}
-
-// Yardımcı metod: Kod tekrarını önlemek için
-func (h *Handler) abortWithForbidden(c *gin.Context, message string) {
-	err := &customerror.BusinnesException{
-		StatusCode: http.StatusForbidden,
-		ErrorCode:  errorcodes.INSUFFICIENT_PERMISSIONS,
-		Message:    message,
-	}
-	c.Error(err)
-	c.Abort()
-}
-
-func (h *Handler) isPlayerPlayedInMatch(c *gin.Context, matchId string) bool {
-	playerId, exists := authmiddleware.GetPlayerIdFromContext(c)
-	if !exists {
-		return false
-	}
-	playedInMatch, _ := h.matchUc.IsUserPlayerOfMatch(c.Request.Context(), matchId, playerId)
-	return playedInMatch
-}
-
-func (h *Handler) checkIfMatchIsLeague(c *gin.Context) {
-	matchId := c.Param("matchId")
-	matchInfo, err := h.matchUc.GetMatchInfo(c.Request.Context(), matchId)
-	if err != nil {
-		c.Error(err)
-		c.Abort()
-		return
-	}
-	if matchInfo.Source != match.MatchSource_LEAGUE {
-		c.Error(errors.New("Buradan sadece Lig maçları güncellenebilir"))
-		c.Abort()
-	}
 }
 
 func (h *Handler) updateScore(c *gin.Context) {
