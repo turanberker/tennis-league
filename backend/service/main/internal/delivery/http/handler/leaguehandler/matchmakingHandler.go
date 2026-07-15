@@ -1,16 +1,9 @@
 package leaguehandler
 
 import (
-	"errors"
-	"net/http"
 	"tennis-league/common/http/router"
-	customerror "tennis-league/common/lib/error"
-	"tennis-league/common/lib/http/delivery"
 	"tennis-league/common/security/authmiddleware"
 	"tennis-league/service/internal/domain/matchrequest"
-
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type matchmakingHandler struct {
@@ -28,18 +21,13 @@ func (h *matchmakingHandler) registerSubRoutes(group *router.CustomRouterGroup) 
 		h.leagueHandlerMiddleware.userAttendedToLeague, h.new)
 }
 
-func (h *matchmakingHandler) new(c *gin.Context) {
+func (h *matchmakingHandler) new(c *router.CustomContext) {
 	leagueId := c.Param("id")
-	playerId, _ := authmiddleware.GetPlayerIdFromContext(c)
+	playerId, _ := c.CurrentPlayerId()
 	request := MatchRequestRequest{}
 
-	if err := c.ShouldBindJSON(&request); err != nil {
-		var ve validator.ValidationErrors
-		if errors.As(err, &ve) {
-			_ = c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&request) {
+		return
 	}
 
 	dto := matchrequest.RequestDto{
@@ -51,10 +39,8 @@ func (h *matchmakingHandler) new(c *gin.Context) {
 
 	requestId, err := h.useCase.NewRequest(c.Request.Context(), dto)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-
-	c.JSON(http.StatusCreated, delivery.NewSuccessResponse(requestId))
+	c.OkComplete(requestId)
 }

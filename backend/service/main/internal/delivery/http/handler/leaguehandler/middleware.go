@@ -3,14 +3,13 @@ package leaguehandler
 import (
 	"fmt"
 	"net/http"
+	"tennis-league/common/http/router"
 	customerror "tennis-league/common/lib/error"
 	"tennis-league/common/security/authmiddleware"
 	"tennis-league/common/security/dto"
 	errorcodes "tennis-league/service/internal/domain/error_codes"
 	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/match"
-
-	"github.com/gin-gonic/gin"
 )
 
 type leagueHandlerMiddleware struct {
@@ -18,10 +17,10 @@ type leagueHandlerMiddleware struct {
 	matchUc *match.UseCase
 }
 
-func (h *leagueHandlerMiddleware) checkIfCoordinator(c *gin.Context) {
+func (h *leagueHandlerMiddleware) checkIfCoordinator(c *router.CustomContext) {
 	roleValue, _ := c.Get("Role")
 	leagueId := c.Param("id")
-	userId, _ := authmiddleware.GetUserIdFromContext(c)
+	userId, _ := c.CurrentUserId()
 
 	if role, ok := roleValue.(dto.Role); ok {
 
@@ -29,8 +28,7 @@ func (h *leagueHandlerMiddleware) checkIfCoordinator(c *gin.Context) {
 		if role == dto.RoleCoordinator {
 			coordinator, err := h.uc.IsUserCoordinator(c.Request.Context(), leagueId, userId)
 			if err != nil {
-				_ = c.Error(customerror.NewInternalError(err))
-				c.Abort()
+				c.ErrorComplete(err)
 				return
 			}
 			if coordinator {
@@ -60,9 +58,9 @@ func (h *leagueHandlerMiddleware) checkIfCoordinator(c *gin.Context) {
 	}
 }
 
-func (h *leagueHandlerMiddleware) checkIfUserIsCoordinatAdminOrPlayer(c *gin.Context) {
+func (h *leagueHandlerMiddleware) checkIfUserIsCoordinateAdminOrPlayer(c *router.CustomContext) {
 	roleValue, _ := c.Get("Role")
-	userId, _ := authmiddleware.GetUserIdFromContext(c)
+	userId, _ := c.CurrentUserId()
 	matchId := c.Param("matchId")
 	// Not: Lig ID'si bu context'te farklı bir isimle (örn: leagueId) geliyorsa onu almalısın.
 	// Eğer match üzerinden leagueId'ye gitmek gerekiyorsa usecase katmanında bu kontrolü yapabilirsin.
@@ -101,7 +99,7 @@ func (h *leagueHandlerMiddleware) checkIfUserIsCoordinatAdminOrPlayer(c *gin.Con
 }
 
 // Yardımcı metod: Kod tekrarını önlemek için
-func (h *leagueHandlerMiddleware) abortWithForbidden(c *gin.Context, message string) {
+func (h *leagueHandlerMiddleware) abortWithForbidden(c *router.CustomContext, message string) {
 	err := &customerror.BusinnesException{
 		StatusCode: http.StatusForbidden,
 		ErrorCode:  authmiddleware.INSUFFICIENT_PERMISSIONS,
@@ -111,8 +109,8 @@ func (h *leagueHandlerMiddleware) abortWithForbidden(c *gin.Context, message str
 	c.Abort()
 }
 
-func (h *leagueHandlerMiddleware) isPlayerPlayedInMatch(c *gin.Context, matchId string) bool {
-	playerId, exists := authmiddleware.GetPlayerIdFromContext(c)
+func (h *leagueHandlerMiddleware) isPlayerPlayedInMatch(c *router.CustomContext, matchId string) bool {
+	playerId, exists := c.CurrentPlayerId()
 	if !exists {
 		return false
 	}
@@ -120,12 +118,11 @@ func (h *leagueHandlerMiddleware) isPlayerPlayedInMatch(c *gin.Context, matchId 
 	return playedInMatch
 }
 
-func (h *leagueHandlerMiddleware) checkIfMatchIsLeague(c *gin.Context) {
+func (h *leagueHandlerMiddleware) checkIfMatchIsLeague(c *router.CustomContext) {
 	matchId := c.Param("matchId")
 	matchInfo, err := h.matchUc.GetMatchInfo(c.Request.Context(), matchId)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 	if matchInfo.Source != match.MatchSource_LEAGUE {
@@ -134,15 +131,14 @@ func (h *leagueHandlerMiddleware) checkIfMatchIsLeague(c *gin.Context) {
 			ErrorCode:  errorcodes.ErrorINVALID_MATCH_SOURCE,
 			Message:    "Buradan sadece Lig maçları güncellenebilir",
 		}
+		c.ErrorComplete(businessErr)
 
-		_ = c.Error(businessErr)
-		c.Abort()
 		return
 	}
 	c.Next()
 }
 
-func (h *leagueHandlerMiddleware) checkLeagueIsChallenging(c *gin.Context) {
+func (h *leagueHandlerMiddleware) checkLeagueIsChallenging(c *router.CustomContext) {
 	leagueId := c.Param("id")
 
 	leagueData, err := h.uc.GetById(c.Request.Context(), leagueId)
@@ -161,20 +157,18 @@ func (h *leagueHandlerMiddleware) checkLeagueIsChallenging(c *gin.Context) {
 			Message:    fmt.Sprintf("%s tipinde ligler için maç talebinde bulunabilirsiniz!", league.LeagueProcessType_DEFI),
 		}
 
-		_ = c.Error(businessErr)
-		c.Abort()
+		c.ErrorComplete(businessErr)
 		return
 	}
 
 }
 
-func (h *leagueHandlerMiddleware) userAttendedToLeague(c *gin.Context) {
+func (h *leagueHandlerMiddleware) userAttendedToLeague(c *router.CustomContext) {
 	leagueId := c.Param("id")
-	playerId, _ := authmiddleware.GetPlayerIdFromContext(c)
+	playerId, _ := c.CurrentPlayerId()
 	attended, err := h.uc.IsPlayerAttandedToLeague(c.Request.Context(), playerId, leagueId)
 	if err != nil {
-		_ = c.Error(customerror.NewInternalError(err))
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 	if !attended {

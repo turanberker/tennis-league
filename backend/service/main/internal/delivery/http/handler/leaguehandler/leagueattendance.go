@@ -1,17 +1,11 @@
 package leaguehandler
 
 import (
-	"net/http"
 	"tennis-league/common/http/router"
-	customerror "tennis-league/common/lib/error"
-	"tennis-league/common/lib/http/delivery"
 	"tennis-league/common/security/authmiddleware"
 	"tennis-league/common/security/dto"
 	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/team"
-
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type leagueAttendanceHandler struct {
@@ -30,15 +24,14 @@ func (h *leagueAttendanceHandler) registerSubRoutes(group *router.CustomRouterGr
 	group.POST("/players", h.addPlayer)
 }
 
-func (h *leagueAttendanceHandler) getTeams(c *gin.Context) {
+func (h *leagueAttendanceHandler) getTeams(c *router.CustomContext) {
 
 	idParam := c.Param("id") // query param
 
 	teams, err := h.teamUc.GetByLeagueId(c.Request.Context(), idParam)
 
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 	type TeamResponse struct {
@@ -58,10 +51,10 @@ func (h *leagueAttendanceHandler) getTeams(c *gin.Context) {
 		}
 		teamResponse = append(teamResponse, res)
 	}
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(teamResponse))
+	c.OkComplete(teamResponse)
 }
 
-func (h *leagueAttendanceHandler) newTeam(c *gin.Context) {
+func (h *leagueAttendanceHandler) newTeam(c *router.CustomContext) {
 
 	leagueId := c.Param("id") // query param
 
@@ -70,16 +63,8 @@ func (h *leagueAttendanceHandler) newTeam(c *gin.Context) {
 		PlayerIDs []string `json:"playerIds" binding:"required,len=2,dive,gt=0"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			_ = c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			_ = c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&req) {
+		return
 	}
 
 	response, err := h.uc.CreateTeam(c.Request.Context(), &league.CreateTeamRequestDto{
@@ -89,8 +74,7 @@ func (h *leagueAttendanceHandler) newTeam(c *gin.Context) {
 	})
 
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
@@ -100,17 +84,14 @@ func (h *leagueAttendanceHandler) newTeam(c *gin.Context) {
 	}
 	resModel.TeamId = response.TeamId
 	resModel.TotalAttendanceCount = response.TotalAttendance
-	res := delivery.NewSuccessResponse(resModel)
-	c.JSON(http.StatusOK, res)
-
+	c.OkComplete(resModel)
 }
 
-func (h *leagueAttendanceHandler) players(c *gin.Context) {
+func (h *leagueAttendanceHandler) players(c *router.CustomContext) {
 	idParam := c.Param("id")
 	players, err := h.uc.GetPlayersByLeagueId(c.Request.Context(), idParam)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 	type PlayerResponse struct {
@@ -131,27 +112,23 @@ func (h *leagueAttendanceHandler) players(c *gin.Context) {
 		}
 		response = append(response, pr)
 	}
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
-
+	c.OkComplete(response)
 }
 
-func (h *leagueAttendanceHandler) addPlayer(c *gin.Context) {
+func (h *leagueAttendanceHandler) addPlayer(c *router.CustomContext) {
 	leagueId := c.Param("id")
 
 	var req struct {
 		PlayerId string `form:"playerId" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+	if !c.BindJSONOrAbort(&req) {
 		return
 	}
 
 	totalAttendance, err := h.uc.AddPlayerToLeague(c.Request.Context(), leagueId, req.PlayerId)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
@@ -160,6 +137,5 @@ func (h *leagueAttendanceHandler) addPlayer(c *gin.Context) {
 		TotalAttendanceCount *int32 `json:"totalAttendanceCount"`
 	}
 	response := addPlayerResponse{PlayerId: req.PlayerId, TotalAttendanceCount: totalAttendance}
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
+	c.OkComplete(response)
 }

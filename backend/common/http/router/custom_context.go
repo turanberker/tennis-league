@@ -48,6 +48,12 @@ func (c *CustomContext) OkComplete(data any) {
 	c.JSON(http.StatusOK, res)
 }
 
+func (c *CustomContext) ErrorComplete(err error) {
+	_ = c.Error(err)
+	c.Abort()
+	return
+}
+
 func (c *CustomContext) CurrentPlayerId() (string, bool) {
 	playerIdIdValue, exists := c.Get("PlayerId")
 	return playerIdIdValue.(string), exists

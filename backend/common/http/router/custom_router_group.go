@@ -78,8 +78,8 @@ func (cg *CustomRouterGroup) PATCH(relativePath string, handlers ...any) {
 
 // Group metodu standart gin.HandlerFunc (middleware'leri) kabul eder.
 // Alt gruplar da yine CustomRouterGroup olarak döner.
-func (cg *CustomRouterGroup) Group(relativePath string, handlers ...gin.HandlerFunc) *CustomRouterGroup {
+func (cg *CustomRouterGroup) Group(relativePath string, handlers ...any) *CustomRouterGroup {
 	return &CustomRouterGroup{
-		IRouter: cg.IRouter.Group(relativePath, handlers...),
+		IRouter: cg.IRouter.Group(relativePath, cg.wrapHandlers(handlers...)...),
 	}
 }

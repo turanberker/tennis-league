@@ -1,7 +1,6 @@
 package leaguehandler
 
 import (
-	"log"
 	"net/http"
 	"tennis-league/common/http/router"
 	"tennis-league/service/internal/domain/matchrequest"
@@ -19,9 +18,6 @@ import (
 	"tennis-league/service/internal/domain/match"
 	"tennis-league/service/internal/domain/scoreboard"
 	"tennis-league/service/internal/domain/team"
-
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type Handler struct {
@@ -81,7 +77,7 @@ func (h *Handler) RegisterRoutes(r *router.CustomRouterGroup) {
 			h.leagueHandlerMiddleware.checkIfCoordinator, h.newCoordinator)
 		leagues.PUT("/:id/match/:matchId/update-score", authmiddleware.RequireAuth(),
 			h.leagueHandlerMiddleware.checkIfMatchIsLeague,
-			h.leagueHandlerMiddleware.checkIfUserIsCoordinatAdminOrPlayer,
+			h.leagueHandlerMiddleware.checkIfUserIsCoordinateAdminOrPlayer,
 			h.updateScore)
 		leagues.PUT("/:id/match/:matchId/update-date",
 			authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),
@@ -95,7 +91,7 @@ func (h *Handler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 }
 
-func (h *Handler) getById(c *gin.Context) {
+func (h *Handler) getById(c *router.CustomContext) {
 	ctx := c.Request.Context()
 
 	// path param
@@ -103,8 +99,7 @@ func (h *Handler) getById(c *gin.Context) {
 
 	leagueData, err := h.uc.GetById(ctx, leagueId)
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
@@ -130,11 +125,10 @@ func (h *Handler) getById(c *gin.Context) {
 	res.TotalAttentance = leagueData.TotalAttendance
 	res.StartedDate = leagueData.StartDate
 	res.EndDate = leagueData.EndDate
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(res))
+	c.OkComplete(res)
 }
 
-func (h *Handler) save(c *gin.Context) {
+func (h *Handler) save(c *router.CustomContext) {
 
 	var req struct {
 		Name        string                     `json:"name" binding:"min=3,max=75,required"`
@@ -142,17 +136,8 @@ func (h *Handler) save(c *gin.Context) {
 		Categoty    league.LEAGUE_CATEGORY     `json:"category" binding:"required"`
 		ProcessType league.LEAGUE_PROCESS_TYPE `json:"processType" binding:"required"`
 	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&req) {
+		return
 	}
 
 	persistLeague := &league.PersistLeague{
@@ -165,38 +150,25 @@ func (h *Handler) save(c *gin.Context) {
 	leagueId, err := h.uc.Save(c.Request.Context(), persistLeague)
 
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
-	} else {
-		res := delivery.NewSuccessResponse(leagueId)
-		c.JSON(http.StatusOK, res)
 	}
-
+	c.OkComplete(leagueId)
 }
 
-func (h *Handler) getAll(c *gin.Context) {
+func (h *Handler) getAll(c *router.CustomContext) {
 
 	var req struct {
 		Status *league.LEAGUE_STATUS `form:"status" binding:"omitempty"`
 	}
 
-	if err := c.ShouldBindQuery(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindQueryOrAbort(&req) {
+		return
 	}
 
 	leagues, err := h.uc.GetAll(c.Request.Context(), req.Status)
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
@@ -224,36 +196,28 @@ func (h *Handler) getAll(c *gin.Context) {
 			CoordinatorUserIds: l.CoordinatorUserId,
 		})
 	}
-
-	res := delivery.NewSuccessResponse(leagueResponse)
-	c.JSON(http.StatusOK, res)
-
+	c.OkComplete(leagueResponse)
 }
 
-func (h *Handler) startLeague(c *gin.Context) {
+func (h *Handler) startLeague(c *router.CustomContext) {
 
 	leagueId := c.Param("id") // query param
 	err := h.uc.Start(c.Request.Context(), leagueId)
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-
-	res := delivery.NewSuccessResponse("Lig Başladı")
-	c.JSON(http.StatusOK, res)
+	c.OkComplete("Lig Başladı")
 }
 
-func (h *Handler) getFixture(c *gin.Context) {
+func (h *Handler) getFixture(c *router.CustomContext) {
 	leagueId := c.Param("id") // query param
 
 	var req struct {
 		TeamId *string `form:"teamId" binding:"omitempty"`
 	}
 
-	if err := c.ShouldBindQuery(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+	if !c.BindQueryOrAbort(&req) {
 		return
 	}
 
@@ -264,8 +228,7 @@ func (h *Handler) getFixture(c *gin.Context) {
 	fixture, err := h.uc.GetFixture(c.Request.Context(), leagueId, &filterParam)
 
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 	fixtureResponse := make([]*LeagueFixtureMatchResponse, 0, len(fixture))
@@ -273,11 +236,10 @@ func (h *Handler) getFixture(c *gin.Context) {
 	for _, l := range fixture {
 		fixtureResponse = append(fixtureResponse, toFixtureResponse(l))
 	}
-	res := delivery.NewSuccessResponse(fixtureResponse)
-	c.JSON(http.StatusOK, res)
+	c.OkComplete(fixtureResponse)
 }
 
-func (h *Handler) getScoreBoard(c *gin.Context) {
+func (h *Handler) getScoreBoard(c *router.CustomContext) {
 	leagueId := c.Param("id")
 
 	board, err := h.scoreBoardUc.GetScoreBoard(c.Request.Context(), leagueId)
@@ -289,7 +251,7 @@ func (h *Handler) getScoreBoard(c *gin.Context) {
 
 	var result []*ScoreBoardResponse
 	for o, b := range board {
-		team := &ScoreBoardResponse{
+		teamRes := &ScoreBoardResponse{
 			TeamRef:   TeamRef{Id: b.Team.Id, Name: b.Team.Name},
 			Order:     o + 1,
 			Played:    b.Played,
@@ -301,66 +263,47 @@ func (h *Handler) getScoreBoard(c *gin.Context) {
 			LostGames: b.LostGames,
 			Score:     b.Score,
 		}
-		result = append(result, team)
+		result = append(result, teamRes)
 	}
-	res := delivery.NewSuccessResponse(result)
-	c.JSON(http.StatusOK, res)
-
+	c.OkComplete(result)
 }
 
-func (h *Handler) newCoordinator(c *gin.Context) {
+func (h *Handler) newCoordinator(c *router.CustomContext) {
 	leagueId := c.Param("id")
 	var req struct {
 		UserId string `form:"userId" binding:"required"`
 	}
-
-	if err := c.ShouldBindQuery(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindQueryOrAbort(&req) {
+		return
 	}
 
 	added, err := h.uc.AddNewCoordinator(c.Request.Context(), leagueId, req.UserId)
 
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
+		_ = c.Error(customerror.NewInternalError(err))
 		c.Abort()
 		return
 	}
-
-	res := delivery.NewSuccessResponse(added)
-	c.JSON(http.StatusOK, res)
-
+	c.OkComplete(added)
 }
 
-func (h *Handler) updateMatchDate(c *gin.Context) {
+func (h *Handler) updateMatchDate(c *router.CustomContext) {
 	matchId := c.Param("matchId")
 
 	var req struct {
 		MatchDate *time.Time `form:"match-date" time_format:"2006-01-02T15:04:05Z07:00"`
 	}
 
-	if err := c.ShouldBindQuery(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindQueryOrAbort(&req) {
+		return
 	}
 
-	h.matchUc.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_LEAGUE, req.MatchDate)
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(true))
-
+	err := h.matchUc.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_LEAGUE, req.MatchDate)
+	if err != nil {
+		c.ErrorComplete(err)
+		return
+	}
+	c.OkComplete(true)
 }
 
 func toFixtureResponse(l *match.LeagueFixtureMatch) *LeagueFixtureMatchResponse {
@@ -376,37 +319,25 @@ func toFixtureResponse(l *match.LeagueFixtureMatch) *LeagueFixtureMatchResponse 
 	}
 }
 
-func (h *Handler) approveScore(c *gin.Context) {
+func (h *Handler) approveScore(c *router.CustomContext) {
 	matchId := c.Param("matchId")
 	leagueId := c.Param("id")
 	err := h.uc.ApproveMatchScore(c.Request.Context(), leagueId, matchId)
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
+	c.OkComplete(nil)
 }
 
-func (h *Handler) updateScore(c *gin.Context) {
+func (h *Handler) updateScore(c *router.CustomContext) {
 	matchId := c.Param("matchId")
 
 	macScore := matchhandler.UpdateScoreRequest{}
 
-	if err := c.ShouldBindJSON(&macScore); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			_ = c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			_ = c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&macScore) {
+		return
 	}
-
-	log.Printf("match id: %s", matchId)
-	log.Printf("score :%+v", macScore)
 
 	set1 := match.SaveScore{Team1Score: macScore.Set1.Team1Score, Team2Score: macScore.Set1.Team2Score}
 	set2 := match.SaveScore{Team1Score: macScore.Set2.Team1Score, Team2Score: macScore.Set2.Team2Score}
@@ -414,7 +345,6 @@ func (h *Handler) updateScore(c *gin.Context) {
 	saveMatchScore := &match.SaveMatchScore{MatchId: matchId, MatchDate: macScore.MatchDate, Set1: set1, Set2: set2}
 
 	if macScore.SuperTie != nil {
-
 		saveMatchScore.SuperTie = &match.SaveScore{}
 		saveMatchScore.SuperTie.Team1Score = macScore.SuperTie.Team1Score
 		saveMatchScore.SuperTie.Team2Score = macScore.SuperTie.Team2Score
@@ -423,11 +353,8 @@ func (h *Handler) updateScore(c *gin.Context) {
 
 	response, err := h.matchUc.SaveMatchScore(c.Request.Context(), saveMatchScore)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(&matchhandler.MatchScoreResponse{Team1Score: response.Team1Score, Team2Score: response.Team2Score}))
-
+	c.OkComplete(matchhandler.MatchScoreResponse{Team1Score: response.Team1Score, Team2Score: response.Team2Score})
 }
