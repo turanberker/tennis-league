@@ -11,8 +11,6 @@ import (
 
 	errorcodes "tennis-league/service/internal/domain/error_codes"
 	"tennis-league/service/internal/domain/match"
-
-	"github.com/gin-gonic/gin"
 )
 
 type MatchHandler struct {
@@ -151,30 +149,27 @@ func (h *MatchHandler) updateDate(c *router.CustomContext) {
 	c.OkComplete(req.MatchDate)
 }
 
-func (h *MatchHandler) checkIfMatchIsFriendly(c *gin.Context) {
+func (h *MatchHandler) checkIfMatchIsFriendly(c *router.CustomContext) {
 	matchId := c.Param("id")
 	matchInfo, err := h.u.GetMatchInfo(c.Request.Context(), matchId)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 	if matchInfo.Source != match.MatchSource_FRIENDLY {
-		_ = c.Error(errors.New("Buradan sadece dosluk maçları güncellenebilir"))
-		c.Abort()
+		c.ErrorComplete(errors.New("Buradan sadece dosluk maçları güncellenebilir"))
 		return
 	}
 }
 
-func (h *MatchHandler) checkIfUserIsMatchPlayer(c *gin.Context) {
+func (h *MatchHandler) checkIfUserIsMatchPlayer(c *router.CustomContext) {
 	matchId := c.Param("id")
-	playerId, _ := authmiddleware.GetPlayerIdFromContext(c)
+	playerId, _ := c.CurrentPlayerId()
 
 	playedInMatch, err := h.u.IsUserPlayerOfMatch(c.Request.Context(), matchId, playerId)
 
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
@@ -184,8 +179,7 @@ func (h *MatchHandler) checkIfUserIsMatchPlayer(c *gin.Context) {
 			ErrorCode:  errorcodes.ErrNotParticipatedInMatch,
 			Message:    "Bu maçta oynamadığınız için skoru güncelleyemezsiniz",
 		}
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 }

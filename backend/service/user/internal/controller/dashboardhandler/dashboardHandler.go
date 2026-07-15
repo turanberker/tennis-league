@@ -1,16 +1,11 @@
 package dashboardhandler
 
 import (
-	"net/http"
 	"tennis-league/common/http/router"
 	"tennis-league/user-service/internal/service/player"
 
-	customerror "tennis-league/common/lib/error"
-	"tennis-league/common/lib/http/delivery"
 	httpcache "tennis-league/common/lib/http/http-cache"
 	authmiddleware "tennis-league/common/security/authmiddleware"
-
-	"github.com/gin-gonic/gin"
 )
 
 type DashboardHandler struct {
@@ -30,33 +25,30 @@ func (h *DashboardHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 	}
 }
 
-func (h *DashboardHandler) getPlayerStatistics(c *gin.Context) {
+func (h *DashboardHandler) getPlayerStatistics(c *router.CustomContext) {
 
 	var req struct {
 		Limit *int `form:"limit" binding:"omitempty,numeric"`
 	}
-	if err := c.ShouldBindQuery(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+
+	if !c.BindQueryOrAbort(&req) {
 		return
 	}
 
-	playerId, exists := c.Get("PlayerId")
+	playerId, exists := c.CurrentPlayerId()
 
-	if exists == false || playerId == nil || playerId.(string) == "" {
-		res := delivery.NewSuccessResponse(nil)
-		c.JSON(http.StatusOK, res)
+	if exists == false {
+		c.OkComplete(nil)
 		return
 	}
 
 	statistics, err := h.playerUc.GetPlayerStatistics(c.Request.Context(), player.PlayerStatisticsRequest{
-		PlayerId: playerId.(string),
+		PlayerId: playerId,
 		Limit:    req.Limit,
 	})
 
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
@@ -71,8 +63,5 @@ func (h *DashboardHandler) getPlayerStatistics(c *gin.Context) {
 	response.EarnedSinglePoints = statistics.LastSinglePointsSum
 	response.SinglePoints = statistics.CurrentSinglePoint
 	response.DoublePoints = statistics.CurrentDoublePoint
-
-	res := delivery.NewSuccessResponse(response)
-
-	c.JSON(http.StatusOK, res)
+	c.OkComplete(response)
 }

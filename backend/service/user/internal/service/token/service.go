@@ -8,7 +8,6 @@ import (
 
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-chi/jwtauth/v5"
 )
 
@@ -26,7 +25,7 @@ func NewTokenService(secret string, sessionRepository session.Repository, server
 	}
 }
 
-func (t *TokenService) GenerateAccessTokenAndSetCookie(c *gin.Context, sessionId string) (string, error) {
+func (t *TokenService) GenerateAccessTokenAndSetCookie(c *router.CustomContext, sessionId string) (string, error) {
 
 	_, tokenString, err := t.auth.Encode(map[string]interface{}{
 		"session_id": sessionId,
@@ -48,7 +47,7 @@ func (t *TokenService) GenerateAccessTokenAndSetCookie(c *gin.Context, sessionId
 	return tokenString, err
 }
 
-func (t *TokenService) GenerateRefreshTokenAndSetCookie(c *gin.Context, sessionId string) (string, error) {
+func (t *TokenService) GenerateRefreshTokenAndSetCookie(c *router.CustomContext, sessionId string) (string, error) {
 	// Refresh Token genellikle daha uzun ömürlüdür (örn. 7 gün)
 	_, tokenString, err := t.auth.Encode(map[string]interface{}{
 		"session_id": sessionId,
@@ -70,7 +69,7 @@ func (t *TokenService) GenerateRefreshTokenAndSetCookie(c *gin.Context, sessionI
 	return tokenString, err
 }
 
-func (t *TokenService) ValidateAndRefreshAndSetAccessCookie(c *gin.Context, refreshToken string) (string, error) {
+func (t *TokenService) ValidateAndRefreshAndSetAccessCookie(c *router.CustomContext, refreshToken string) (string, error) {
 	// 1. Refresh Token'ı decode et
 	token, err := t.auth.Decode(refreshToken)
 	if err != nil {

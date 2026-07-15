@@ -1,17 +1,15 @@
 package authhandler
 
 import (
-	"errors"
 	"net/http"
+	"tennis-league/common/http/router"
 	service "tennis-league/user-service/internal"
 	"tennis-league/user-service/internal/service/auth"
 	"tennis-league/user-service/internal/service/token"
 
 	customerror "tennis-league/common/lib/error"
-	"tennis-league/common/lib/http/delivery"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type AuthHandler struct {
@@ -33,7 +31,7 @@ func (h *AuthHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 	}
 }
 
-func (h *AuthHandler) logout(c *gin.Context) {
+func (h *AuthHandler) logout(c *router.CustomContext) {
 	sId, _ := c.Get("session_id")
 
 	// 1. Redis'ten sil
@@ -44,52 +42,41 @@ func (h *AuthHandler) logout(c *gin.Context) {
 	// 2. Tarayıcıdaki cookie'leri temizle (Sürelerini -1 yaparak)
 	c.SetCookie("access_token", "", -1, "/", "", false, true)
 	c.SetCookie("refresh_token", "", -1, "/authmiddleware/refresh", "", false, true)
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse("Çıkış Yaptınız"))
+	c.OkComplete("Çıkış Yaptınız")
 }
 
-func (h *AuthHandler) login(c *gin.Context) {
+func (h *AuthHandler) login(c *router.CustomContext) {
 	var req struct {
 		Email    string `json:"email" binding:"required,email"`
 		Password string `json:"password" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&req) {
+		return
 	}
 
 	usr, err := h.uc.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		c.Error(customerror.NewBusinessError(http.StatusUnauthorized,
+		c.ErrorComplete(customerror.NewBusinessError(http.StatusUnauthorized,
 			service.INVALID_CREDENTIAL, "invalid email or password"))
-		c.Abort()
 		return
 	}
 
 	_, err = h.tokenService.GenerateAccessTokenAndSetCookie(c, usr.SessionId)
 
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
 	_, err = h.tokenService.GenerateRefreshTokenAndSetCookie(c, usr.SessionId)
 
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-	response := delivery.NewSuccessResponse(LoginResponse{
+
+	c.OkComplete(LoginResponse{
 		CurrentUser: CurrentUserDTO{
 			UserID:   usr.ID,
 			Name:     usr.Name,
@@ -98,11 +85,9 @@ func (h *AuthHandler) login(c *gin.Context) {
 			PlayerId: usr.PlayerId,
 		},
 	})
-
-	c.JSON(http.StatusOK, response)
 }
 
-func (h *AuthHandler) refresh(c *gin.Context) {
+func (h *AuthHandler) refresh(c *router.CustomContext) {
 	// Cookie'den refresh token'ı oku
 	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
@@ -120,19 +105,11 @@ func (h *AuthHandler) refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": newAccessToken})
 }
 
-func (h *AuthHandler) register(c *gin.Context) {
+func (h *AuthHandler) register(c *router.CustomContext) {
 	var req RegisterRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&req) {
+		return
 	}
 
 	usr, err := h.uc.RegisterUser(
@@ -146,34 +123,25 @@ func (h *AuthHandler) register(c *gin.Context) {
 	)
 
 	if err != nil {
-		var be *customerror.BusinnesException
-		if errors.As(err, &be) {
-			c.Error(be)
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+		c.ErrorComplete(err)
+		return
 	}
 
 	_, err = h.tokenService.GenerateAccessTokenAndSetCookie(c, usr.SessionId)
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
 	_, err = h.tokenService.GenerateRefreshTokenAndSetCookie(c, usr.SessionId)
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
 	// JWT oluştur
-	response := delivery.NewSuccessResponse(LoginResponse{
+
+	c.OkComplete(LoginResponse{
 		CurrentUser: CurrentUserDTO{
 			UserID:  usr.ID,
 			Name:    usr.Name,
@@ -181,6 +149,4 @@ func (h *AuthHandler) register(c *gin.Context) {
 			Role:    string(usr.Role),
 		},
 	})
-
-	c.JSON(http.StatusOK, response)
 }

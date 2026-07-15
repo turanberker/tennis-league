@@ -156,11 +156,6 @@ func RequireRole(roles ...dto.Role) gin.HandlerFunc {
 	}
 }
 
-func GetUserIdFromContext(c *gin.Context) (string, bool) {
-	userIdValue, exists := c.Get("UserId")
-	return userIdValue.(string), exists
-}
-
 func GetPlayerIdFromContext(c *gin.Context) (string, bool) {
 	playerIdIdValue, exists := c.Get("PlayerId")
 	return playerIdIdValue.(string), exists

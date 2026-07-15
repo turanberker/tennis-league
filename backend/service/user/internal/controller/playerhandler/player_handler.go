@@ -1,14 +1,10 @@
 package playerhandler
 
 import (
-	"net/http"
 	"tennis-league/common/http/router"
 	"tennis-league/user-interface/constants"
 	"tennis-league/user-service/internal/service/player"
 
-	"github.com/gin-gonic/gin"
-
-	"tennis-league/common/lib/http/delivery"
 	"tennis-league/common/security/authmiddleware"
 	"tennis-league/common/security/dto"
 )
@@ -34,15 +30,15 @@ func (h *PlayerHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 }
 
-func (h *PlayerHandler) save(c *gin.Context) {
+func (h *PlayerHandler) save(c *router.CustomContext) {
 
 	var req struct {
 		Name    string        `json:"name" binding:"min=3,max=75,required"`
 		Surname string        `json:"surname" binding:"min=3,max=75,required"`
 		Sex     constants.Sex `json:"sex" binding:"required,oneof=M F"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+	if !c.BindJSONOrAbort(&req) {
 		return
 	}
 
@@ -55,23 +51,19 @@ func (h *PlayerHandler) save(c *gin.Context) {
 	playerId, err := h.uc.Save(c.Request.Context(), persistPlayer)
 
 	if err != nil {
-		res := delivery.NewErrorResponse(err.Error())
-		c.JSON(http.StatusOK, res)
+		c.ErrorComplete(err)
 	} else {
-		res := delivery.NewSuccessResponse(playerId)
-		c.JSON(http.StatusOK, res)
+		c.OkComplete(playerId)
 	}
 }
 
-func (h *PlayerHandler) assignToUser(c *gin.Context) {
+func (h *PlayerHandler) assignToUser(c *router.CustomContext) {
 	playerId := c.Param("id")
 
 	var req struct {
 		UserId string `form:"userId" binding:"required"`
 	}
-	if err := c.ShouldBindQuery(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+	if !c.BindQueryOrAbort(&req) {
 		return
 	}
 	var err error
@@ -80,24 +72,20 @@ func (h *PlayerHandler) assignToUser(c *gin.Context) {
 	err = h.uc.AssignToUser(ctx, playerId, req.UserId)
 
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse("İşlem başarılı"))
+	c.OkComplete("İşlem başarılı")
 }
 
-func (h *PlayerHandler) getAll(c *gin.Context) {
+func (h *PlayerHandler) getAll(c *router.CustomContext) {
 	var req struct {
 		Name *string        `form:"name" binding:"omitempty"`
 		Sex  *constants.Sex `form:"sex" binding:"omitempty,oneof=M F"`
 	}
 
 	// Gin otomatik olarak URL'deki ?name=...&sex=... kısımlarını struct'a doldurur
-	if err := c.ShouldBindQuery(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+	if !c.BindQueryOrAbort(&req) {
 		return
 	}
 
@@ -109,20 +97,16 @@ func (h *PlayerHandler) getAll(c *gin.Context) {
 	for _, l := range players {
 		playersResponse = append(playersResponse, toPlayerResponse(l))
 	}
-
-	res := delivery.NewSuccessResponse(playersResponse)
-	c.JSON(http.StatusOK, res)
+	c.OkComplete(playersResponse)
 }
 
-func (h *PlayerHandler) unassignedPlayers(c *gin.Context) {
+func (h *PlayerHandler) unassignedPlayers(c *router.CustomContext) {
 
 	var req struct {
 		Sex constants.Sex `form:"sex" binding:"oneof=M F"`
 	}
 	// Gin otomatik olarak URL'deki ?name=...&sex=... kısımlarını struct'a doldurur
-	if err := c.ShouldBindQuery(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+	if c.BindQueryOrAbort(&req) {
 		return
 	}
 
@@ -132,17 +116,16 @@ func (h *PlayerHandler) unassignedPlayers(c *gin.Context) {
 			HasUser: &isFalse})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, delivery.UnexpectedError)
+		c.ErrorComplete(err)
 		return
 	}
 
-	leagueResponse := make([]*PlayerResponse, 0, len(players))
+	playerResponseList := make([]*PlayerResponse, 0, len(players))
 
 	for _, l := range players {
-		leagueResponse = append(leagueResponse, toPlayerResponse(l))
+		playerResponseList = append(playerResponseList, toPlayerResponse(l))
 	}
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(leagueResponse))
-
+	c.OkComplete(playerResponseList)
 }
 
 func toPlayerResponse(l *player.Player) *PlayerResponse {
@@ -161,14 +144,12 @@ func toPlayerResponse(l *player.Player) *PlayerResponse {
 	}
 }
 
-func (h *PlayerHandler) getPlayerStatistics(c *gin.Context) {
+func (h *PlayerHandler) getPlayerStatistics(c *router.CustomContext) {
 	playerId := c.Param("id")
 	var req struct {
 		Limit *int `form:"limit" binding:"omitempty,numeric"`
 	}
-	if err := c.ShouldBindQuery(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+	if !c.BindQueryOrAbort(&req) {
 		return
 	}
 
@@ -178,7 +159,6 @@ func (h *PlayerHandler) getPlayerStatistics(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.Error(err)
 		c.Abort()
 		return
 	}
@@ -194,6 +174,5 @@ func (h *PlayerHandler) getPlayerStatistics(c *gin.Context) {
 	response.SinglePoints = statistics.CurrentSinglePoint
 	response.DoublePoints = statistics.CurrentDoublePoint
 
-	res := delivery.NewSuccessResponse(response)
-	c.JSON(http.StatusOK, res)
+	c.OkComplete(response)
 }

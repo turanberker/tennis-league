@@ -1,17 +1,11 @@
 package userhandler
 
 import (
-	"net/http"
 	"tennis-league/common/http/router"
 	"tennis-league/user-service/internal/service/user"
 
-	customerror "tennis-league/common/lib/error"
-	"tennis-league/common/lib/http/delivery"
 	authmiddleware "tennis-league/common/security/authmiddleware"
 	"tennis-league/common/security/dto"
-
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type UserHandler struct {
@@ -36,11 +30,10 @@ func (h *UserHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 	}
 }
 
-func (h *UserHandler) getAll(c *gin.Context) {
+func (h *UserHandler) getAll(c *router.CustomContext) {
 	users, err := h.userUc.GetAll(c.Request.Context())
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 	usersResponse := make([]*UserResponse, 0, len(users))
@@ -48,40 +41,28 @@ func (h *UserHandler) getAll(c *gin.Context) {
 	for _, l := range users {
 		usersResponse = append(usersResponse, toPlayerResponse(l))
 	}
-
-	res := delivery.NewSuccessResponse(usersResponse)
-	c.JSON(http.StatusOK, res)
+	c.OkComplete(usersResponse)
 }
 
-func (h *UserHandler) changeMyPassword(c *gin.Context) {
+func (h *UserHandler) changeMyPassword(c *router.CustomContext) {
 	var req struct {
 		CurrentPassword string `json:"currentPassword" binding:"required"`
 		NewPassword     string `json:"newPassword" binding:"required,min=8"`
 		ConfirmPassword string `json:"confirmPassword" binding:"required,eqfield=NewPassword"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&req) {
+		return
 	}
 
-	userId, _ := authmiddleware.GetUserIdFromContext(c)
+	userId, _ := c.CurrentUserId()
 
 	err := h.userUc.ChangePassword(c.Request.Context(), userId, req.CurrentPassword, req.NewPassword)
 	if err != nil {
-		c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-	res := delivery.NewSuccessResponse("password changed successfully")
-	c.JSON(http.StatusOK, res)
+	c.OkComplete("password changed successfully")
 }
 
 func toPlayerResponse(l *user.User) *UserResponse {
