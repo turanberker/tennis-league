@@ -47,3 +47,13 @@ func (c *CustomContext) OkComplete(data any) {
 	res := delivery.NewSuccessResponse(data)
 	c.JSON(http.StatusOK, res)
 }
+
+func (c *CustomContext) CurrentPlayerId() (string, bool) {
+	playerIdIdValue, exists := c.Get("PlayerId")
+	return playerIdIdValue.(string), exists
+}
+
+func (c *CustomContext) CurrentUserId() (string, bool) {
+	userIdValue, exists := c.Get("UserId")
+	return userIdValue.(string), exists
+}

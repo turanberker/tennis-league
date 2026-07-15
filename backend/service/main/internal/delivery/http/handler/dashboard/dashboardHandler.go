@@ -1,13 +1,11 @@
 package dashboard
 
 import (
-	"net/http"
 	"tennis-league/common/http/router"
 
 	"time"
 
 	customerror "tennis-league/common/lib/error"
-	"tennis-league/common/lib/http/delivery"
 	httpcache "tennis-league/common/lib/http/http-cache"
 	authmiddleware "tennis-league/common/security/authmiddleware"
 	"tennis-league/service/internal/domain/match"
@@ -23,10 +21,9 @@ func NewDashboardHandler(matchUseCase *match.UseCase) *DashboardHandler {
 
 func (h *DashboardHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 
-	group := r.Group("/me", authmiddleware.RequireAuth(), httpcache.AddCacheControlHeader(600, httpcache.TYPE_PRIVATE))
+	group := r.Group("/me", authmiddleware.RequireAuth(), authmiddleware.RequirePlayerRecord, httpcache.AddCacheControlHeader(600, httpcache.TYPE_PRIVATE))
 	{
 		group.GET("/incoming-matches", h.getIncomingMatches)
-
 	}
 }
 
@@ -34,21 +31,14 @@ func (h *DashboardHandler) getIncomingMatches(c *router.CustomContext) {
 	var req struct {
 		Limit int16 `form:"limit" binding:"omitempty,numeric"`
 	}
-	if err := c.ShouldBindQuery(&req); err != nil {
-		errorMessage := delivery.ValidationError(err)
-		c.JSON(http.StatusBadRequest, delivery.NewValidationErrorResponse(errorMessage))
+
+	if !c.BindQueryOrAbort(&req) {
 		return
 	}
 
-	playerId, exists := c.Get("PlayerId")
+	playerId, _ := c.CurrentPlayerId()
 
-	if exists == false || playerId == nil || playerId.(string) == "" {
-		res := delivery.NewSuccessResponse(nil)
-		c.JSON(http.StatusOK, res)
-		return
-	}
-
-	dto := match.PlayerIncomingMatchesRequest{PlayerId: playerId.(string), Limit: req.Limit}
+	dto := match.PlayerIncomingMatchesRequest{PlayerId: playerId, Limit: req.Limit}
 	matches, err := h.matchUseCase.GetImconimgMatches(c.Request.Context(), dto)
 
 	if err != nil {
@@ -81,8 +71,5 @@ func (h *DashboardHandler) getIncomingMatches(c *router.CustomContext) {
 				OppenentName: m.OppenentName,
 			})
 	}
-	res := delivery.NewSuccessResponse(matchesResponse)
-
-	c.JSON(http.StatusOK, res)
-
+	c.OkComplete(matchesResponse)
 }
