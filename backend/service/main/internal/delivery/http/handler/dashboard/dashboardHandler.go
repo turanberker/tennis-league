@@ -15,23 +15,23 @@ import (
 )
 
 type DashboardHandler struct {
-	matchUsecase *match.UseCase
+	matchUseCase *match.UseCase
 }
 
-func NewDashboardHandler(matchUsecase *match.UseCase) *DashboardHandler {
-	return &DashboardHandler{matchUsecase: matchUsecase}
+func NewDashboardHandler(matchUseCase *match.UseCase) *DashboardHandler {
+	return &DashboardHandler{matchUseCase: matchUseCase}
 }
 
 func (h *DashboardHandler) RegisterRoutes(r *gin.Engine) {
 
 	group := r.Group("/me", authmiddleware.RequireAuth(), httpcache.AddCacheControlHeader(600, httpcache.TYPE_PRIVATE))
 	{
-		group.GET("/incoming-matches", h.getIncomingMaches)
+		group.GET("/incoming-matches", h.getIncomingMatches)
 
 	}
 }
 
-func (h *DashboardHandler) getIncomingMaches(c *gin.Context) {
+func (h *DashboardHandler) getIncomingMatches(c *gin.Context) {
 	var req struct {
 		Limit int16 `form:"limit" binding:"omitempty,numeric"`
 	}
@@ -50,10 +50,10 @@ func (h *DashboardHandler) getIncomingMaches(c *gin.Context) {
 	}
 
 	dto := match.PlayerIncomingMatchesRequest{PlayerId: playerId.(string), Limit: req.Limit}
-	matches, err := h.matchUsecase.GetImconimgMatches(c.Request.Context(), dto)
+	matches, err := h.matchUseCase.GetImconimgMatches(c.Request.Context(), dto)
 
 	if err != nil {
-		c.Error(customerror.NewInternalError(err))
+		_ = c.Error(customerror.NewInternalError(err))
 		c.Abort()
 		return
 	}
