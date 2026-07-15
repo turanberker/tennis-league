@@ -3,6 +3,7 @@ package leaguehandler
 import (
 	"log"
 	"net/http"
+	"tennis-league/service/internal/domain/matchrequest"
 	"time"
 
 	"tennis-league/common/lib/database"
@@ -30,20 +31,27 @@ type Handler struct {
 	matchUc                 *match.UseCase
 	leagueHandlerMiddleware *leagueHandlerMiddleware
 	leagueAttendanceHandler *leagueAttendanceHandler
+	matchmakingHandler      *matchmakingHandler
+	matchRequestUseCase     *matchrequest.UseCase
 }
 
-func NewHandler(uc *league.Usecase, teamUc *team.UseCase, scoreBoardUc *scoreboard.UseCase, matchUc *match.UseCase) *Handler {
+func NewHandler(uc *league.Usecase, teamUc *team.UseCase,
+	scoreBoardUc *scoreboard.UseCase, matchUc *match.UseCase,
+	matchRequestUseCase *matchrequest.UseCase) *Handler {
 
 	leagueHandlerMiddleware :=
 		&leagueHandlerMiddleware{uc: uc, matchUc: matchUc}
 
 	leagueAttendanceHandler := &leagueAttendanceHandler{leagueHandlerMiddleware: leagueHandlerMiddleware, teamUc: teamUc, uc: uc}
+
+	matchmakingHandler := newMatchMakingHandler(leagueHandlerMiddleware, matchRequestUseCase)
 	return &Handler{uc: uc,
 		teamUc:                  teamUc,
 		scoreBoardUc:            scoreBoardUc,
 		matchUc:                 matchUc,
 		leagueHandlerMiddleware: leagueHandlerMiddleware,
 		leagueAttendanceHandler: leagueAttendanceHandler,
+		matchmakingHandler:      matchmakingHandler,
 	}
 }
 
@@ -60,6 +68,10 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 			h.startLeague)
 		attendance := leagues.Group("/:id/attendance")
 		h.leagueAttendanceHandler.registerSubRoutes(attendance)
+
+		matchmakingGroup := leagues.Group("/:id/match-making",
+			h.leagueHandlerMiddleware.checkLeagueIsChallenging)
+		h.matchmakingHandler.registerSubRoutes(matchmakingGroup)
 
 		leagues.GET("/:id/fixture", h.getFixture)
 		leagues.GET("/:id/standings", h.getScoreBoard)
@@ -382,11 +394,11 @@ func (h *Handler) updateScore(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&macScore); err != nil {
 		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
+			_ = c.Error(customerror.NewValidationError(ve))
 			c.Abort()
 			return
 		} else {
-			c.Error(customerror.NewInternalError(err))
+			_ = c.Error(customerror.NewInternalError(err))
 			c.Abort()
 			return
 		}
@@ -410,7 +422,7 @@ func (h *Handler) updateScore(c *gin.Context) {
 
 	response, err := h.matchUc.SaveMatchScore(c.Request.Context(), saveMatchScore)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
 		return
 	}

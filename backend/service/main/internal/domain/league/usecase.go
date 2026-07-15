@@ -173,6 +173,7 @@ func (u *Usecase) Start(ctx context.Context, leagueId string) error {
 }
 
 func (u *Usecase) GetById(ctx context.Context, id string) (*League, error) {
+
 	cacheKey := u.cacheManager.PrepareCacheKey("league", id)
 
 	return cache.Cacheable(u.cacheManager, ctx, cacheKey, 1*time.Hour, func() (*League, error) {
@@ -233,6 +234,10 @@ func (u *Usecase) CreateTeam(ctx context.Context, createTeamDto *CreateTeamReque
 
 func (u *Usecase) GetPlayersByLeagueId(ctx context.Context, leagueId string) ([]SingleLeagueAttendance, error) {
 	return u.participantRepository.SingleLeagueAttendanceList(ctx, leagueId)
+}
+
+func (u *Usecase) IsPlayerAttandedToLeague(ctx context.Context, leagueId string, playerId string) (bool, error) {
+	return u.participantRepository.IsPlayerAttendedToLeague(ctx, leagueId, playerId)
 }
 
 func (u *Usecase) AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) (*int32, error) {

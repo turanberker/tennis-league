@@ -1,6 +1,7 @@
 package leaguehandler
 
 import (
+	"fmt"
 	"net/http"
 	customerror "tennis-league/common/lib/error"
 	"tennis-league/common/security/authmiddleware"
@@ -30,13 +31,14 @@ func (h *leagueHandlerMiddleware) checkIfCoordinator(c *gin.Context) {
 			if err != nil {
 				_ = c.Error(customerror.NewInternalError(err))
 				c.Abort()
+				return
 			}
 			if coordinator {
 				c.Next()
 			} else {
 				err := &customerror.BusinnesException{
 					StatusCode: http.StatusForbidden,
-					ErrorCode:  errorcodes.INSUFFICIENT_PERMISSIONS,
+					ErrorCode:  authmiddleware.INSUFFICIENT_PERMISSIONS,
 					Message:    "Bu ligde koordinatör değilsiniz",
 				}
 				_ = c.Error(err)
@@ -50,7 +52,7 @@ func (h *leagueHandlerMiddleware) checkIfCoordinator(c *gin.Context) {
 	} else {
 		err := &customerror.BusinnesException{
 			StatusCode: http.StatusForbidden,
-			ErrorCode:  errorcodes.INSUFFICIENT_PERMISSIONS,
+			ErrorCode:  authmiddleware.INSUFFICIENT_PERMISSIONS,
 			Message:    "Bu ligde yetkiniz yok",
 		}
 		_ = c.Error(err)
@@ -102,7 +104,7 @@ func (h *leagueHandlerMiddleware) checkIfUserIsCoordinatAdminOrPlayer(c *gin.Con
 func (h *leagueHandlerMiddleware) abortWithForbidden(c *gin.Context, message string) {
 	err := &customerror.BusinnesException{
 		StatusCode: http.StatusForbidden,
-		ErrorCode:  errorcodes.INSUFFICIENT_PERMISSIONS,
+		ErrorCode:  authmiddleware.INSUFFICIENT_PERMISSIONS,
 		Message:    message,
 	}
 	_ = c.Error(err)
@@ -138,4 +140,46 @@ func (h *leagueHandlerMiddleware) checkIfMatchIsLeague(c *gin.Context) {
 		return
 	}
 	c.Next()
+}
+
+func (h *leagueHandlerMiddleware) checkLeagueIsChallenging(c *gin.Context) {
+	leagueId := c.Param("id")
+
+	leagueData, err := h.uc.GetById(c.Request.Context(), leagueId)
+	if err != nil {
+		_ = c.Error(err)
+		c.Abort()
+		return
+	}
+
+	if leagueData.ProcessType == league.LeagueProcessType_DEFI {
+		c.Next()
+	} else {
+		businessErr := &customerror.BusinnesException{
+			StatusCode: http.StatusBadRequest,
+			ErrorCode:  errorcodes.ErrorInvalid_ProcessType,
+			Message:    fmt.Sprintf("%s tipinde ligler için maç talebinde bulunabilirsiniz!", league.LeagueProcessType_DEFI),
+		}
+
+		_ = c.Error(businessErr)
+		c.Abort()
+		return
+	}
+
+}
+
+func (h *leagueHandlerMiddleware) userAttendedToLeague(c *gin.Context) {
+	leagueId := c.Param("id")
+	playerId, _ := authmiddleware.GetPlayerIdFromContext(c)
+	attended, err := h.uc.IsPlayerAttandedToLeague(c.Request.Context(), playerId, leagueId)
+	if err != nil {
+		_ = c.Error(customerror.NewInternalError(err))
+		c.Abort()
+		return
+	}
+	if !attended {
+		h.abortWithForbidden(c, "Bu lige katılmadığınız için maç talebinde bulunamazsınız")
+		return
+	}
+
 }

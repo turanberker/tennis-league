@@ -1,6 +1,7 @@
 package leaguehandler
 
 import (
+	customtype "tennis-league/common/lib/type"
 	"time"
 
 	"tennis-league/service/internal/domain/match"
@@ -44,4 +45,9 @@ type ScoreBoardResponse struct {
 type TeamRef struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type MatchRequestRequest struct {
+	MatchRequestDate customtype.Date `json:"requested_match_date" binding:"required"`
+	StartHour        int             `json:"start_hour" binding:"required"`
 }

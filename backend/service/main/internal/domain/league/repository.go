@@ -24,4 +24,6 @@ type ParticipantRepository interface {
 	AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) error
 
 	AddTeamToLeague(ctx context.Context, leagueId string, teamId string) error
+
+	IsPlayerAttendedToLeague(ctx context.Context, leagueId string, playerId string) (bool, error)
 }

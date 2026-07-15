@@ -207,3 +207,38 @@ func (f *ScoreBoardRepository) AddPlayerToLeague(ctx context.Context, leagueId s
 	// Her şey yolunda gittiyse nil dönüyoruz
 	return nil
 }
+
+func (f *ScoreBoardRepository) IsPlayerAttendedToLeague(ctx context.Context, leagueId string, playerId string) (bool, error) {
+	executor := f.GetExecutor(ctx)
+
+	query, args, err := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Select(
+			"1",
+		).
+		From("score_board sb").
+		Join("player p ON p.id = sb.player_id").
+		Where(squirrel.Eq{
+			"sb.league_id": leagueId,
+			"sb.player_id": playerId,
+		}).
+		ToSql()
+
+	if err != nil {
+		return false, fmt.Errorf("Sorgu oluşturulamadı: %w", err)
+	}
+
+	var dummy int
+
+	err = executor.QueryRowContext(ctx, query, args...).Scan(&dummy)
+	if err != nil {
+		// Eğer hiç kayıt bulunamadıysa sql.ErrNoRows döner, bu bir hata değil oyuncunun ligde olmadığını gösterir.
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, fmt.Errorf("Sorcu çalıştırılamadı: %w", err)
+	}
+
+	// Kayıt başarıyla scan edildiyse oyuncu lige katılmıştır.
+	return true, nil
+}

@@ -13,7 +13,7 @@ import (
 )
 
 var errSessionExpired = "AUTH_102"
-var insufficient_permissions = "AUTH_100"
+var INSUFFICIENT_PERMISSIONS = "AUTH_100"
 
 type AuthMiddleware struct {
 	tokenAuth         *jwtauth.JWTAuth
@@ -85,12 +85,26 @@ func RequireAuth() gin.HandlerFunc {
 				ErrorCode:  errSessionExpired, // Burada AUTH_102 dönersen React atar
 				Message:    "Oturumunuzun süresi dolmuş veya geçersiz. Lütfen tekrar giriş yapın.",
 			}
-			c.Error(err)
+			_ = c.Error(err)
 			c.Abort()
 			return
 		}
 
 		c.Next()
+	}
+}
+
+func RequirePlayerRecord(c *gin.Context) {
+	_, exists := GetPlayerIdFromContext(c)
+	if !exists {
+		err := &customerror.BusinnesException{
+			StatusCode: http.StatusForbidden,
+			ErrorCode:  INSUFFICIENT_PERMISSIONS,
+			Message:    "Oyuncu kaydınız bulunamamıştır",
+		}
+		_ = c.Error(err)
+		c.Abort()
+		return
 	}
 }
 
@@ -109,18 +123,18 @@ func RequireRole(roles ...dto.Role) gin.HandlerFunc {
 			// Özel bir business hatası oluşturuyoruz
 			err := &customerror.BusinnesException{
 				StatusCode: http.StatusForbidden,
-				ErrorCode:  insufficient_permissions,
+				ErrorCode:  INSUFFICIENT_PERMISSIONS,
 				Message:    "Kullanıcı şu rollerden birine sahip olmalı: " + strings.Join(roleStrings, ", "),
 			}
-			c.Error(err) // Hatayı Gin'in listesine ekle
-			c.Abort()    // İsteği durdur (Handler'a gitmesin)
+			_ = c.Error(err) // Hatayı Gin'in listesine ekle
+			c.Abort()        // İsteği durdur (Handler'a gitmesin)
 			return
 		}
 
 		userRole, ok := roleValue.(dto.Role)
 		if !ok {
 			err := customerror.NewInternalError(errors.New("Geçersiz Rol Tipi"))
-			c.Error(err)
+			_ = c.Error(err)
 			c.Abort()
 			return
 		}
@@ -133,11 +147,12 @@ func RequireRole(roles ...dto.Role) gin.HandlerFunc {
 		}
 		err := &customerror.BusinnesException{
 			StatusCode: http.StatusForbidden,
-			ErrorCode:  insufficient_permissions,
+			ErrorCode:  INSUFFICIENT_PERMISSIONS,
 			Message:    "Kullanıcı şu rollerden birine sahip olmalı: " + strings.Join(roleStrings, ", "),
 		}
-		c.Error(err) // Hatayı Gin'in listesine ekle
-		c.Abort()    // İsteği durdur (Handler'a gitmesin)
+		_ = c.Error(err) // Hatayı Gin'in listesine ekle
+		c.Abort()        // İsteği durdur (Handler'a gitmesin)
+		return
 	}
 }
 

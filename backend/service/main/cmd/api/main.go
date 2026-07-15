@@ -13,6 +13,7 @@ import (
 	"tennis-league/service/internal/delivery/http/handler/matchhandler"
 	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/match"
+	"tennis-league/service/internal/domain/matchrequest"
 	"tennis-league/service/internal/domain/scoreboard"
 	"tennis-league/service/internal/domain/team"
 	"tennis-league/service/internal/domain/user"
@@ -46,18 +47,18 @@ func main() {
 	matchSetRepository := postgres.NewMatchSetRepository(db)
 	scoreBoardRepository := postgres.NewScoreBoardRepository(db)
 	outboxRepository := postgres.NewOutboxRepository(db)
-
+	matchRequestRepository := postgres.NewMatchRequestRepository(db)
 	leagueCoordinatorRepository := postgres.NewLeagueCoordinatorRepository(db)
 
 	teamUseCase := team.NewUseCase(transactionManager, cacheManager, teamRepository, teamPlayerRepository)
 	matchUseCase := match.NewUseCase(transactionManager, cacheManager, matchRepository, matchSetRepository, outboxRepository)
 	leagueUseCase := league.NewUsecase(transactionManager, cacheManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
 		matchRepository, outboxRepository, leagueCoordinatorRepository, scoreBoardRepository)
-
+	matchRequestUseCase := matchrequest.NewMatchRequestUseCase(transactionManager, matchRequestRepository)
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
 
 	dashboardHandler := dashboard.NewDashboardHandler(matchUseCase)
-	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc, matchUseCase)
+	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc, matchUseCase, matchRequestUseCase)
 
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 	doubleTeamHandler := doubleteamhandler.NewDoubleTeamHandler(teamUseCase)

@@ -30,7 +30,7 @@ func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
 	{
 		matches.GET("/:id", h.getById)
 		matches.GET("/:id/match-info", h.getSetScore)
-		matches.PUT("/:id/score", authmiddleware.RequireAuth(), h.checkIfMatchIsFriendly, h.checkIfUserIsMatchPlayer, h.updateScore)
+		matches.PUT("/:id/score", authmiddleware.RequireAuth(), h.checkIfMatchIsFriendly, authmiddleware.RequirePlayerRecord, h.checkIfUserIsMatchPlayer, h.updateScore)
 		matches.PUT("/:id/update-date", authmiddleware.RequireAuth(), h.checkIfMatchIsFriendly, h.checkIfUserIsMatchPlayer, h.updateDate)
 		matches.PUT("/:id/approve", authmiddleware.RequireAuth(), h.checkIfMatchIsFriendly, h.checkIfUserIsMatchPlayer, h.approveScore)
 	}
@@ -39,7 +39,7 @@ func (h *MatchHandler) approveScore(c *gin.Context) {
 	matchId := c.Param("id")
 	err := h.u.ApproveScore(c.Request.Context(), match.MatchSource_FRIENDLY, matchId)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
 		return
 	}
@@ -53,7 +53,7 @@ func (h *MatchHandler) getSetScore(c *gin.Context) {
 	sides, err := h.u.GetMatchInfo(c.Request.Context(), matchId)
 
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
 		return
 	}
@@ -114,11 +114,11 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&macScore); err != nil {
 		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
+			_ = c.Error(customerror.NewValidationError(ve))
 			c.Abort()
 			return
 		} else {
-			c.Error(customerror.NewInternalError(err))
+			_ = c.Error(customerror.NewInternalError(err))
 			c.Abort()
 			return
 		}
@@ -142,7 +142,7 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 
 	response, err := h.u.SaveMatchScore(c.Request.Context(), saveMatchScore)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
 		return
 	}
@@ -160,11 +160,11 @@ func (h *MatchHandler) updateDate(c *gin.Context) {
 
 	if err := c.ShouldBindQuery(&req); err != nil {
 		if ve, ok := err.(validator.ValidationErrors); ok {
-			c.Error(customerror.NewValidationError(ve))
+			_ = c.Error(customerror.NewValidationError(ve))
 			c.Abort()
 			return
 		} else {
-			c.Error(customerror.NewInternalError(err))
+			_ = c.Error(customerror.NewInternalError(err))
 			c.Abort()
 			return
 		}
@@ -172,7 +172,7 @@ func (h *MatchHandler) updateDate(c *gin.Context) {
 
 	err := h.u.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_FRIENDLY, &req.MatchDate)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
 		return
 	}
@@ -185,34 +185,27 @@ func (h *MatchHandler) checkIfMatchIsFriendly(c *gin.Context) {
 	matchId := c.Param("id")
 	matchInfo, err := h.u.GetMatchInfo(c.Request.Context(), matchId)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
 		return
 	}
 	if matchInfo.Source != match.MatchSource_FRIENDLY {
-		c.Error(errors.New("Buradan sadece dosluk maçları güncellenebilir"))
+		_ = c.Error(errors.New("Buradan sadece dosluk maçları güncellenebilir"))
 		c.Abort()
+		return
 	}
 }
 
 func (h *MatchHandler) checkIfUserIsMatchPlayer(c *gin.Context) {
 	matchId := c.Param("id")
-	playerId, exists := authmiddleware.GetPlayerIdFromContext(c)
-	if !exists {
-		err := &customerror.BusinnesException{
-			StatusCode: http.StatusForbidden,
-			ErrorCode:  errorcodes.INSUFFICIENT_PERMISSIONS,
-			Message:    "Oyuncu kaydınız bulunamamıştır",
-		}
-		c.Error(err)
-		c.Abort()
-	}
+	playerId, _ := authmiddleware.GetPlayerIdFromContext(c)
 
 	playedInMatch, err := h.u.IsUserPlayerOfMatch(c.Request.Context(), matchId, playerId)
 
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
+		return
 	}
 
 	if !playedInMatch {
@@ -221,7 +214,8 @@ func (h *MatchHandler) checkIfUserIsMatchPlayer(c *gin.Context) {
 			ErrorCode:  errorcodes.ErrNotParticipatedInMatch,
 			Message:    "Bu maçta oynamadığınız için skoru güncelleyemezsiniz",
 		}
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
+		return
 	}
 }
