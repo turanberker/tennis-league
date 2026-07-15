@@ -3,6 +3,7 @@ package leaguehandler
 import (
 	"errors"
 	"net/http"
+	"tennis-league/common/http/router"
 	customerror "tennis-league/common/lib/error"
 	"tennis-league/common/lib/http/delivery"
 	"tennis-league/common/security/authmiddleware"
@@ -22,7 +23,7 @@ func newMatchMakingHandler(leagueHandlerMiddleware *leagueHandlerMiddleware,
 	return &matchmakingHandler{leagueHandlerMiddleware: leagueHandlerMiddleware, useCase: useCase}
 }
 
-func (h *matchmakingHandler) registerSubRoutes(group *gin.RouterGroup) {
+func (h *matchmakingHandler) registerSubRoutes(group *router.CustomRouterGroup) {
 	group.POST("", authmiddleware.RequireAuth(), authmiddleware.RequirePlayerRecord,
 		h.leagueHandlerMiddleware.userAttendedToLeague, h.new)
 }

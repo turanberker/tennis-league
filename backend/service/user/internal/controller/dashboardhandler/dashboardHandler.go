@@ -2,6 +2,7 @@ package dashboardhandler
 
 import (
 	"net/http"
+	"tennis-league/common/http/router"
 	"tennis-league/user-service/internal/service/player"
 
 	customerror "tennis-league/common/lib/error"
@@ -20,7 +21,7 @@ func NewDashboardHandler(playerUc *player.Usecase) *DashboardHandler {
 	return &DashboardHandler{playerUc: playerUc}
 }
 
-func (h *DashboardHandler) RegisterRoutes(r *gin.Engine) {
+func (h *DashboardHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 	group := r.Group("/me", authmiddleware.RequireAuth(), httpcache.AddCacheControlHeader(600, httpcache.TYPE_PRIVATE))
 	{

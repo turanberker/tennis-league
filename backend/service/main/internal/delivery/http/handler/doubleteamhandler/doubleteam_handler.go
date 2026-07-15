@@ -2,6 +2,7 @@ package doubleteamhandler
 
 import (
 	"net/http"
+	"tennis-league/common/http/router"
 
 	"tennis-league/common/lib/http/delivery"
 	httpcache "tennis-league/common/lib/http/http-cache"
@@ -18,7 +19,7 @@ func NewDoubleTeamHandler(uc *team.UseCase) *DoubleTeamHandler {
 	return &DoubleTeamHandler{uc: uc}
 }
 
-func (h *DoubleTeamHandler) RegisterRoutes(r *gin.Engine) {
+func (h *DoubleTeamHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 	group := r.Group("/double-team")
 	{
@@ -33,7 +34,7 @@ func (h *DoubleTeamHandler) getTeamMembers(c *gin.Context) {
 	players, err := h.uc.GetTeamMembers(c.Request.Context(), id)
 
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		c.Abort()
 		return
 	}

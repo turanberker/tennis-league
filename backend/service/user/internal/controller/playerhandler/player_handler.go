@@ -2,6 +2,7 @@ package playerhandler
 
 import (
 	"net/http"
+	"tennis-league/common/http/router"
 	"tennis-league/user-interface/constants"
 	"tennis-league/user-service/internal/service/player"
 
@@ -20,7 +21,7 @@ func NewPlayerHandler(uc *player.Usecase) *PlayerHandler {
 	return &PlayerHandler{uc: uc}
 }
 
-func (h *PlayerHandler) RegisterRoutes(r *gin.Engine) {
+func (h *PlayerHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 	group := r.Group("/player")
 	{

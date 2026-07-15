@@ -3,6 +3,7 @@ package leaguehandler
 import (
 	"log"
 	"net/http"
+	"tennis-league/common/http/router"
 	"tennis-league/service/internal/domain/matchrequest"
 	"time"
 
@@ -55,7 +56,7 @@ func NewHandler(uc *league.Usecase, teamUc *team.UseCase,
 	}
 }
 
-func (h *Handler) RegisterRoutes(r *gin.Engine) {
+func (h *Handler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 	leagues := r.Group("/leagues")
 	{

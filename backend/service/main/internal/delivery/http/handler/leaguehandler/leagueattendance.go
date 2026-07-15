@@ -2,6 +2,7 @@ package leaguehandler
 
 import (
 	"net/http"
+	"tennis-league/common/http/router"
 	customerror "tennis-league/common/lib/error"
 	"tennis-league/common/lib/http/delivery"
 	"tennis-league/common/security/authmiddleware"
@@ -19,7 +20,7 @@ type leagueAttendanceHandler struct {
 	uc                      *league.Usecase
 }
 
-func (h *leagueAttendanceHandler) registerSubRoutes(group *gin.RouterGroup) {
+func (h *leagueAttendanceHandler) registerSubRoutes(group *router.CustomRouterGroup) {
 	group.GET("/teams", h.getTeams)
 	group.POST("/teams",
 		authmiddleware.RequireRole(dto.RoleAdmin, dto.RoleCoordinator),

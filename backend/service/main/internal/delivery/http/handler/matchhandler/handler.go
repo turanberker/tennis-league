@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"tennis-league/common/http/router"
 	"time"
 
 	customerror "tennis-league/common/lib/error"
@@ -25,7 +26,7 @@ func NewMatchHandler(u *match.UseCase) *MatchHandler {
 	return &MatchHandler{u: u}
 }
 
-func (h *MatchHandler) RegisterRoutes(r *gin.Engine) {
+func (h *MatchHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 	matches := r.Group("/match")
 	{
 		matches.GET("/:id", h.getById)

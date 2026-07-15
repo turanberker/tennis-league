@@ -23,7 +23,7 @@ func NewAuthHandler(uc *auth.Usecase, tokenService *token.TokenService) *AuthHan
 	return &AuthHandler{uc: uc, tokenService: tokenService}
 }
 
-func (h *AuthHandler) RegisterRoutes(r *gin.Engine) {
+func (h *AuthHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 	authGroup := r.Group("/auth")
 	{
 		authGroup.POST("/login", h.login)

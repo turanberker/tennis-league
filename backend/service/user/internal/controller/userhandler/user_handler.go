@@ -2,6 +2,7 @@ package userhandler
 
 import (
 	"net/http"
+	"tennis-league/common/http/router"
 	"tennis-league/user-service/internal/service/user"
 
 	customerror "tennis-league/common/lib/error"
@@ -21,7 +22,7 @@ func NewUserHandler(userUc *user.Usecase) *UserHandler {
 	return &UserHandler{userUc: userUc}
 }
 
-func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
+func (h *UserHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 	userRoute := r.Group("/user")
 	{

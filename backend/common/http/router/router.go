@@ -24,13 +24,15 @@ func NewRouter(serverConfig *ServerConfig, auth *authmiddleware.AuthMiddleware,
 	r.Use(handler.ErrorHandler())
 	r.Use(auth.GetToken()) // 🔥 Global JWT kontrolü
 
+	customRouter := NewCustomGroup(r)
+
 	for _, h := range handlers {
-		h.RegisterRoutes(r)
+		h.RegisterRoutes(customRouter)
 	}
 
 	return r
 }
 
 type RegisterableHandler interface {
-	RegisterRoutes(r *gin.Engine)
+	RegisterRoutes(r *CustomRouterGroup)
 }

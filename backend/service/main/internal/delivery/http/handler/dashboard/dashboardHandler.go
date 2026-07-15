@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"net/http"
+	"tennis-league/common/http/router"
 
 	"time"
 
@@ -10,8 +11,6 @@ import (
 	httpcache "tennis-league/common/lib/http/http-cache"
 	authmiddleware "tennis-league/common/security/authmiddleware"
 	"tennis-league/service/internal/domain/match"
-
-	"github.com/gin-gonic/gin"
 )
 
 type DashboardHandler struct {
@@ -22,7 +21,7 @@ func NewDashboardHandler(matchUseCase *match.UseCase) *DashboardHandler {
 	return &DashboardHandler{matchUseCase: matchUseCase}
 }
 
-func (h *DashboardHandler) RegisterRoutes(r *gin.Engine) {
+func (h *DashboardHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 	group := r.Group("/me", authmiddleware.RequireAuth(), httpcache.AddCacheControlHeader(600, httpcache.TYPE_PRIVATE))
 	{
@@ -31,7 +30,7 @@ func (h *DashboardHandler) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
-func (h *DashboardHandler) getIncomingMatches(c *gin.Context) {
+func (h *DashboardHandler) getIncomingMatches(c *router.CustomContext) {
 	var req struct {
 		Limit int16 `form:"limit" binding:"omitempty,numeric"`
 	}
