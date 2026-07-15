@@ -2,20 +2,17 @@ package matchhandler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"tennis-league/common/http/router"
 	"time"
 
 	customerror "tennis-league/common/lib/error"
-	"tennis-league/common/lib/http/delivery"
 	authmiddleware "tennis-league/common/security/authmiddleware"
 
 	errorcodes "tennis-league/service/internal/domain/error_codes"
 	"tennis-league/service/internal/domain/match"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type MatchHandler struct {
@@ -36,17 +33,16 @@ func (h *MatchHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 		matches.PUT("/:id/approve", authmiddleware.RequireAuth(), h.checkIfMatchIsFriendly, h.checkIfUserIsMatchPlayer, h.approveScore)
 	}
 }
-func (h *MatchHandler) approveScore(c *gin.Context) {
+func (h *MatchHandler) approveScore(c *router.CustomContext) {
 	matchId := c.Param("id")
 	err := h.u.ApproveScore(c.Request.Context(), match.MatchSource_FRIENDLY, matchId)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(nil))
+	c.OkComplete(nil)
 }
-func (h *MatchHandler) getSetScore(c *gin.Context) {
+func (h *MatchHandler) getSetScore(c *router.CustomContext) {
 
 	// path param
 	matchId := c.Param("id")
@@ -54,8 +50,7 @@ func (h *MatchHandler) getSetScore(c *gin.Context) {
 	sides, err := h.u.GetMatchInfo(c.Request.Context(), matchId)
 
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
@@ -96,37 +91,24 @@ func (h *MatchHandler) getSetScore(c *gin.Context) {
 		}
 
 	}
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(response))
+	c.OkComplete(response)
 }
 
-func (h *MatchHandler) getById(c *gin.Context) {
+func (h *MatchHandler) getById(c *router.CustomContext) {
 
 	// path param
 	matchId := c.Param("id")
-	log.Printf("match id: %s", matchId)
-	c.JSON(200, gin.H{"message": "get match by id"})
+	c.OkComplete(matchId)
 }
 
-func (h *MatchHandler) updateScore(c *gin.Context) {
+func (h *MatchHandler) updateScore(c *router.CustomContext) {
 	matchId := c.Param("id")
 
 	macScore := UpdateScoreRequest{}
 
-	if err := c.ShouldBindJSON(&macScore); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			_ = c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			_ = c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&macScore) {
+		return
 	}
-
-	log.Printf("match id: %s", matchId)
-	log.Printf("score :%+v", macScore)
 
 	set1 := match.SaveScore{Team1Score: macScore.Set1.Team1Score, Team2Score: macScore.Set1.Team2Score}
 	set2 := match.SaveScore{Team1Score: macScore.Set2.Team1Score, Team2Score: macScore.Set2.Team2Score}
@@ -143,43 +125,30 @@ func (h *MatchHandler) updateScore(c *gin.Context) {
 
 	response, err := h.u.SaveMatchScore(c.Request.Context(), saveMatchScore)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(&MatchScoreResponse{Team1Score: response.Team1Score, Team2Score: response.Team2Score}))
+	c.OkComplete(MatchScoreResponse{Team1Score: response.Team1Score, Team2Score: response.Team2Score})
 
 }
 
-func (h *MatchHandler) updateDate(c *gin.Context) {
+func (h *MatchHandler) updateDate(c *router.CustomContext) {
 	matchId := c.Param("id")
 
 	var req struct {
 		MatchDate time.Time `form:"match-date" binding:"required" time_format:"2006-01-02T15:04:05Z07:00"`
 	}
 
-	if err := c.ShouldBindQuery(&req); err != nil {
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			_ = c.Error(customerror.NewValidationError(ve))
-			c.Abort()
-			return
-		} else {
-			_ = c.Error(customerror.NewInternalError(err))
-			c.Abort()
-			return
-		}
+	if !c.BindJSONOrAbort(&req) {
+		return
 	}
 
 	err := h.u.UpdateMatchDate(c.Request.Context(), matchId, match.MatchSource_FRIENDLY, &req.MatchDate)
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
-
-	c.JSON(http.StatusOK, delivery.NewSuccessResponse(req.MatchDate))
-
+	c.OkComplete(req.MatchDate)
 }
 
 func (h *MatchHandler) checkIfMatchIsFriendly(c *gin.Context) {

@@ -1,14 +1,10 @@
 package doubleteamhandler
 
 import (
-	"net/http"
 	"tennis-league/common/http/router"
 
-	"tennis-league/common/lib/http/delivery"
 	httpcache "tennis-league/common/lib/http/http-cache"
 	"tennis-league/service/internal/domain/team"
-
-	"github.com/gin-gonic/gin"
 )
 
 type DoubleTeamHandler struct {
@@ -28,14 +24,13 @@ func (h *DoubleTeamHandler) RegisterRoutes(r *router.CustomRouterGroup) {
 
 }
 
-func (h *DoubleTeamHandler) getTeamMembers(c *gin.Context) {
+func (h *DoubleTeamHandler) getTeamMembers(c *router.CustomContext) {
 	id := c.Param("id")
 
 	players, err := h.uc.GetTeamMembers(c.Request.Context(), id)
 
 	if err != nil {
-		_ = c.Error(err)
-		c.Abort()
+		c.ErrorComplete(err)
 		return
 	}
 
@@ -51,7 +46,5 @@ func (h *DoubleTeamHandler) getTeamMembers(c *gin.Context) {
 			SinglePoints: p.SinglePoints,
 		})
 	}
-
-	res := delivery.NewSuccessResponse(response)
-	c.JSON(http.StatusOK, res)
+	c.OkComplete(response)
 }
