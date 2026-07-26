@@ -39,7 +39,7 @@ func ErrorHandler() gin.HandlerFunc {
 			}
 
 			// 3. Beklenmedik Hatalar
-			log.Printf("[KRİTİK HATA]: %v", err)
+			log.Printf("[KRİTİK HATA]: %+v", err)
 			c.JSON(http.StatusInternalServerError, delivery.UnexpectedError)
 		}
 	}
