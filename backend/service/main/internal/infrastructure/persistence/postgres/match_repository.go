@@ -3,17 +3,17 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"errors"
+
 	"time"
 
 	"fmt"
-	"log"
 
 	sqlrepository "tennis-league/common/lib/repository/sql"
 	"tennis-league/service/internal/domain/match"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/sqlscan"
+	"github.com/pkg/errors"
 )
 
 type MatchRepository struct {
@@ -74,13 +74,13 @@ func (r *MatchRepository) SaveBulkMatches(ctx context.Context, req *match.BulkIn
 
 	query, args, err := builder.ToSql()
 	if err != nil {
-		fmt.Println(query)
-		return fmt.Errorf("sorgu olusturulamadi: %w", err)
+		errors.Wrap(err, "Sorgu oluşturulamadı")
+
 	}
 
 	_, err = executor.ExecContext(ctx, query, args...)
 	if err != nil {
-		log.Printf("Maçlar oluşturulurken hata oluştu: %v\n", err)
+		errors.Wrap(err, "Maçlar oluşturulurken hata oluştu")
 		return err
 	}
 
@@ -119,7 +119,7 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 
 	query, args, err := sqlBuilder.OrderBy("m.match_date ASC").ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("sorgu oluşturulamadı: %w", err)
+		return nil, errors.Wrap(err, "Sorgu oluşturulamadı")
 	}
 	// 2. Metod İçi Yerel Struct (sqlscan için)
 	type row struct {
@@ -139,7 +139,7 @@ func (r *MatchRepository) GetFixtureByLeagueId(ctx context.Context, leagueId str
 	var rowsData []row
 	err = sqlscan.Select(ctx, executor, &rowsData, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("veritabanı hatası (fikstür): %w", err)
+		return nil, errors.Wrap(err, "veritabanı hatası (fikstür)")
 	}
 
 	// 3. Domain Modeline Mapping
@@ -177,8 +177,7 @@ func (r *MatchRepository) UpdateMatchDate(ctx context.Context, data match.Update
 
 	result, err := executor.ExecContext(ctx, query, data.MatchDate, data.Id)
 	if err != nil {
-		log.Println("Maç tarihi güncellenirken hata oluştu:", err)
-		return err
+		return errors.Wrap(err, "Maç tarihi güncellenirken hata oluştu")
 	}
 
 	// Etkilenen satır sayısını kontrol et
@@ -219,8 +218,7 @@ func (r *MatchRepository) UpdateMatchScore(ctx context.Context, macScore *match.
 
 	_, err := executor.ExecContext(ctx, query, macScore.Team1Score, macScore.Team2Score, macScore.WinnerTeamId, match.StatusCompleted, macScore.Id)
 	if err != nil {
-		log.Printf("Maç Skoru güncellenirken hata oluştu:%+v", err)
-		return err
+		return errors.Wrap(err, "Maç Skoru güncellenirken hata oluştu")
 	}
 	return nil
 }
@@ -238,14 +236,12 @@ func (r *MatchRepository) ApproveScore(ctx context.Context, source match.Match_S
 		source,
 	)
 	if err != nil {
-		log.Printf("Maç Skoru Onaylanırken hata oluştu:%+v", err)
-		return err
+		return errors.Wrap(err, "Maç Skoru Onaylanırken hata oluştu")
 	}
 
 	c, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("Maç Skoru Onaylanırken hata oluştu:%+v", err)
-		return err
+		return errors.Wrap(err, "Maç Skoru Onaylanırken hata oluştu")
 	}
 	if c == 0 {
 		return errors.New("Onaylanacak Maç bulunamadı")
@@ -276,7 +272,7 @@ func (r *MatchRepository) GetPlayersIdsAndWinnerStatus(ctx context.Context, matc
 		Else("singles.player_id = m.winner_id")
 	caseSql, _, err := isWinnerCase.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build case clause: %w", err)
+		return nil, errors.Wrap(err, "failed to build CASE statement")
 	}
 	query, args, err := psql.
 		Select(
@@ -294,7 +290,7 @@ func (r *MatchRepository) GetPlayersIdsAndWinnerStatus(ctx context.Context, matc
 		ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to build query: %w", err)
+		return nil, errors.Wrap(err, "failed to build query")
 	}
 
 	// 2. sqlscan (scany) ile <sorguyu çalıştır ve sonuçları bind et
@@ -307,7 +303,7 @@ func (r *MatchRepository) GetPlayersIdsAndWinnerStatus(ctx context.Context, matc
 
 	var rows []dbRow
 	if err := sqlscan.Select(ctx, r.DB, &rows, query, args...); err != nil {
-		return nil, fmt.Errorf("failed to select participants: %w", err)
+		return nil, errors.Wrap(err, "failed to select participants")
 	}
 
 	// 3. Database row'larını service modeline (match.MatchParticipant) dönüştür
@@ -389,7 +385,7 @@ func (r *MatchRepository) GetPlayerIncomingMatches(ctx context.Context, queryPar
 
 	query, args, err := finalQueryBuilder.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build query: %w", err)
+		return nil, errors.Wrap(err, "failed to build query")
 	}
 	allArgs = append(allArgs, args...) // UNION sorgusunun argümanları + final sorgunun argümanları
 	type dbRow struct {
@@ -485,7 +481,7 @@ func (r *MatchRepository) GetMatchInfo(ctx context.Context, matchId string) (*ma
 	matchInfo := &match.MatchInfo{}
 
 	if err := sqlscan.Get(ctx, executor, &dbRow, query, args...); err != nil {
-		return nil, fmt.Errorf("Maç Bilgisi Getirilemedi (id: %s): %w", matchId, err)
+		return nil, errors.Wrapf(err, "Maç Bilgisi Getirilemedi (id: %s)", matchId)
 	}
 	matchInfo.MatchDate = dbRow.MatchDate
 	matchInfo.MatchType = dbRow.Match_Type
@@ -517,7 +513,7 @@ func (r *MatchRepository) GetMatchInfo(ctx context.Context, matchId string) (*ma
 		matchInfo.Side2.Id = *dbRow.Player2Id
 		matchInfo.Side2.Name = fmt.Sprintf("%s %s", *dbRow.Player2Name, *dbRow.Player2Surname)
 	} else {
-		return nil, fmt.Errorf("match sides not found for match id: %s", matchId)
+		return nil, errors.Wrapf(err, "match sides not found for match id: %s", matchId)
 	}
 
 	return matchInfo, nil
@@ -542,7 +538,7 @@ func (r *MatchRepository) CheckIfPlayerPlayedInMatch(ctx context.Context, matchI
 	// SQL ve Argümanları al
 	sqlStr, args, err := query.ToSql()
 	if err != nil {
-		return false, fmt.Errorf("query building error: %w", err)
+		return false, errors.Wrap(err, "query building error")
 	}
 
 	var count int
@@ -551,7 +547,7 @@ func (r *MatchRepository) CheckIfPlayerPlayedInMatch(ctx context.Context, matchI
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
-		return false, fmt.Errorf("execution error: %w", err)
+		return false, errors.Wrap(err, "execution error")
 	}
 
 	return count > 0, nil

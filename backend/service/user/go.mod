@@ -7,11 +7,12 @@ require (
 	github.com/georgysavva/scany v1.2.3
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-chi/jwtauth/v5 v5.3.3
-	github.com/go-playground/validator/v10 v10.30.3
 	github.com/lib/pq v1.12.3
 	github.com/rabbitmq/amqp091-go v1.11.0
 	github.com/redis/go-redis/v9 v9.17.3
 	golang.org/x/crypto v0.52.0
+	golang.org/x/sync v0.20.0
+	google.golang.org/grpc v1.82.0
 )
 
 require (
@@ -27,6 +28,7 @@ require (
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/go-playground/validator/v10 v10.30.3 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
@@ -58,5 +60,6 @@ require (
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )

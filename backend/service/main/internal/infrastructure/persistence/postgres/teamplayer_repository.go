@@ -3,13 +3,14 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"errors"
+
 	"log"
 
 	sqlrepository "tennis-league/common/lib/repository/sql"
 	"tennis-league/service/internal/domain/teamplayer"
 
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
 )
 
 type TeamPlayerRepository struct {
@@ -22,12 +23,11 @@ func NewTeamPlayerRepository(db *sql.DB) *TeamPlayerRepository {
 
 func (r *TeamPlayerRepository) GetByPlayersByTeamId(ctx context.Context, teamId string) ([]teamplayer.Player, error) {
 	exec := r.GetExecutor(ctx)
-	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id,p.single_point ,p.double_point FROM team_player tp inner join player p on p.id=tp.player_id WHERE team_id=$1`
+	query := `SELECT  p.id, p.name, p.surname, p.sex, p.user_id,p.single_point ,p.double_point FROM attendance_player tp inner join player p on p.id=tp.player_id WHERE attendance_id=$1`
 	rows, err := exec.QueryContext(ctx, query, teamId)
 
 	if err != nil {
-		log.Println("Takım Oyuncuları çekilirken hata oluştu:", err)
-		return nil, err
+		return nil, errors.Wrap(err, "Takım Oyuncuları çekilirken hata oluştu:")
 	}
 	defer rows.Close()
 	var teamPlayers []teamplayer.Player

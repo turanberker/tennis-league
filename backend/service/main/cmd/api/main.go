@@ -19,6 +19,10 @@ import (
 	"tennis-league/service/internal/domain/user"
 	"tennis-league/service/internal/infrastructure/persistence/postgres"
 	"tennis-league/service/internal/infrastructure/persistence/redis"
+	"tennis-league/user-interface/grpc/pb/playerpb"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -41,7 +45,7 @@ func main() {
 	cacheManager := cache.NewCacheManager(redisClient)
 
 	leagueRepository := postgres.NewLeagueRepository(db)
-	teamRepository := postgres.NewTeamRepository(db)
+	attendanceRepository := postgres.NewAttendanceRepository(db)
 	teamPlayerRepository := postgres.NewTeamPlayerRepository(db)
 	matchRepository := postgres.NewMatchRepository(db)
 	matchSetRepository := postgres.NewMatchSetRepository(db)
@@ -50,18 +54,31 @@ func main() {
 	matchRequestRepository := postgres.NewMatchRequestRepository(db)
 	leagueCoordinatorRepository := postgres.NewLeagueCoordinatorRepository(db)
 
-	teamUseCase := team.NewUseCase(transactionManager, cacheManager, teamRepository, teamPlayerRepository)
+	userGrpcAddr := "localhost:50051"
+
+	conn, err := grpc.NewClient(userGrpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("User Service gRPC bağlantı hatası: %v", err)
+	}
+	// Bağlantıyı uygulama kapanırken kapatmayı unutmuyoruz
+	defer conn.Close()
+
+	// 2. Üretilen paketi kullanarak bir Player Service istemcisi (client) oluşturuyoruz
+	playerClient := playerpb.NewPlayerServiceClient(conn)
+
+	teamUseCase := team.NewUseCase(transactionManager, cacheManager, attendanceRepository, teamPlayerRepository)
 	matchUseCase := match.NewUseCase(transactionManager, cacheManager, matchRepository, matchSetRepository, outboxRepository)
-	leagueUseCase := league.NewUsecase(transactionManager, cacheManager, teamUseCase, matchUseCase, userUC, leagueRepository, teamRepository,
-		matchRepository, outboxRepository, leagueCoordinatorRepository, scoreBoardRepository)
+	leagueUseCase := league.NewUsecase(transactionManager, cacheManager, teamUseCase, matchUseCase, userUC, leagueRepository, attendanceRepository,
+		matchRepository, outboxRepository, leagueCoordinatorRepository, attendanceRepository, playerClient)
 	matchRequestUseCase := matchrequest.NewMatchRequestUseCase(transactionManager, matchRequestRepository)
 	scoreBaordUc := scoreboard.NewUseCase(scoreBoardRepository)
 
 	dashboardHandler := dashboard.NewDashboardHandler(matchUseCase)
-	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc, matchUseCase, matchRequestUseCase)
+	leagueHandler := leaguehandler.NewHandler(leagueUseCase, teamUseCase, scoreBaordUc, matchUseCase, matchRequestUseCase, playerClient)
 
 	matchHandler := matchhandler.NewMatchHandler(matchUseCase)
 	doubleTeamHandler := doubleteamhandler.NewDoubleTeamHandler(teamUseCase)
+
 	r := router.NewRouter(serverConfig, authmiddleware.NewAuthMiddleware("tennis", sessionRepository),
 		dashboardHandler,
 		leagueHandler,

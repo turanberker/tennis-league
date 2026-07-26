@@ -21,7 +21,7 @@ type Repository interface {
 type ParticipantRepository interface {
 	SingleLeagueAttendanceList(ctx context.Context, leagueId string) ([]SingleLeagueAttendance, error)
 
-	AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) error
+	AddPlayerToLeague(ctx context.Context, leagueAttendance NewLeaguePlayerAttendance) error
 
 	AddTeamToLeague(ctx context.Context, leagueId string, teamId string) error
 

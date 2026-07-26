@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"tennis-league/common/http/router"
 	"tennis-league/service/internal/domain/matchrequest"
+	"tennis-league/user-interface/grpc/pb/playerpb"
 	"time"
 
 	"tennis-league/common/lib/database"
@@ -34,7 +35,8 @@ type Handler struct {
 
 func NewHandler(uc *league.Usecase, teamUc *team.UseCase,
 	scoreBoardUc *scoreboard.UseCase, matchUc *match.UseCase,
-	matchRequestUseCase *matchrequest.UseCase) *Handler {
+	matchRequestUseCase *matchrequest.UseCase,
+	playerServiceClient playerpb.PlayerServiceClient) *Handler {
 
 	leagueHandlerMiddleware :=
 		&leagueHandlerMiddleware{uc: uc, matchUc: matchUc}

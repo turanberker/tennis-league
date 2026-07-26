@@ -10,6 +10,7 @@ import (
 	"tennis-league/common/lib/cache"
 	"tennis-league/common/lib/database"
 	customerror "tennis-league/common/lib/error"
+	"tennis-league/user-interface/grpc/pb/playerpb"
 
 	errorcodes "tennis-league/service/internal/domain/error_codes"
 	"tennis-league/service/internal/domain/leaguecoordinator"
@@ -31,6 +32,7 @@ type Usecase struct {
 	matchRepo             match.Repository
 	coordinatorRepository leaguecoordinator.Repository
 	participantRepository ParticipantRepository
+	playerClient          playerpb.PlayerServiceClient
 }
 
 func NewUsecase(
@@ -45,6 +47,7 @@ func NewUsecase(
 	outboxRepository outbox.Repository,
 	coordinatorRepository leaguecoordinator.Repository,
 	participantRepository ParticipantRepository,
+	playerClient playerpb.PlayerServiceClient,
 ) *Usecase {
 	return &Usecase{repo: repo,
 		teamUseCase:           teamUc,
@@ -57,6 +60,7 @@ func NewUsecase(
 		tm:                    tm,
 		outboxRepository:      outboxRepository,
 		participantRepository: participantRepository,
+		playerClient:          playerClient,
 	}
 }
 
@@ -245,7 +249,17 @@ func (u *Usecase) AddPlayerToLeague(ctx context.Context, leagueId string, player
 	var response *int32
 	err := u.tm.WithTransaction(ctx, func(txCtx context.Context) error {
 
-		err := u.participantRepository.AddPlayerToLeague(txCtx, leagueId, playerId)
+		resp, err := u.playerClient.GetPlayer(ctx, &playerpb.GetPlayerRequest{
+			PlayerId: playerId,
+		})
+
+		newPlayerAttancance := NewLeaguePlayerAttendance{
+			LeagueId:   leagueId,
+			PlayerId:   playerId,
+			PlayerName: resp.Name,
+		}
+
+		err = u.participantRepository.AddPlayerToLeague(txCtx, newPlayerAttancance)
 		if err != nil {
 			return err
 		}

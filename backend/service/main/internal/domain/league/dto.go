@@ -14,3 +14,9 @@ type CreateTeamResponseDto struct {
 type FixtureFilterParam struct {
 	TeamId *string
 }
+
+type NewLeaguePlayerAttendance struct {
+	LeagueId   string
+	PlayerId   string
+	PlayerName string
+}

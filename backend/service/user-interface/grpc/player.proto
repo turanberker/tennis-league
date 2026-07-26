@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package player;
+
+// go.mod dosyanızda yazan modül ismine göre burayı güncelleyin:
+option go_package = "grpc/pb/playerpb;playerpb";
+
+service PlayerService {
+  rpc GetPlayer (GetPlayerRequest) returns (GetPlayerResponse);
+}
+
+message GetPlayerRequest {
+  string player_id = 1;
+}
+
+message GetPlayerResponse {
+  string id = 1;
+  string name = 2;
+}

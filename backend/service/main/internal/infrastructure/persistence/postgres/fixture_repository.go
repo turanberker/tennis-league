@@ -3,19 +3,10 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
-	"net/http"
-	customerror "tennis-league/common/lib/error"
 	sqlrepository "tennis-league/common/lib/repository/sql"
 	"tennis-league/service/internal/delivery/message/consumer/match_score/leaguematch"
-	errorcodes "tennis-league/service/internal/domain/error_codes"
-	"tennis-league/service/internal/domain/league"
 	"tennis-league/service/internal/domain/scoreboard"
-
-	"github.com/Masterminds/squirrel"
-	"github.com/georgysavva/scany/sqlscan"
-	"github.com/lib/pq"
 )
 
 type ScoreBoardRepository struct {
@@ -24,35 +15,6 @@ type ScoreBoardRepository struct {
 
 func NewScoreBoardRepository(db *sql.DB) *ScoreBoardRepository {
 	return &ScoreBoardRepository{Repository: *sqlrepository.NewRepository(db)}
-}
-
-func (f *ScoreBoardRepository) AddTeamToLeague(ctx context.Context, leagueId string, teamId string) error {
-	executor := f.GetExecutor(ctx)
-
-	query, args, err := squirrel.StatementBuilder.
-		PlaceholderFormat(squirrel.Dollar).
-		Insert("score_board").
-		Columns("league_id", "team_id").
-		Values(leagueId, teamId).
-		ToSql()
-	if err != nil {
-		return customerror.NewInternalError(err)
-	}
-	_, err = executor.ExecContext(ctx, query, args...)
-	if err != nil {
-		var pqErr *pq.Error
-		if errors.As(err, &pqErr) {
-			if pqErr.Constraint == "uidx_league_team" {
-				return customerror.NewBusinessError(http.StatusConflict, errorcodes.ErrorPlayerAlreadyAddedToLeague, "Bu takım bu lige zaten eklenmiş.")
-			}
-		}
-
-		// Veritabanı hatasını projenizin özel hata yapısıyla sarmalıyoruz
-		return customerror.NewInternalError(err)
-	}
-
-	// Her şey yolunda gittiyse nil dönüyoruz
-	return nil
 }
 
 func (f *ScoreBoardRepository) FetchScoreBoard(ctx context.Context, leagueId string) ([]*scoreboard.ScoreBoard, error) {
@@ -131,114 +93,4 @@ func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, update leaguemat
 	}
 
 	return nil
-}
-
-func (f *ScoreBoardRepository) SingleLeagueAttendanceList(ctx context.Context, leagueId string) ([]league.SingleLeagueAttendance, error) {
-	executor := f.GetExecutor(ctx)
-
-	query, args, err := squirrel.StatementBuilder.
-		PlaceholderFormat(squirrel.Dollar).
-		Select(
-			"sb.player_id",
-			"p.name",
-			"p.surname",
-			"p.single_point",
-		).
-		From("score_board sb").
-		Join("player p ON p.id = sb.player_id").
-		Where(squirrel.Eq{
-			"sb.league_id": leagueId,
-		}).
-		ToSql()
-	if err != nil {
-		return nil, customerror.NewInternalError(err)
-	}
-
-	type attendanceRow struct {
-		ID           string `db:"player_id"`
-		Name         string `db:"name"`
-		Surname      string `db:"surname"`
-		SinglePoints int    `db:"single_point"`
-	}
-	var rowsData []attendanceRow
-	err = sqlscan.Select(ctx, executor, &rowsData, query, args...)
-	if err != nil {
-		return nil, customerror.NewInternalError(err)
-	}
-
-	// Gelen ham veriyi kendi Player modelinize dönüştürme (Mapping)
-	players := make([]league.SingleLeagueAttendance, 0, len(rowsData))
-	for _, d := range rowsData {
-		players = append(players, league.SingleLeagueAttendance{
-			ID:        d.ID,
-			Firstname: d.Name,
-			Surname:   d.Surname,
-			Power:     d.SinglePoints,
-		})
-	}
-
-	return players, nil
-}
-
-func (f *ScoreBoardRepository) AddPlayerToLeague(ctx context.Context, leagueId string, playerId string) error {
-	executor := f.GetExecutor(ctx)
-	query, args, err := squirrel.StatementBuilder.
-		PlaceholderFormat(squirrel.Dollar).
-		Insert("score_board").
-		Columns("league_id", "player_id").
-		Values(leagueId, playerId).
-		ToSql()
-	if err != nil {
-		return customerror.NewInternalError(err)
-	}
-	_, err = executor.ExecContext(ctx, query, args...)
-	if err != nil {
-		var pqErr *pq.Error
-		if errors.As(err, &pqErr) {
-			if pqErr.Constraint == "uidx_league_single_player" {
-				return customerror.NewBusinessError(http.StatusConflict, errorcodes.ErrorPlayerAlreadyAddedToLeague, "Bu oyuncu bu lige zaten eklenmiş.")
-			}
-		}
-
-		// Veritabanı hatasını projenizin özel hata yapısıyla sarmalıyoruz
-		return customerror.NewInternalError(err)
-	}
-
-	// Her şey yolunda gittiyse nil dönüyoruz
-	return nil
-}
-
-func (f *ScoreBoardRepository) IsPlayerAttendedToLeague(ctx context.Context, leagueId string, playerId string) (bool, error) {
-	executor := f.GetExecutor(ctx)
-
-	query, args, err := squirrel.StatementBuilder.
-		PlaceholderFormat(squirrel.Dollar).
-		Select(
-			"1",
-		).
-		From("score_board sb").
-		Join("player p ON p.id = sb.player_id").
-		Where(squirrel.Eq{
-			"sb.league_id": leagueId,
-			"sb.player_id": playerId,
-		}).
-		ToSql()
-
-	if err != nil {
-		return false, fmt.Errorf("Sorgu oluşturulamadı: %w", err)
-	}
-
-	var dummy int
-
-	err = executor.QueryRowContext(ctx, query, args...).Scan(&dummy)
-	if err != nil {
-		// Eğer hiç kayıt bulunamadıysa sql.ErrNoRows döner, bu bir hata değil oyuncunun ligde olmadığını gösterir.
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
-		}
-		return false, fmt.Errorf("Sorcu çalıştırılamadı: %w", err)
-	}
-
-	// Kayıt başarıyla scan edildiyse oyuncu lige katılmıştır.
-	return true, nil
 }

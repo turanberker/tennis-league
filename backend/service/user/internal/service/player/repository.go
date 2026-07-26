@@ -5,7 +5,7 @@ import (
 )
 
 type Repository interface {
-	GetById(ctx context.Context, id int64) (*Player, error)
+	GetById(ctx context.Context, id string) (*Player, error)
 
 	Save(ctx context.Context, persistPlayer *PersistPlayer) (*string, error)
 

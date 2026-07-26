@@ -27,7 +27,7 @@ func NewUsecase(tm *database.TransactionManager, r Repository) *Usecase {
 	return &Usecase{tm: tm, repo: r}
 }
 
-func (u *Usecase) GetById(ctx context.Context, id int64) (*Player, error) {
+func (u *Usecase) GetById(ctx context.Context, id string) (*Player, error) {
 	return u.repo.GetById(ctx, id)
 }
 

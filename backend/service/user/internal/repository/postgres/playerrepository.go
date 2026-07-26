@@ -23,7 +23,7 @@ func NewPlayerRepository(db *sql.DB) *PlayerRepository {
 	return &PlayerRepository{Repository: *sqlrepository.NewRepository(db)}
 }
 
-func (r *PlayerRepository) GetById(ctx context.Context, id int64) (*player.Player, error) {
+func (r *PlayerRepository) GetById(ctx context.Context, id string) (*player.Player, error) {
 	player := &player.Player{}
 	query := `SELECT id,  name, surname, sex,user_id FROM player WHERE id=$1`
 	err := r.GetExecutor(ctx).QueryRowContext(ctx, query, id).
