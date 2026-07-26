@@ -27,3 +27,7 @@ type ParticipantRepository interface {
 
 	IsPlayerAttendedToLeague(ctx context.Context, leagueId string, playerId string) (bool, error)
 }
+
+type ScordoardInitializer interface {
+	InitializeScoreboard(ctx context.Context, leagueId string) error
+}

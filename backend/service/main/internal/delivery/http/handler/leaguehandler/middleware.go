@@ -148,13 +148,13 @@ func (h *leagueHandlerMiddleware) checkLeagueIsChallenging(c *router.CustomConte
 		return
 	}
 
-	if leagueData.ProcessType == league.LeagueProcessType_DEFI {
+	if leagueData.ProcessType == league.LeagueProcessType_CHALLANGE {
 		c.Next()
 	} else {
 		businessErr := &customerror.BusinnesException{
 			StatusCode: http.StatusBadRequest,
 			ErrorCode:  errorcodes.ErrorInvalid_ProcessType,
-			Message:    fmt.Sprintf("%s tipinde ligler için maç talebinde bulunabilirsiniz!", league.LeagueProcessType_DEFI),
+			Message:    fmt.Sprintf("%s tipinde ligler için maç talebinde bulunabilirsiniz!", league.LeagueProcessType_CHALLANGE),
 		}
 
 		c.ErrorComplete(businessErr)

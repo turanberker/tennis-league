@@ -33,6 +33,7 @@ type Usecase struct {
 	coordinatorRepository leaguecoordinator.Repository
 	participantRepository ParticipantRepository
 	playerClient          playerpb.PlayerServiceClient
+	scoreboardInitializer ScordoardInitializer
 }
 
 func NewUsecase(
@@ -48,6 +49,7 @@ func NewUsecase(
 	coordinatorRepository leaguecoordinator.Repository,
 	participantRepository ParticipantRepository,
 	playerClient playerpb.PlayerServiceClient,
+	scoreboardInitializer ScordoardInitializer,
 ) *Usecase {
 	return &Usecase{repo: repo,
 		teamUseCase:           teamUc,
@@ -61,6 +63,7 @@ func NewUsecase(
 		outboxRepository:      outboxRepository,
 		participantRepository: participantRepository,
 		playerClient:          playerClient,
+		scoreboardInitializer: scoreboardInitializer,
 	}
 }
 
@@ -158,6 +161,12 @@ func (u *Usecase) Start(ctx context.Context, leagueId string) error {
 			return customerror.NewBusinessError(http.StatusConflict,
 				errorcodes.ErrLeagueAlreadyFixtureCreated,
 				"Lig başlamıştır")
+		}
+
+		// Puan tablosunu (score_board) ligdeki tüm katılımcılar için başlatıyoruz.
+		err = u.scoreboardInitializer.InitializeScoreboard(txCtx, leagueId)
+		if err != nil {
+			return err
 		}
 
 		starter, err := u.leagueStarterGetter(*league, u.teamRepo, u.matchRepo)

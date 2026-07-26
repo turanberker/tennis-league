@@ -6,7 +6,7 @@ CREATE TABLE tennisleague.league (
     format VARCHAR(20) NOT NULL,
     --MIX, MALE,FEMALE
     category VARCHAR(20) NOT NULL,
-     --FIXTURE,DEFI
+     --FIXTURE,CHALLANGE
     process_type  VARCHAR(20) NOT NULL,
     -- Mevcut Durum: DRAFT, ACTIVE, COMPLETED
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',

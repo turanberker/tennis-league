@@ -66,17 +66,17 @@ export const League_Category_Options = [
 
 export enum LEAGUE_PROCESS_TYPE {
   FIXTURE = "FIXTURE",
-  DEFI = "DEFI",
+  CHALLANGE = "CHALLANGE",
 }
 
 export const League_Process_Type_Labels: Record<LEAGUE_PROCESS_TYPE, string> = {
   [LEAGUE_PROCESS_TYPE.FIXTURE]: "Fixture",
-  [LEAGUE_PROCESS_TYPE.DEFI]: "Defi",
+  [LEAGUE_PROCESS_TYPE.CHALLANGE]: "Challenge",
 };
 
 export const League_Process_Type_Options = [
   { label: "Fixture", value: LEAGUE_PROCESS_TYPE.FIXTURE },
-  { label: "Defi", value: LEAGUE_PROCESS_TYPE.DEFI },
+  { label: "Challenge", value: LEAGUE_PROCESS_TYPE.CHALLANGE },
 ];
 
 export enum LEAGUE_STATUS {

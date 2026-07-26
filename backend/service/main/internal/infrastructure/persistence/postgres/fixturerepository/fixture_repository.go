@@ -136,3 +136,31 @@ func (f *ScoreBoardRepository) UpdateScore(ctx context.Context, update leaguemat
 
 	return nil
 }
+
+func (f *ScoreBoardRepository) InitializeScoreboard(ctx context.Context, leagueId string) error {
+	exec := f.GetExecutor(ctx)
+
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	// INSERT edilecek değerleri sağlayan SELECT sorgusu
+	selectBuilder := psql.Select("league_id", "id").
+		From("attendance").
+		Where(squirrel.Eq{"league_id": leagueId})
+
+	// Ana INSERT sorgusu
+	insertBuilder := psql.Insert("score_board").
+		Columns("league_id", "attendance_id").
+		Select(selectBuilder).
+		Suffix("ON CONFLICT (league_id, attendance_id) DO NOTHING")
+
+	query, args, err := insertBuilder.ToSql()
+	if err != nil {
+		return errors.Wrap(err, "scoreboard başlatma sorgusu oluşturulamadı")
+	}
+
+	_, err = exec.ExecContext(ctx, query, args...)
+	if err != nil {
+		return errors.Wrap(err, "scoreboard başlatılırken veritabanı hatası")
+	}
+	return nil
+}

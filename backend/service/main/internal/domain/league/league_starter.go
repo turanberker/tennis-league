@@ -20,7 +20,7 @@ func (u *Usecase) leagueStarterGetter(league League, teamRepo team.Repository,
 	case LeagueProcessType_FIXTURE:
 		return &fixtureTypeLeagueStarter{teamRepo: teamRepo, matchRepo: matchRepo}, nil
 
-	case LeagueProcessType_DEFI:
+	case LeagueProcessType_CHALLANGE:
 		return &challengingTypeLeagueStarter{}, nil
 	default:
 		err := fmt.Errorf("%s tipin implement edilmemiştir", league.ProcessType)
