@@ -18,6 +18,7 @@ import (
 	"tennis-league/service/internal/domain/team"
 	"tennis-league/service/internal/domain/user"
 	"tennis-league/service/internal/infrastructure/persistence/postgres"
+	"tennis-league/service/internal/infrastructure/persistence/postgres/fixturerepository"
 	"tennis-league/service/internal/infrastructure/persistence/redis"
 	"tennis-league/user-interface/grpc/pb/playerpb"
 
@@ -49,7 +50,7 @@ func main() {
 	teamPlayerRepository := postgres.NewTeamPlayerRepository(db)
 	matchRepository := postgres.NewMatchRepository(db)
 	matchSetRepository := postgres.NewMatchSetRepository(db)
-	scoreBoardRepository := postgres.NewScoreBoardRepository(db)
+	scoreBoardRepository := fixturerepository.NewScoreBoardRepository(db)
 	outboxRepository := postgres.NewOutboxRepository(db)
 	matchRequestRepository := postgres.NewMatchRequestRepository(db)
 	leagueCoordinatorRepository := postgres.NewLeagueCoordinatorRepository(db)

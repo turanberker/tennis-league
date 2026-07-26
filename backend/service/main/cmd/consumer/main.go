@@ -12,6 +12,7 @@ import (
 	"tennis-league/common/lib/database"
 
 	"tennis-league/service/internal/infrastructure/persistence/postgres"
+	"tennis-league/service/internal/infrastructure/persistence/postgres/fixturerepository"
 
 	"tennis-league/common/lib/messaging"
 )
@@ -35,7 +36,7 @@ func main() {
 	matchRepository := postgres.NewMatchRepository(db)
 
 	setRepository := postgres.NewMatchSetRepository(db)
-	scoreboardRepository := postgres.NewScoreBoardRepository(db)
+	scoreboardRepository := fixturerepository.NewScoreBoardRepository(db)
 
 	if err != nil {
 		log.Fatal(err)

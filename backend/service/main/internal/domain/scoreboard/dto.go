@@ -1,12 +1,12 @@
 package scoreboard
 
-type TeamReferance struct {
+type AttendanceReferance struct {
 	Id   string
 	Name string
 }
 
 type ScoreBoard struct {
-	Team      TeamReferance
+	Team      AttendanceReferance
 	Played    int16
 	Won       int16
 	Lost      int16
