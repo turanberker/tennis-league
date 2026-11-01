@@ -1,149 +1,138 @@
-name: Publish Docker Images
+name: Build & Publish Images (GHCR)
+
+# main'e her push'ta tüm image'ları build edip GitHub Container Registry'ye (ghcr.io) atar.
+# Image isimleri: ghcr.io/<owner>/goa-<servis>
+#
+# Beklenen secret'lar (Settings > Secrets and variables > Actions):
+#   GHCR_USERNAME  (opsiyonel) ghcr.io kullanıcı adı. Tanımlı değilse workflow'u tetikleyen kullanıcı (github.actor) kullanılır.
+#   GHCR_TOKEN     (opsiyonel) write:packages yetkili Personal Access Token. Tanımlı değilse yerleşik GITHUB_TOKEN kullanılır.
+#
+# Auto deploy için (deploy job'u eklendiğinde) beklenenler:
+#   SSH_HOST, SSH_USER, SSH_KEY (private key), opsiyonel SSH_PORT
 
 on:
   push:
-    tags:
-      - 'v*' # Sadece v ile başlayan tag'lerde tetiklenir (Örn: v1.0.2)
-  workflow_dispatch: # MANUEL TETİKLEME
-    inputs:
-      version_tag:
-        description: 'Docker imajı için etiket (latest dışında)'
-        required: true
-        default: 'v'
+    branches:
+      - main
+  workflow_dispatch: # Manuel tetikleme
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
-  push_to_registry:
-    name: Build and Push All Images
+  build-and-push:
+    name: ${{ matrix.image }}
     runs-on: ubuntu-latest
-    # Manuel tetiklendiyse VEYA tag v ile başlıyorsa çalış
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- Backend (backend/Dockerfile, multi-stage target'lar) ---
+          - image: goa-main-api
+            context: ./backend
+            file: ./backend/Dockerfile
+            target: main-api
+          - image: goa-main-consumer
+            context: ./backend
+            file: ./backend/Dockerfile
+            target: main-consumer
+          - image: goa-main-publisher
+            context: ./backend
+            file: ./backend/Dockerfile
+            target: main-publisher
+          - image: goa-user-api
+            context: ./backend
+            file: ./backend/Dockerfile
+            target: user-api
+          - image: goa-user-consumer
+            context: ./backend
+            file: ./backend/Dockerfile
+            target: user-consumer
+
+          # --- Frontend (frontend/tennis-league/Dockerfile) ---
+          - image: goa-web-client
+            context: ./frontend/tennis-league
+            file: ./frontend/tennis-league/Dockerfile
+            build-args: BUILD_MODE=build
+          - image: goa-web-client-staging
+            context: ./frontend/tennis-league
+            file: ./frontend/tennis-league/Dockerfile
+            build-args: BUILD_MODE=build:staging
+
+          # --- DB migration (infra/development/migrations/Dockerfile) ---
+          - image: goa-migrate
+            context: ./infra/development/migrations
+            file: ./infra/development/migrations/Dockerfile
 
     steps:
-      - name: Check out the repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Versiyon belirleme mantığı:
-      # Manuel tetiklendiyse input'u al, tag ile çalıştıysa tag ismini al.
-      - name: Set Version Tag
-        id: vars
+      # ghcr.io image isimleri küçük harf olmalı
+      - name: Image adını hazırla
+        id: name
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.version_tag }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          fi
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "image=${REGISTRY}/${owner}/${{ matrix.image }}" >> "$GITHUB_OUTPUT"
 
-      - name: Log in to Docker Hub
+      - name: Docker metadata (tag'ler)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.name.outputs.image }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: ghcr.io'ya giriş
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.GHCR_USERNAME || github.actor }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
-      # 1. Backend: API Image
-      - name: Build and Push Main API
-        uses: docker/build-push-action@v5
+      - name: Build & push
+        uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          target: main-api # Dockerfile'daki ilgili target
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
+          build-args: ${{ matrix.build-args }}
           push: true
-          tags: |
-            berkerturan/tennis-league-main-api:latest
-            berkerturan/tennis-league-main-api:${{ steps.vars.outputs.tag }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
-      # 2. Backend: Main Comsumer Image
-      - name: Build and Push Main Consumer
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          target: main-consumer
-          push: true
-          tags: |
-            berkerturan/tennis-league-main-consumer:latest
-            berkerturan/tennis-league-main-consumer:${{ steps.vars.outputs.tag }}
-
-      # 3. Backend: Main Comsumer Image
-      - name: Build and Push Main Publisher
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          target: main-publisher
-          push: true
-          tags: |
-            berkerturan/tennis-league-main-publisher:latest
-            berkerturan/tennis-league-main-publisher:${{ steps.vars.outputs.tag }}
-
-      # 4. Backend: User Service Image
-      - name: Build and Push User API
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          target: user-api
-          push: true
-          tags: |
-            berkerturan/tennis-league-user-api:latest
-            berkerturan/tennis-league-user-api:${{ steps.vars.outputs.tag }}
-            
-
-      # 5. Backend: User Comsumer Image
-      - name: Build and Push User Consumer
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          target: user-consumer
-          push: true
-          tags: |
-            berkerturan/tennis-league-user-consumer:latest
-            berkerturan/tennis-league-user-consumer:${{ steps.vars.outputs.tag }}
-
-      # 6. Frontend: UI-Docker
-      - name: Build and push Frontend Docker
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend/tennis-league
-          file: ./frontend/tennis-league/Dockerfile
-          build-args: |
-            BUILD_MODE=build:staging
-          push: true
-          tags: |
-            berkerturan/tennis-league-ui-docker:latest
-            berkerturan/tennis-league-ui-docker:${{ steps.vars.outputs.tag }}
-
-      # 7. Frontend: UI-Prod
-      - name: Build and push Frontend Prod
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend/tennis-league
-          file: ./frontend/tennis-league/Dockerfile
-          push: true
-          tags: |
-            berkerturan/tennis-league-ui-prod:latest
-            berkerturan/tennis-league-ui-prod:${{ steps.vars.outputs.tag }}
-
-
-      # 8. Migrate Image
-      - name: Build and push Migrate
-        uses: docker/build-push-action@v5
-        with:
-          context: ./infra/development/migrations
-          file: ./infra/development/migrations/Dockerfile
-          push: true
-          tags: |
-            berkerturan/tennis-league-migrate:latest
-            berkerturan/tennis-league-migrate:${{ steps.vars.outputs.tag }}
-
-      # --- SSH DEPLOY ADIMI (Sunucuyu güncellemek için) ---
-      - name: Deploy to Server via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        if: success() # Sadece build'ler başarılıysa çalışır
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd ~/amateur-tennis-league-deployment/docker
-            docker compose up -d
+  # --- AUTO DEPLOY ---
+  # SSH bilgileri geldiğinde burada etkinleştirilecek.
+  # build-and-push job'unun tüm matrix adımları başarılı olursa çalışacak şekilde tasarlandı.
+  #
+  # deploy:
+  #   name: Deploy to server
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   environment: production
+  #   steps:
+  #     - name: Deploy via SSH
+  #       uses: appleboy/ssh-action@v1.2.0
+  #       with:
+  #         host: ${{ secrets.SSH_HOST }}
+  #         username: ${{ secrets.SSH_USER }}
+  #         key: ${{ secrets.SSH_KEY }}
+  #         port: ${{ secrets.SSH_PORT || 22 }}
+  #         script: |
+  #           cd ~/tennis-league/deployment
+  #           docker compose pull
+  #           docker compose up -d
